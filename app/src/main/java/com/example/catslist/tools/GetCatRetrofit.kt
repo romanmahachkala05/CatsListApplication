@@ -11,5 +11,5 @@ object GetCatRetrofit {
         .addConverterFactory(GsonConverterFactory.create())
         .build()
 
-    fun getService() = retrofit.create(CatRequest::class.java)
+    fun getService() = retrofit.create(CatRequestApiService::class.java)
 }
