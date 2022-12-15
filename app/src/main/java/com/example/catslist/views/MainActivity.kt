@@ -1,7 +1,8 @@
-package com.example.catslist
+package com.example.catslist.views
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import com.example.catslist.R
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
