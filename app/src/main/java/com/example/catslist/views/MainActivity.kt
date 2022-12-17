@@ -29,11 +29,15 @@ class MainActivity : AppCompatActivity() {
         binding.recyclerViewWithCats.adapter = adapter
 
         catsStorage.addListener(catsListener)
-        repeat(5) { MainActivityViewModel().addCat() }
+        addCat()
     }
 
     private val catsListener: CatsListener = {
         Log.v("catsListener", "catsListener!")
         adapter.catsList = it
+    }
+
+    private fun addCat() {
+        repeat(5) { MainActivityViewModel().addCat() }
     }
 }
