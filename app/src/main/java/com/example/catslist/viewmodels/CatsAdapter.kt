@@ -11,6 +11,14 @@ import com.bumptech.glide.Glide
 import com.example.catslist.databinding.ItemCatBinding
 import com.example.catslist.models.Cat
 
+interface CatsActionsListener {
+
+    fun onAddToFavorites(cat: Cat)
+
+    fun onDownload(cat: Cat)
+
+}
+
 class CatsAdapter : RecyclerView.Adapter<CatsAdapter.CatsViewHolder>() {
 
     private val tag = "CatsAdapter"
