@@ -3,6 +3,7 @@ package com.example.catslist.viewmodels
 import android.content.Context
 import android.util.Log
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import androidx.databinding.BindingAdapter
@@ -19,7 +20,7 @@ interface CatsActionsListener {
 
 }
 
-class CatsAdapter : RecyclerView.Adapter<CatsAdapter.CatsViewHolder>() {
+class CatsAdapter : RecyclerView.Adapter<CatsAdapter.CatsViewHolder>(), View.OnClickListener {
 
     private val tag = "CatsAdapter"
     var catsList: List<Cat> = emptyList()
@@ -27,6 +28,10 @@ class CatsAdapter : RecyclerView.Adapter<CatsAdapter.CatsViewHolder>() {
             field = newValue
             notifyDataSetChanged()
         }
+
+    override fun onClick(v: View) {
+        val cat = v.tag as Cat
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CatsViewHolder {
         Log.v(tag, "onCreateViewHolder()")
