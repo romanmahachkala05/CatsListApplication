@@ -28,7 +28,7 @@ class MainActivity : AppCompatActivity() {
         binding.recyclerViewWithCats.layoutManager = layoutManager
         binding.recyclerViewWithCats.adapter = adapter
 
-        CatStorage.addListener(catsListener)
+        catsStorage.addListener(catsListener)
         repeat(5) { MainActivityViewModel().addCat() }
     }
 
