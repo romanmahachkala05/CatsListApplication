@@ -9,6 +9,7 @@ import android.widget.ImageView
 import androidx.databinding.BindingAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.example.catslist.R
 import com.example.catslist.databinding.ItemCatBinding
 import com.example.catslist.models.Cat
 
@@ -20,7 +21,9 @@ interface CatsActionsListener {
 
 }
 
-class CatsAdapter : RecyclerView.Adapter<CatsAdapter.CatsViewHolder>(), View.OnClickListener {
+class CatsAdapter(
+    private val actionsListener: CatsActionsListener
+) : RecyclerView.Adapter<CatsAdapter.CatsViewHolder>(), View.OnClickListener {
 
     private val tag = "CatsAdapter"
     var catsList: List<Cat> = emptyList()
@@ -30,25 +33,40 @@ class CatsAdapter : RecyclerView.Adapter<CatsAdapter.CatsViewHolder>(), View.OnC
         }
 
     override fun onClick(v: View) {
-        val cat = v.tag as Cat
+        val cat = v.tag as? Cat
+        when(v.id){
+            R.id.download_cat_image -> {
+                if (cat != null) {
+                    actionsListener.onDownload(cat)
+                } else {
+                    Log.v(tag, "onDownload(), cat = null")
+                }
+            }
+            else -> {
+                //TODO add to favorites button
+            }
+        }
+
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CatsViewHolder {
         Log.v(tag, "onCreateViewHolder()")
         val inflater = LayoutInflater.from(parent.context)
         val binding = ItemCatBinding.inflate(inflater, parent,false)
+
+        binding.downloadCatImage.setOnClickListener(this)
+
         return CatsViewHolder(binding)
     }
 
     override fun onBindViewHolder(holder: CatsViewHolder, position: Int) {
-        Log.v(tag, "onBindViewHolder()")
         with(holder.binding){
             cat = catsList[position]
+            downloadCatImage.tag = cat
         }
     }
 
     override fun getItemCount(): Int {
-        Log.v(tag, "getItemCount(), value = ${catsList.size}")
         return catsList.size
     }
 
