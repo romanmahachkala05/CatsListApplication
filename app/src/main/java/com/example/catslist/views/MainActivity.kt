@@ -4,6 +4,7 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.example.catslist.App
 import com.example.catslist.databinding.ActivityMainBinding
 import com.example.catslist.tools.CatStorage
@@ -27,6 +28,14 @@ class MainActivity : AppCompatActivity() {
         val layoutManager = LinearLayoutManager(this)
         binding.recyclerViewWithCats.layoutManager = layoutManager
         binding.recyclerViewWithCats.adapter = adapter
+        binding.recyclerViewWithCats.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                super.onScrolled(recyclerView, dx, dy)
+                if(!recyclerView.canScrollVertically(1)) {
+                    addCat()
+                }
+            }
+        })
 
         catsStorage.addListener(catsListener)
         addCat()
