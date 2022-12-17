@@ -60,7 +60,7 @@ object CatStorage {
             }
 
             override fun onFailure(call: Call<List<Cat>>, t: Throwable) {
-                TODO("Not yet implemented")
+                Log.e(tag, "error loading cat: ${t.message}")
             }
         }
         )
