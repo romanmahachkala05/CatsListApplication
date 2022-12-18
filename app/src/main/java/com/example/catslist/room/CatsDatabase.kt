@@ -3,12 +3,7 @@ package com.example.catslist.room
 import androidx.room.Database
 import androidx.room.RoomDatabase
 
-@Database (
-    version = 1,
-    entities = [
-        CatDatabaseEntity::class
-    ]
-        )
-abstract class CatsDatabase: RoomDatabase() {
-
+@Database(entities = [CatDatabaseEntity::class], version = 1)
+abstract class CatsDatabase : RoomDatabase() {
+    abstract fun catsDao(): CatsDao
 }
