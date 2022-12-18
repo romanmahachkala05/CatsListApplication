@@ -5,7 +5,7 @@ import androidx.room.PrimaryKey
 import com.example.catslist.models.Cat
 
 @Entity(
-    tableName = "favoriteCats"
+    tableName = "favoriteCatsTable"
 )
 data class CatDatabaseEntity(
     @PrimaryKey  val id: String,
