@@ -1,18 +1,21 @@
 package com.example.catslist.room
 
-import androidx.room.Dao
-import androidx.room.Insert
-import androidx.room.Query
-import com.example.catslist.models.Cat
+import androidx.room.*
 
 
 @Dao
 interface CatsDao {
 
     @Insert
-    suspend fun insertCat(cat: Cat)
+    suspend fun insertCat(catsDbEntity: CatDatabaseEntity)
 
-    @Query("SELECT * FROM favoriteCats")
-    suspend fun getAll(): List<Cat>
+    @Delete
+    suspend fun deleteCat(catsDbEntity: CatDatabaseEntity)
+
+    @Update
+    suspend fun updateCat(catsDbEntity: CatDatabaseEntity)
+
+    @Query("SELECT * FROM favoriteCatsTable")
+    fun getAllCats(): List<CatDatabaseEntity>
 
 }
