@@ -1,4 +1,4 @@
-package com.example.catslist.viewmodels
+package com.example.catslist.adapters
 
 import android.content.Context
 import android.util.Log

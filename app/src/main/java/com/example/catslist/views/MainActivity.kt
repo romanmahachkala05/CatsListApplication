@@ -10,8 +10,8 @@ import com.example.catslist.databinding.ActivityMainBinding
 import com.example.catslist.models.Cat
 import com.example.catslist.tools.CatStorage
 import com.example.catslist.tools.CatsListener
-import com.example.catslist.viewmodels.CatsActionsListener
-import com.example.catslist.viewmodels.CatsAdapter
+import com.example.catslist.adapters.CatsActionsListener
+import com.example.catslist.adapters.CatsAdapter
 import com.example.catslist.viewmodels.MainActivityViewModel
 
 class MainActivity : AppCompatActivity() {
