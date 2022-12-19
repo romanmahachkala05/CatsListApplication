@@ -29,7 +29,10 @@ class CatsListFragmentViewModel(app: Application) : AndroidViewModel(app) {
         Log.v(tag, "init")
         CoroutineScope(Main).launch {
             catsDatabaseRepository.getAllCats().forEach { CatStorage.favoriteCats.add(it.toCat()) }
-            Log.v(tag, "getAllCats, add each to CatStorage.favoriteCats = ${CatStorage.favoriteCats}")
+            Log.v(
+                tag,
+                "getAllCats, add each to CatStorage.favoriteCats = ${CatStorage.favoriteCats}"
+            )
             CatStorage.notifyFavChanges()
         }
     }
@@ -38,10 +41,10 @@ class CatsListFragmentViewModel(app: Application) : AndroidViewModel(app) {
         CatStorage.getNewCatData()
     }
 
-    fun onFavoriteButtonClick(cat: Cat, view: View){
+    fun onFavoriteButtonClick(cat: Cat, view: View) {
         CoroutineScope(Main).launch {
             val icon = view.findViewById<AppCompatImageButton>(R.id.item_cat_star_button)
-            if (!(CatStorage.favoriteCats.any { it.id == cat.id})) {
+            if (!(CatStorage.favoriteCats.any { it.id == cat.id })) {
                 cat.favorite = true
                 CatStorage.favoriteCats.add(cat)
                 CatStorage.notifyFavChanges()

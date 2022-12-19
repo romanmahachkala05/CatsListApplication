@@ -47,8 +47,8 @@ object CatStorage {
         listeners.remove(listener)
     }
 
-     fun notifyChanges() {
-         listeners.forEach { it.invoke(cats) }
+    fun notifyChanges() {
+        listeners.forEach { it.invoke(cats) }
     }
 
     fun getNewCatData() {

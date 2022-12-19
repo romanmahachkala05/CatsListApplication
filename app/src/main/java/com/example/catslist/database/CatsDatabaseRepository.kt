@@ -13,23 +13,23 @@ class CatsDatabaseRepository(application: Application) {
         catsDao = catsDatabase.catsDao()
     }
 
-    suspend fun insert(cat: CatDatabaseEntity){
+    suspend fun insert(cat: CatDatabaseEntity) {
         catsDao.insertCat(cat)
     }
 
-    suspend fun delete(cat: CatDatabaseEntity){
+    suspend fun delete(cat: CatDatabaseEntity) {
         catsDao.deleteCat(cat)
     }
 
-    suspend fun update(cat: CatDatabaseEntity){
+    suspend fun update(cat: CatDatabaseEntity) {
         catsDao.updateCat(cat)
     }
 
-    suspend fun getAllCats():List<CatDatabaseEntity>{
+    suspend fun getAllCats(): List<CatDatabaseEntity> {
         return catsDao.getAllCats()
     }
 
-    suspend fun deleteAllCats(){
+    suspend fun deleteAllCats() {
         catsDao.deleteAllCats()
     }
 

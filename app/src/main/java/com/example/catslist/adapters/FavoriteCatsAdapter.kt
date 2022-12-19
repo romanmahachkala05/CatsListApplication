@@ -33,7 +33,7 @@ class FavoriteCatsAdapter(
         if (cat != null) {
             when (v.id) {
                 R.id.item_cat_favorite_download_image_button -> {
-                        actionsListener.onDownload(cat)
+                    actionsListener.onDownload(cat)
                 }
                 R.id.item_cat_favorite_star_button -> {
                     actionsListener.onAddToFavorites(cat, v)
@@ -43,7 +43,6 @@ class FavoriteCatsAdapter(
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): FavoriteCatsViewHolder {
-        Log.v(tag, "onCreateViewHolder()")
         val inflater = LayoutInflater.from(parent.context)
         val binding = ItemFavoriteCatBinding.inflate(inflater, parent, false)
 
@@ -56,7 +55,9 @@ class FavoriteCatsAdapter(
     override fun onBindViewHolder(holder: FavoriteCatsViewHolder, position: Int) {
         with(holder.binding) {
             cat = favoriteCatsList[position]
-            if(favoriteCatsList[position].favorite) itemCatFavoriteStarButton.setBackgroundResource(R.drawable.ic_star_filled)
+            if (favoriteCatsList[position].favorite) itemCatFavoriteStarButton.setBackgroundResource(
+                R.drawable.ic_star_filled
+            )
             itemCatFavoriteDownloadImageButton.tag = cat
             itemCatFavoriteStarButton.tag = cat
         }

@@ -52,6 +52,7 @@ class FavoriteCatsListFragment : Fragment() {
             override fun onAddToFavorites(cat: Cat, view: View) {
                 viewModel.onFavoriteButtonClick(cat)
             }
+
             override fun onDownload(cat: Cat) {
                 viewModel.downloadCatImage(requireContext(), cat.url, cat.id)
             }
@@ -62,7 +63,6 @@ class FavoriteCatsListFragment : Fragment() {
     }
 
     private val favoriteCatsListener: CatsListener = {
-        Log.v("FAVORITEcatsListener", "FAVORITEcatsListener!")
         adapter.favoriteCatsList = it
     }
 }

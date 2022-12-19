@@ -8,7 +8,7 @@ import com.google.android.material.tabs.TabLayoutMediator
 
 class MainActivity : AppCompatActivity() {
 
-    private val tag  = "MainActivity"
+    private val tag = "MainActivity"
     private lateinit var binding: ActivityMainBinding
     private val fragmentsList = listOf(
         CatsListFragment.newInstance(),
@@ -27,8 +27,8 @@ class MainActivity : AppCompatActivity() {
             "Infinite Cats",
             "Favorite Cats"
         )
-        TabLayoutMediator(tabLayout, viewPager){
-            tab, pos -> tab.text = fragmentsNames[pos]
+        TabLayoutMediator(tabLayout, viewPager) { tab, pos ->
+            tab.text = fragmentsNames[pos]
         }.attach()
 
     }

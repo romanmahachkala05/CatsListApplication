@@ -22,7 +22,7 @@ class FavoriteCatsListFragmentViewModel(app: Application) : AndroidViewModel(app
 
     fun onFavoriteButtonClick(cat: Cat) {
         CoroutineScope(Dispatchers.Main).launch {
-            if (CatStorage.cats.any { it.id == cat.id}) {
+            if (CatStorage.cats.any { it.id == cat.id }) {
                 cat.favorite = false
                 CatStorage.notifyChanges()
             }

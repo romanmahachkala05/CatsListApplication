@@ -7,7 +7,7 @@ import androidx.room.PrimaryKey
     tableName = "favoriteCatsTable"
 )
 data class CatDatabaseEntity(
-    @PrimaryKey  val id: String,
+    @PrimaryKey val id: String,
     val url: String,
     val width: Int,
     val height: Int,

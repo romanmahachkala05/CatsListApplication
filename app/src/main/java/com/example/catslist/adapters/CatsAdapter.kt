@@ -1,7 +1,5 @@
 package com.example.catslist.adapters
 
-import android.content.Context
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -9,7 +7,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.catslist.R
 import com.example.catslist.databinding.ItemCatBinding
 import com.example.catslist.models.Cat
-import com.example.catslist.tools.CatStorage
 
 interface CatsActionsListener {
 
@@ -33,12 +30,12 @@ class CatsAdapter(
     override fun onClick(v: View) {
         val cat = v.tag as? Cat
         if (cat != null) {
-            when(v.id){
+            when (v.id) {
                 R.id.item_cat_download_image_button -> {
-                        actionsListener.onDownload(cat)
+                    actionsListener.onDownload(cat)
                 }
                 R.id.item_cat_star_button -> {
-                        actionsListener.onAddToFavorites(cat, v)
+                    actionsListener.onAddToFavorites(cat, v)
                 }
             }
         }
@@ -46,7 +43,7 @@ class CatsAdapter(
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CatsViewHolder {
         val inflater = LayoutInflater.from(parent.context)
-        val binding = ItemCatBinding.inflate(inflater, parent,false)
+        val binding = ItemCatBinding.inflate(inflater, parent, false)
 
         binding.itemCatDownloadImageButton.setOnClickListener(this)
         binding.itemCatStarButton.setOnClickListener(this)
@@ -55,7 +52,7 @@ class CatsAdapter(
     }
 
     override fun onBindViewHolder(holder: CatsViewHolder, position: Int) {
-        with(holder.binding){
+        with(holder.binding) {
             cat = catsList[position]
             if (!catsList[position].favorite) itemCatStarButton.setBackgroundResource(R.drawable.ic_star_empty)
             itemCatDownloadImageButton.tag = cat

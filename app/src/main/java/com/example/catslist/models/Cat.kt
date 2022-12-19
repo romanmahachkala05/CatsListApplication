@@ -1,7 +1,5 @@
 package com.example.catslist.models
 
-import android.view.inspector.IntFlagMapping
-
 data class Cat(
     var id: String,
     var url: String,

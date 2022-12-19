@@ -16,9 +16,7 @@ abstract class CatsDatabase : RoomDatabase() {
 
         @Synchronized
         fun getInstance(context: Context): CatsDatabase {
-            Log.v("starting building DB", "getInstance")
             if (instance == null) {
-                Log.v("starting building DB", "puk")
                 instance = Room.databaseBuilder(
                     context.applicationContext,
                     CatsDatabase::class.java, "cats_database"
