@@ -1,6 +1,7 @@
 package com.example.catslist.database
 
 import android.app.Application
+import com.example.catslist.models.CatDatabaseEntity
 
 class CatsDatabaseRepository(application: Application) {
 

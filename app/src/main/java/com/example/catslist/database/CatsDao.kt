@@ -1,6 +1,7 @@
 package com.example.catslist.database
 
 import androidx.room.*
+import com.example.catslist.models.CatDatabaseEntity
 
 
 @Dao

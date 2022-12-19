@@ -1,8 +1,7 @@
-package com.example.catslist.database
+package com.example.catslist.models
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import com.example.catslist.models.Cat
 
 @Entity(
     tableName = "favoriteCatsTable"
