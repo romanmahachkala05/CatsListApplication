@@ -7,6 +7,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.catslist.R
 import com.example.catslist.databinding.ItemCatBinding
 import com.example.catslist.models.Cat
+import com.example.catslist.tools.CatStorage
 
 interface CatsActionsListener {
 
@@ -21,7 +22,7 @@ class CatsAdapter(
 ) : RecyclerView.Adapter<CatsAdapter.CatsViewHolder>(), View.OnClickListener {
 
     private val tag = "CatsAdapter"
-    var catsList: List<Cat> = emptyList()
+    var catsList: List<Cat> = CatStorage.cats
         set(newValue) {
             field = newValue
             notifyDataSetChanged()
