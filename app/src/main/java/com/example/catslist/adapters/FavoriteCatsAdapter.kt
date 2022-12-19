@@ -8,21 +8,21 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.catslist.R
 import com.example.catslist.databinding.ItemFavoriteCatBinding
 import com.example.catslist.models.Cat
+import com.example.catslist.tools.CatStorage
 
 interface FavoriteCatsActionsListener {
 
     fun onAddToFavorites(cat: Cat)
-
     fun onDownload(cat: Cat)
 
 }
 
 class FavoriteCatsAdapter(
-    private val actionsListener: CatsActionsListener
+    private val actionsListener: FavoriteCatsActionsListener
 ) : RecyclerView.Adapter<FavoriteCatsAdapter.FavoriteCatsViewHolder>(), View.OnClickListener {
 
     private val tag = "FavoriteCatsAdapter"
-    var favoriteCatsList: List<Cat> = emptyList()
+    var favoriteCatsList: List<Cat> = CatStorage.favoriteCats
         set(newValue) {
             field = newValue
             notifyDataSetChanged()
@@ -30,35 +30,35 @@ class FavoriteCatsAdapter(
 
     override fun onClick(v: View) {
         val cat = v.tag as? Cat
-        when(v.id){
-            R.id.item_favorite_cat_download_image_button -> {
-                if (cat != null) {
-                    actionsListener.onDownload(cat)
-                } else {
-                    Log.v(tag, "onDownload(), cat = null")
+        if (cat != null) {
+            when (v.id) {
+                R.id.item_cat_favorite_download_image_button -> {
+                        actionsListener.onDownload(cat)
+                }
+                R.id.item_cat_favorite_star_button -> {
+                    actionsListener.onAddToFavorites(cat)
                 }
             }
-            else -> {
-                //TODO add to favorites button
-            }
         }
-
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): FavoriteCatsViewHolder {
         Log.v(tag, "onCreateViewHolder()")
         val inflater = LayoutInflater.from(parent.context)
-        val binding = ItemFavoriteCatBinding.inflate(inflater, parent,false)
+        val binding = ItemFavoriteCatBinding.inflate(inflater, parent, false)
 
-        binding.itemFavoriteCatDownloadImageButton.setOnClickListener(this)
+        binding.itemCatFavoriteDownloadImageButton.setOnClickListener(this)
+        binding.itemCatFavoriteStarButton.setOnClickListener(this)
 
         return FavoriteCatsViewHolder(binding)
     }
 
     override fun onBindViewHolder(holder: FavoriteCatsViewHolder, position: Int) {
-        with(holder.binding){
+        with(holder.binding) {
             cat = favoriteCatsList[position]
-            itemFavoriteCatDownloadImageButton.tag = cat
+            if(favoriteCatsList[position].favorite) itemCatFavoriteStarButton.setBackgroundResource(R.drawable.ic_star_filled)
+            itemCatFavoriteDownloadImageButton.tag = cat
+            itemCatFavoriteStarButton.tag = cat
         }
     }
 
@@ -66,9 +66,7 @@ class FavoriteCatsAdapter(
         return favoriteCatsList.size
     }
 
-
     class FavoriteCatsViewHolder(
         val binding: ItemFavoriteCatBinding
     ) : RecyclerView.ViewHolder(binding.root)
-
 }
