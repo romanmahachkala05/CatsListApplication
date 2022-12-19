@@ -8,7 +8,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.databinding.DataBindingUtil
-import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.catslist.App
 import com.example.catslist.R
@@ -19,7 +18,6 @@ import com.example.catslist.models.Cat
 import com.example.catslist.tools.CatStorage
 import com.example.catslist.tools.CatsListener
 import com.example.catslist.viewmodels.CatsListFragmentViewModel
-import com.example.catslist.viewmodels.MainActivityViewModel
 
 class CatsListFragment : Fragment() {
 
@@ -51,19 +49,16 @@ class CatsListFragment : Fragment() {
         viewModel = ViewModelProvider(this)[CatsListFragmentViewModel::class.java]
 
         adapter = CatsAdapter(object : CatsActionsListener {
-            override fun onAddToFavorites(cat: Cat) {
-                TODO("Not yet implemented")
+            override fun onAddToFavorites(cat: Cat, view: View) {
+                viewModel.onFavoriteButtonClick(cat, view)
             }
 
             override fun onDownload(cat: Cat) {
-                Log.v(tag, "onDownload()")
                 viewModel.downloadCatImage(requireContext(), cat.url, cat.id)
             }
 
         })
 
-        val layoutManager = LinearLayoutManager(requireActivity().applicationContext)
-        binding.recyclerViewWithCats.layoutManager = layoutManager
         binding.recyclerViewWithCats.adapter = adapter
         binding.recyclerViewWithCats.addOnScrollListener(object : RecyclerView.OnScrollListener() {
             override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
@@ -83,7 +78,6 @@ class CatsListFragment : Fragment() {
     }
 
     private val catsListener: CatsListener = {
-        Log.v("catsListener", "catsListener!")
         adapter.catsList = it
     }
 }
