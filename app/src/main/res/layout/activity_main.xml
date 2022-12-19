@@ -8,13 +8,6 @@
         android:layout_height="match_parent"
         >
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/recyclerViewWithCats"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:layout_constraintTop_toTopOf="parent"
-            tools:layout_editor_absoluteX="16dp" />
-
         <com.google.android.material.tabs.TabLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
