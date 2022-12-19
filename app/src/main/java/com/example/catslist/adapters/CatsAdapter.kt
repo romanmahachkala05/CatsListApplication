@@ -5,17 +5,15 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
-import androidx.databinding.BindingAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
 import com.example.catslist.R
 import com.example.catslist.databinding.ItemCatBinding
 import com.example.catslist.models.Cat
+import com.example.catslist.tools.CatStorage
 
 interface CatsActionsListener {
 
-    fun onAddToFavorites(cat: Cat)
+    fun onAddToFavorites(cat: Cat, view: View)
 
     fun onDownload(cat: Cat)
 
@@ -34,27 +32,24 @@ class CatsAdapter(
 
     override fun onClick(v: View) {
         val cat = v.tag as? Cat
-        when(v.id){
-            R.id.item_cat_download_image_button -> {
-                if (cat != null) {
-                    actionsListener.onDownload(cat)
-                } else {
-                    Log.v(tag, "onDownload(), cat = null")
+        if (cat != null) {
+            when(v.id){
+                R.id.item_cat_download_image_button -> {
+                        actionsListener.onDownload(cat)
+                }
+                R.id.item_cat_star_button -> {
+                        actionsListener.onAddToFavorites(cat, v)
                 }
             }
-            R.id.item_cat_favorite_button -> {
-                //TODO add to favorites button
-            }
         }
-
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CatsViewHolder {
-        Log.v(tag, "onCreateViewHolder()")
         val inflater = LayoutInflater.from(parent.context)
         val binding = ItemCatBinding.inflate(inflater, parent,false)
 
         binding.itemCatDownloadImageButton.setOnClickListener(this)
+        binding.itemCatStarButton.setOnClickListener(this)
 
         return CatsViewHolder(binding)
     }
@@ -62,7 +57,9 @@ class CatsAdapter(
     override fun onBindViewHolder(holder: CatsViewHolder, position: Int) {
         with(holder.binding){
             cat = catsList[position]
+            if (!catsList[position].favorite) itemCatStarButton.setBackgroundResource(R.drawable.ic_star_empty)
             itemCatDownloadImageButton.tag = cat
+            itemCatStarButton.tag = cat
         }
     }
 
