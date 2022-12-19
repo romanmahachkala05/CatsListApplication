@@ -12,7 +12,7 @@ import com.example.catslist.tools.CatStorage
 
 interface FavoriteCatsActionsListener {
 
-    fun onAddToFavorites(cat: Cat)
+    fun onAddToFavorites(cat: Cat, view: View)
     fun onDownload(cat: Cat)
 
 }
@@ -36,7 +36,7 @@ class FavoriteCatsAdapter(
                         actionsListener.onDownload(cat)
                 }
                 R.id.item_cat_favorite_star_button -> {
-                    actionsListener.onAddToFavorites(cat)
+                    actionsListener.onAddToFavorites(cat, v)
                 }
             }
         }
