@@ -7,6 +7,6 @@ data class Cat(
     var url: String,
     var width: Int,
     var height: Int,
-    var favourite: Boolean
+    var favorite: Boolean
 )
 

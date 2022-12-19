@@ -16,6 +16,9 @@ interface CatsDao {
     suspend fun updateCat(catsDbEntity: CatDatabaseEntity)
 
     @Query("SELECT * FROM favoriteCatsTable")
-    fun getAllCats(): List<CatDatabaseEntity>
+    suspend fun getAllCats(): List<CatDatabaseEntity>
+
+    @Query("DELETE FROM favoriteCatsTable")
+    suspend fun deleteAllCats()
 
 }

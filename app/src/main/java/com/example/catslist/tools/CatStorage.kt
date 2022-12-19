@@ -11,10 +11,30 @@ typealias CatsListener = (cats: List<Cat>) -> Unit
 object CatStorage {
 
     private val tag = "CatStorage"
-    private var cats = mutableListOf<Cat>()
+    var cats = mutableListOf<Cat>()
+    var favoriteCats = mutableListOf<Cat>()
     private val listeners = mutableListOf<CatsListener>()
+    private val favListeners = mutableListOf<CatsListener>()
 
-    fun getCats(): List<Cat> {
+    fun getFavCats(): List<Cat> {
+        notifyChanges()
+        return favoriteCats
+    }
+
+    fun addFavListener(listener: CatsListener) {
+        favListeners.add(listener)
+    }
+
+    fun removeFavListener(listener: CatsListener) {
+        favListeners.remove(listener)
+    }
+
+    fun notifyFavChanges() {
+        Log.v(tag, "notifyFavChanges")
+        favListeners.forEach { it.invoke(favoriteCats) }
+    }
+
+    fun getCatslist(): List<Cat> {
         notifyChanges()
         return cats
     }
@@ -27,22 +47,19 @@ object CatStorage {
         listeners.remove(listener)
     }
 
-    private fun notifyChanges() {
-        listeners.forEach { it.invoke(cats) }
+     fun notifyChanges() {
+         listeners.forEach { it.invoke(cats) }
     }
 
     fun getNewCatData() {
-        Log.v(tag, "getNewCat")
         getCatData(object : DataReceivedCallback {
             override fun onDataReceived(catData: Cat?) {
                 catData?.let {
                     if (cats.contains(catData)) {
-                        Log.v(tag, "duplicate, adding new cat")
                         getCatData(this)
                     } else {
-                        Log.v(tag, "adding item $it to catsList")
                         cats.add(it)
-                        getCats()
+                        getCatslist()
                     }
                 }
             }
@@ -50,7 +67,6 @@ object CatStorage {
     }
 
     fun getCatData(callback: DataReceivedCallback) {
-        Log.v(tag, "getCatData")
         GetCatRetrofit.getService().requestCatInfo().enqueue(object :
             Callback<List<Cat>> {
             override fun onResponse(call: Call<List<Cat>>, response: Response<List<Cat>>) {

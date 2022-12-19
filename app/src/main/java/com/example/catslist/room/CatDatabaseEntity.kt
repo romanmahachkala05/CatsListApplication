@@ -12,15 +12,26 @@ data class CatDatabaseEntity(
     val url: String,
     val width: Int,
     val height: Int,
-    val favourite: Boolean
+    val favorite: Boolean
 ) {
     fun toCat(): Cat = Cat(
         id = id,
         url = url,
         width = width,
         height = height,
-        favourite = favourite
+        favorite = favorite
     )
 
+    companion object {
+
+        fun fromCat(cat: Cat): CatDatabaseEntity = CatDatabaseEntity(
+            id = cat.id,
+            url = cat.url,
+            width = cat.width,
+            height = cat.height,
+            favorite = cat.favorite
+        )
+
+    }
 }
 
