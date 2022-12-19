@@ -22,5 +22,16 @@ data class CatDatabaseEntity(
         favorite = favorite
     )
 
+    companion object {
+
+        fun fromCat(cat: Cat): CatDatabaseEntity = CatDatabaseEntity(
+            id = cat.id,
+            url = cat.url,
+            width = cat.width,
+            height = cat.height,
+            favorite = cat.favorite
+        )
+
+    }
 }
 
