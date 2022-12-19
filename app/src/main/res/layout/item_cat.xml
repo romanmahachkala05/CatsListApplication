@@ -46,7 +46,7 @@
             android:background="@android:color/transparent"/>
 
         <ImageButton
-            android:id="@+id/item_cat_favorite_button"
+            android:id="@+id/item_cat_star_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:background="@android:color/transparent"
