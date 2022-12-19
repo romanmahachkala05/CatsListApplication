@@ -35,14 +35,14 @@ class CatsAdapter(
     override fun onClick(v: View) {
         val cat = v.tag as? Cat
         when(v.id){
-            R.id.download_cat_image -> {
+            R.id.item_cat_download_image_button -> {
                 if (cat != null) {
                     actionsListener.onDownload(cat)
                 } else {
                     Log.v(tag, "onDownload(), cat = null")
                 }
             }
-            else -> {
+            R.id.item_cat_favorite_button -> {
                 //TODO add to favorites button
             }
         }
@@ -54,7 +54,7 @@ class CatsAdapter(
         val inflater = LayoutInflater.from(parent.context)
         val binding = ItemCatBinding.inflate(inflater, parent,false)
 
-        binding.downloadCatImage.setOnClickListener(this)
+        binding.itemCatDownloadImageButton.setOnClickListener(this)
 
         return CatsViewHolder(binding)
     }
@@ -62,7 +62,7 @@ class CatsAdapter(
     override fun onBindViewHolder(holder: CatsViewHolder, position: Int) {
         with(holder.binding){
             cat = catsList[position]
-            downloadCatImage.tag = cat
+            itemCatDownloadImageButton.tag = cat
         }
     }
 
