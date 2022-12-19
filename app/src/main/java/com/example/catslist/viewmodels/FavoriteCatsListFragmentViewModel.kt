@@ -8,8 +8,8 @@ import android.os.Environment
 import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
 import com.example.catslist.models.Cat
-import com.example.catslist.room.CatDatabaseEntity
-import com.example.catslist.room.CatsDatabaseRepository
+import com.example.catslist.database.CatDatabaseEntity
+import com.example.catslist.database.CatsDatabaseRepository
 import com.example.catslist.tools.CatStorage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

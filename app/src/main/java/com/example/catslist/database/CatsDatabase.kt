@@ -1,4 +1,4 @@
-package com.example.catslist.room
+package com.example.catslist.database
 
 import android.content.Context
 import android.util.Log
