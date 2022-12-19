@@ -72,8 +72,20 @@ class MainActivity : AppCompatActivity() {
         }
         testDB()
 
-        catsStorage.addListener(catsListener)
-        addCat()
+        //ViewPage Adapter
+        val viewPager = binding.viewPager
+        val tabLayout = binding.tabLayout
+        val viewPageAdapter = ViewPageAdapter(this, fragmentsList)
+        viewPager.adapter = viewPageAdapter
+        val fragmentsNames = listOf(
+            "Infinite Cats",
+            "Favorite Cats"
+        )
+        TabLayoutMediator(tabLayout, viewPager){
+            tab, pos -> tab.text = fragmentsNames[pos]
+        }.attach()
+
+
     }
 
     private val catsListener: CatsListener = {
