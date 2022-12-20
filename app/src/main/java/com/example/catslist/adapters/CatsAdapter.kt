@@ -1,5 +1,6 @@
 package com.example.catslist.adapters
 
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -22,7 +23,7 @@ class CatsAdapter(
 ) : RecyclerView.Adapter<CatsAdapter.CatsViewHolder>(), View.OnClickListener {
 
     private val tag = "CatsAdapter"
-    var catsList: List<Cat> = CatStorage.cats
+    var catsList: List<Cat> = emptyList()
         set(newValue) {
             field = newValue
             notifyDataSetChanged()
@@ -55,7 +56,11 @@ class CatsAdapter(
     override fun onBindViewHolder(holder: CatsViewHolder, position: Int) {
         with(holder.binding) {
             cat = catsList[position]
-            if (!catsList[position].favorite) itemCatStarButton.setBackgroundResource(R.drawable.ic_star_empty)
+            if (!catsList[position].favorite) {
+                itemCatStarButton.setBackgroundResource(R.drawable.ic_star_empty)
+            } else {
+                itemCatStarButton.setBackgroundResource(R.drawable.ic_star_filled)
+            }
             itemCatDownloadImageButton.tag = cat
             itemCatStarButton.tag = cat
         }

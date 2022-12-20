@@ -54,8 +54,8 @@ class CatsListFragmentViewModel(app: Application) : AndroidViewModel(app) {
                 icon.setBackgroundResource(R.drawable.ic_star_empty)
                 CatStorage.favoriteCats.removeIf { it.id == cat.id }
                 CatStorage.notifyFavChanges()
+                cat.favorite = false
                 catsDatabaseRepository.delete(CatDatabaseEntity.fromCat(cat))
-
             }
         }
     }
