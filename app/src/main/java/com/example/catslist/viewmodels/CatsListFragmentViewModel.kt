@@ -21,7 +21,6 @@ import kotlinx.coroutines.launch
 
 class CatsListFragmentViewModel(app: Application) : AndroidViewModel(app) {
 
-
     private val catsDatabaseRepository = CatsDatabaseRepository(app)
     private val tag = "CatsListFragmentViewModel"
 
@@ -45,17 +44,9 @@ class CatsListFragmentViewModel(app: Application) : AndroidViewModel(app) {
         CoroutineScope(Main).launch {
             val icon = view.findViewById<AppCompatImageButton>(R.id.item_cat_star_button)
             if (!(CatStorage.favoriteCats.any { it.id == cat.id })) {
-                cat.favorite = true
-                CatStorage.favoriteCats.add(cat)
-                CatStorage.notifyFavChanges()
-                catsDatabaseRepository.insert(CatDatabaseEntity.fromCat(cat))
-                icon.setBackgroundResource(R.drawable.ic_star_filled)
+                addCatToFavorites(cat, icon)
             } else {
-                icon.setBackgroundResource(R.drawable.ic_star_empty)
-                CatStorage.favoriteCats.removeIf { it.id == cat.id }
-                CatStorage.notifyFavChanges()
-                cat.favorite = false
-                catsDatabaseRepository.delete(CatDatabaseEntity.fromCat(cat))
+                removeCatFromFavorites(cat, icon)
             }
         }
     }
@@ -73,4 +64,19 @@ class CatsListFragmentViewModel(app: Application) : AndroidViewModel(app) {
         Toast.makeText(context, "Downloading started", Toast.LENGTH_LONG).show()
     }
 
+    private suspend fun addCatToFavorites(cat: Cat, icon: AppCompatImageButton){
+        cat.favorite = true
+        CatStorage.favoriteCats.add(cat)
+        CatStorage.notifyFavChanges()
+        catsDatabaseRepository.insert(CatDatabaseEntity.fromCat(cat))
+        icon.setBackgroundResource(R.drawable.ic_star_filled)
+    }
+
+    private suspend fun removeCatFromFavorites(cat: Cat, icon: AppCompatImageButton){
+        cat.favorite = false
+        CatStorage.favoriteCats.removeIf { it.id == cat.id }
+        CatStorage.notifyFavChanges()
+        catsDatabaseRepository.delete(CatDatabaseEntity.fromCat(cat))
+        icon.setBackgroundResource(R.drawable.ic_star_empty)
+    }
 }
