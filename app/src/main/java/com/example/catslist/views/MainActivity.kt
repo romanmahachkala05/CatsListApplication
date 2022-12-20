@@ -23,6 +23,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initialize(){
+        initViewPager()
+    }
+
+    private fun initViewPager(){
         val viewPager = binding.viewPager
         val tabLayout = binding.tabLayout
         val viewPageAdapter = ViewPageAdapter(this, fragmentsList)
