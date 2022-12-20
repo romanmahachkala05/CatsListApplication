@@ -8,7 +8,6 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.databinding.DataBindingUtil
 import androidx.recyclerview.widget.RecyclerView
-import com.example.catslist.App
 import com.example.catslist.R
 import com.example.catslist.adapters.CatsActionsListener
 import com.example.catslist.adapters.CatsAdapter
@@ -22,8 +21,6 @@ class CatsListFragment : Fragment() {
 
     private lateinit var adapter: CatsAdapter
     private lateinit var binding: FragmentCatsListBinding
-    private val catsStorage: CatStorage
-        get() = (requireActivity().applicationContext as App).catsService
 
     companion object {
         fun newInstance() = CatsListFragment()
@@ -66,7 +63,6 @@ class CatsListFragment : Fragment() {
             }
 
         })
-
         binding.recyclerViewWithCats.adapter = adapter
         binding.recyclerViewWithCats.addOnScrollListener(object : RecyclerView.OnScrollListener() {
             override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
@@ -76,13 +72,10 @@ class CatsListFragment : Fragment() {
                 }
             }
         })
-
-        catsStorage.addListener(catsListener)
-        addCat()
     }
 
-    fun addCat() {
-        repeat(5) { viewModel.addCat() }
+    private fun addCat() {
+        repeat(7) { viewModel.addCat() }
     }
 
     private val catsListener: CatsListener = {

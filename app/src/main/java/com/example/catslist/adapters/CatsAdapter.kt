@@ -46,10 +46,8 @@ class CatsAdapter(
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CatsViewHolder {
         val inflater = LayoutInflater.from(parent.context)
         val binding = ItemCatBinding.inflate(inflater, parent, false)
-
         binding.itemCatDownloadImageButton.setOnClickListener(this)
         binding.itemCatStarButton.setOnClickListener(this)
-
         return CatsViewHolder(binding)
     }
 
