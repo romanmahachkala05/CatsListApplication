@@ -46,8 +46,15 @@ class FavoriteCatsListFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         viewModel = ViewModelProvider(this)[FavoriteCatsListFragmentViewModel::class.java]
-        catsStorage.notifyFavChanges()
+        initialize()
+    }
 
+    private fun initialize(){
+        initRecyclerView()
+        CatStorage.addFavListener(favoriteCatsListener)
+    }
+
+    private fun initRecyclerView(){
         adapter = FavoriteCatsAdapter(object : FavoriteCatsActionsListener {
             override fun onAddToFavorites(cat: Cat, view: View) {
                 viewModel.onFavoriteButtonClick(cat)
