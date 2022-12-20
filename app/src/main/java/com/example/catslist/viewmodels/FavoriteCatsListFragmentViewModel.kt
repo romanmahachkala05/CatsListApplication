@@ -22,13 +22,7 @@ class FavoriteCatsListFragmentViewModel(app: Application) : AndroidViewModel(app
 
     fun onFavoriteButtonClick(cat: Cat) {
         CoroutineScope(Dispatchers.Main).launch {
-            if (CatStorage.cats.any { it.id == cat.id }) {
-                cat.favorite = false
-                CatStorage.notifyChanges()
-            }
-            CatStorage.favoriteCats.remove(cat)
-            CatStorage.notifyFavChanges()
-            catsDatabaseRepository.delete(CatDatabaseEntity.fromCat(cat))
+            removeCatFromFavorites(cat)
         }
     }
 
@@ -43,5 +37,15 @@ class FavoriteCatsListFragmentViewModel(app: Application) : AndroidViewModel(app
         val manager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
         manager.enqueue(request)
         Toast.makeText(context, "Downloading started", Toast.LENGTH_LONG).show()
+    }
+
+    private suspend fun removeCatFromFavorites(cat: Cat){
+        if (CatStorage.cats.any { it.id == cat.id }) {
+            cat.favorite = false
+            CatStorage.notifyChanges()
+        }
+        CatStorage.favoriteCats.remove(cat)
+        CatStorage.notifyFavChanges()
+        catsDatabaseRepository.delete(CatDatabaseEntity.fromCat(cat))
     }
 }

@@ -1,6 +1,5 @@
 package com.example.catslist.adapters
 
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -45,10 +44,8 @@ class FavoriteCatsAdapter(
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): FavoriteCatsViewHolder {
         val inflater = LayoutInflater.from(parent.context)
         val binding = ItemFavoriteCatBinding.inflate(inflater, parent, false)
-
         binding.itemCatFavoriteDownloadImageButton.setOnClickListener(this)
         binding.itemCatFavoriteStarButton.setOnClickListener(this)
-
         return FavoriteCatsViewHolder(binding)
     }
 
