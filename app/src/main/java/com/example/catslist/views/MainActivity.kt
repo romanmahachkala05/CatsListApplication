@@ -19,14 +19,6 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        initialize()
-    }
-
-    private fun initialize(){
-        initViewPager()
-    }
-
-    private fun initViewPager(){
         val viewPager = binding.viewPager
         val tabLayout = binding.tabLayout
         val viewPageAdapter = ViewPageAdapter(this, fragmentsList)
@@ -38,5 +30,6 @@ class MainActivity : AppCompatActivity() {
         TabLayoutMediator(tabLayout, viewPager) { tab, pos ->
             tab.text = fragmentsNames[pos]
         }.attach()
+
     }
 }

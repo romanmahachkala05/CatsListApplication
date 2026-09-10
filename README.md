@@ -1,10 +1,8 @@
 # CatsListApplication
 
 Todo: 
-- enable minify/proguard
-- test application and ensure everything works without issues
-- add application icon
-- optimize code
+- enable minify/proguard?
+- add application icon?
 
 # Main features:
 
