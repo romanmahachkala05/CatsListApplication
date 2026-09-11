@@ -4,61 +4,36 @@ import android.app.DownloadManager
 import android.content.Context
 import android.net.Uri
 import android.os.Environment
-import android.util.Log
-import android.view.View
 import android.widget.Toast
-import androidx.appcompat.widget.AppCompatImageButton
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.catslist.R
-import com.example.catslist.database.CatsDatabaseRepository
-import com.example.catslist.models.Cat
-import com.example.catslist.models.CatDatabaseEntity
-import com.example.catslist.tools.CatStorage
+import com.example.catslist.domain.model.Cat
+import com.example.catslist.domain.usecase.FetchNextCatUseCase
+import com.example.catslist.domain.usecase.GetCatFeedUseCase
+import com.example.catslist.domain.usecase.ToggleFavoriteUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class CatsListFragmentViewModel @Inject constructor(
-    private val catsDatabaseRepository: CatsDatabaseRepository
+    getCatFeed: GetCatFeedUseCase,
+    private val fetchNextCat: FetchNextCatUseCase,
+    private val toggleFavorite: ToggleFavoriteUseCase,
 ) : ViewModel() {
 
-    private val tag = "CatsListFragmentViewModel"
-
-    init {
-        Log.v(tag, "init")
-        viewModelScope.launch {
-            catsDatabaseRepository.getAllCats().forEach { CatStorage.favoriteCats.add(it.toCat()) }
-            Log.v(
-                tag,
-                "getAllCats, add each to CatStorage.favoriteCats = ${CatStorage.favoriteCats}"
-            )
-            CatStorage.notifyFavChanges()
-        }
-    }
+    val cats: StateFlow<List<Cat>> = getCatFeed()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     fun addCat() {
-        CatStorage.getNewCatData()
+        viewModelScope.launch { fetchNextCat() }
     }
 
-    fun onFavoriteButtonClick(cat: Cat, view: View) {
-        viewModelScope.launch {
-            val icon = view.findViewById<AppCompatImageButton>(R.id.item_cat_star_button)
-            if (!(CatStorage.favoriteCats.any { it.id == cat.id })) {
-                cat.favorite = true
-                CatStorage.favoriteCats.add(cat)
-                CatStorage.notifyFavChanges()
-                catsDatabaseRepository.insert(CatDatabaseEntity.fromCat(cat))
-                icon.setBackgroundResource(R.drawable.ic_star_filled)
-            } else {
-                icon.setBackgroundResource(R.drawable.ic_star_empty)
-                CatStorage.favoriteCats.removeIf { it.id == cat.id }
-                CatStorage.notifyFavChanges()
-                catsDatabaseRepository.delete(CatDatabaseEntity.fromCat(cat))
-
-            }
-        }
+    fun onFavoriteButtonClick(cat: Cat) {
+        viewModelScope.launch { toggleFavorite(cat) }
     }
 
     fun downloadCatImage(context: Context, url: String, catId: String) {

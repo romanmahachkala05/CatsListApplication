@@ -4,7 +4,7 @@ import android.content.Context
 import android.widget.ImageView
 import androidx.databinding.BindingAdapter
 import com.bumptech.glide.Glide
-import com.example.catslist.models.Cat
+import com.example.catslist.domain.model.Cat
 
 @BindingAdapter("catImage")
 fun setCatImage(view: ImageView, cat: Cat) {
