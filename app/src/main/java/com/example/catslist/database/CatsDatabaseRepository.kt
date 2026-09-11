@@ -1,17 +1,11 @@
 package com.example.catslist.database
 
-import android.app.Application
 import com.example.catslist.models.CatDatabaseEntity
+import javax.inject.Inject
 
-class CatsDatabaseRepository(application: Application) {
-
-    private var catsDao: CatsDao
-
-    private val catsDatabase = CatsDatabase.getInstance(application)
-
-    init {
-        catsDao = catsDatabase.catsDao()
-    }
+class CatsDatabaseRepository @Inject constructor(
+    private val catsDao: CatsDao
+) {
 
     suspend fun insert(cat: CatDatabaseEntity) {
         catsDao.insertCat(cat)

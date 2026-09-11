@@ -2,7 +2,8 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.ksp)
-    id("org.jetbrains.kotlin.kapt") // still required by data binding; Room is on KSP
+    alias(libs.plugins.hilt.android)
+    id("org.jetbrains.kotlin.kapt") // required by data binding and Hilt's ViewModel compiler; Room is on KSP
 }
 
 android {
@@ -53,6 +54,7 @@ java {
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.fragment.ktx)
     implementation(libs.material)
     implementation(libs.androidx.constraintlayout)
     //RecyclerView
@@ -69,6 +71,10 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.room.ktx)
+    //Hilt
+    implementation(libs.hilt.android)
+    kapt(libs.hilt.android.compiler)
+    kapt(libs.androidx.hilt.compiler)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

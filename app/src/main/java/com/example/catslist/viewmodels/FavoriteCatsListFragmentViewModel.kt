@@ -1,27 +1,29 @@
 package com.example.catslist.viewmodels
 
-import android.app.Application
 import android.app.DownloadManager
 import android.content.Context
 import android.net.Uri
 import android.os.Environment
 import android.widget.Toast
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.catslist.database.CatsDatabaseRepository
 import com.example.catslist.models.Cat
 import com.example.catslist.models.CatDatabaseEntity
-import com.example.catslist.database.CatsDatabaseRepository
 import com.example.catslist.tools.CatStorage
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class FavoriteCatsListFragmentViewModel(app: Application) : AndroidViewModel(app) {
+@HiltViewModel
+class FavoriteCatsListFragmentViewModel @Inject constructor(
+    private val catsDatabaseRepository: CatsDatabaseRepository
+) : ViewModel() {
 
     private val tag = "FavoriteCatsListFragmentViewModel"
-    private val catsDatabaseRepository = CatsDatabaseRepository(app)
 
     fun onFavoriteButtonClick(cat: Cat) {
-        CoroutineScope(Dispatchers.Main).launch {
+        viewModelScope.launch {
             if (CatStorage.cats.any { it.id == cat.id }) {
                 cat.favorite = false
                 CatStorage.notifyChanges()

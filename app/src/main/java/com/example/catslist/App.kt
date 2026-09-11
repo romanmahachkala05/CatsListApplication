@@ -1,8 +1,7 @@
 package com.example.catslist
 
 import android.app.Application
-import com.example.catslist.tools.CatStorage
+import dagger.hilt.android.HiltAndroidApp
 
-class App : Application() {
-    val catsService = CatStorage
-}
+@HiltAndroidApp
+class App : Application()
