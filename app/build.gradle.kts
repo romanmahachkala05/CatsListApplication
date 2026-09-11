@@ -55,11 +55,9 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
     implementation(libs.androidx.constraintlayout)
-    implementation(libs.androidx.legacy.support.v4)
     //RecyclerView
     implementation(libs.androidx.recyclerview)
     //Lifecycle
-    implementation(libs.androidx.lifecycle.extensions)
     implementation(libs.androidx.lifecycle.livedata.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
     //Retrofit
