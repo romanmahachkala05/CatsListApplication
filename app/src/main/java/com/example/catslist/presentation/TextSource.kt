@@ -1,4 +1,4 @@
-package com.example.catslist.core.ui
+package com.example.catslist.presentation
 
 import androidx.annotation.PluralsRes
 import androidx.annotation.StringRes

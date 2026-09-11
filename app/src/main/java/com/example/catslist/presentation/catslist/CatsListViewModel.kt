@@ -1,9 +1,9 @@
-package com.example.catslist.feature.catslist
+package com.example.catslist.presentation.catslist
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.catslist.core.download.CatImageDownloader
-import com.example.catslist.core.mvi.StateOwner
+import com.example.catslist.presentation.StateOwner
+import com.example.catslist.domain.usecase.DownloadCatImageUseCase
 import com.example.catslist.domain.usecase.FetchNextCatUseCase
 import com.example.catslist.domain.usecase.GetCatFeedUseCase
 import com.example.catslist.domain.usecase.ToggleFavoriteUseCase
@@ -20,7 +20,7 @@ class CatsListViewModel @Inject constructor(
     getCatFeed: GetCatFeedUseCase,
     private val fetchNextCat: FetchNextCatUseCase,
     private val toggleFavorite: ToggleFavoriteUseCase,
-    private val imageDownloader: CatImageDownloader,
+    private val downloadCatImage: DownloadCatImageUseCase,
 ) : ViewModel(), StateOwner<CatsListState> by stateHolder {
 
     init {
@@ -36,7 +36,7 @@ class CatsListViewModel @Inject constructor(
         when (event) {
             CatsListEvent.LoadMore -> loadMore()
             is CatsListEvent.ToggleFavorite -> viewModelScope.launch { toggleFavorite(event.cat) }
-            is CatsListEvent.Download -> imageDownloader.download(event.cat.url, event.cat.id)
+            is CatsListEvent.Download -> downloadCatImage(event.cat)
         }
     }
 

@@ -1,4 +1,4 @@
-package com.example.catslist.core.ui.components
+package com.example.catslist.presentation.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -16,9 +16,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.catslist.R
-import com.example.catslist.core.ui.TextSource
-import com.example.catslist.core.ui.resolve
-import com.example.catslist.core.ui.theme.CatsListTheme
+import com.example.catslist.presentation.TextSource
+import com.example.catslist.presentation.resolve
+import com.example.catslist.presentation.theme.CatsListTheme
 
 @Composable
 fun LoadingIndicator(modifier: Modifier = Modifier) {
@@ -66,7 +66,7 @@ fun ErrorMessage(
         )
         if (onRetry != null) {
             Button(onClick = onRetry, modifier = Modifier.padding(top = 16.dp)) {
-                Text(text = stringResource(R.string.action_retry))
+                Text(text = stringResource(R.string.common_action_retry))
             }
         }
     }
@@ -81,13 +81,13 @@ private fun LoadingIndicatorPreview() {
 @Preview(showBackground = true)
 @Composable
 private fun EmptyMessagePreview() {
-    CatsListTheme { EmptyMessage(TextSource.Res(R.string.empty_favorites_message)) }
+    CatsListTheme { EmptyMessage(TextSource.Res(R.string.favoritecats_empty_message)) }
 }
 
 @Preview(showBackground = true)
 @Composable
 private fun ErrorMessagePreview() {
     CatsListTheme {
-        ErrorMessage(TextSource.Res(R.string.error_loading_cats), onRetry = {})
+        ErrorMessage(TextSource.Res(R.string.catslist_error_loading_cats), onRetry = {})
     }
 }

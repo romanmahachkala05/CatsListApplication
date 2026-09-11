@@ -1,4 +1,4 @@
-package com.example.catslist.di
+package com.example.catslist.data.di
 
 import android.content.Context
 import androidx.room.Room

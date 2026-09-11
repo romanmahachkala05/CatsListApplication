@@ -1,4 +1,4 @@
-package com.example.catslist.views
+package com.example.catslist
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -16,10 +16,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import com.example.catslist.R
-import com.example.catslist.core.ui.theme.CatsListTheme
-import com.example.catslist.feature.catslist.CatsListScreen
-import com.example.catslist.feature.favoritecats.FavoriteCatsScreen
+import com.example.catslist.presentation.theme.CatsListTheme
+import com.example.catslist.presentation.catslist.CatsListScreen
+import com.example.catslist.presentation.favoritecats.FavoriteCatsScreen
 import dagger.hilt.android.AndroidEntryPoint
 
 /**
@@ -47,8 +46,8 @@ class MainActivity : ComponentActivity() {
 private fun CatsListApp() {
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
     val tabTitles = listOf(
-        stringResource(R.string.tab_infinite_cats),
-        stringResource(R.string.tab_favorite_cats),
+        stringResource(R.string.catslist_tab_title),
+        stringResource(R.string.favoritecats_tab_title),
     )
 
     Scaffold(

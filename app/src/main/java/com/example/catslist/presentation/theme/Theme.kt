@@ -1,4 +1,4 @@
-package com.example.catslist.core.ui.theme
+package com.example.catslist.presentation.theme
 
 import android.app.Activity
 import android.os.Build

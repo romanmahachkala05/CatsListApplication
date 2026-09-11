@@ -1,7 +1,7 @@
-package com.example.catslist.feature.catslist
+package com.example.catslist.presentation.catslist
 
-import com.example.catslist.core.mvi.StateOwner
-import com.example.catslist.core.ui.TextSource
+import com.example.catslist.presentation.StateOwner
+import com.example.catslist.presentation.TextSource
 import com.example.catslist.domain.model.Cat
 import dagger.hilt.android.scopes.ViewModelScoped
 import kotlinx.collections.immutable.toPersistentList

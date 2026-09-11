@@ -1,4 +1,4 @@
-package com.example.catslist.core.mvi
+package com.example.catslist.presentation
 
 import kotlinx.coroutines.flow.StateFlow
 

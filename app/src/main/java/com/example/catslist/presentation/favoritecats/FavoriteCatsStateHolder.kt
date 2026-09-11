@@ -1,6 +1,6 @@
-package com.example.catslist.feature.favoritecats
+package com.example.catslist.presentation.favoritecats
 
-import com.example.catslist.core.mvi.StateOwner
+import com.example.catslist.presentation.StateOwner
 import com.example.catslist.domain.model.Cat
 import dagger.hilt.android.scopes.ViewModelScoped
 import kotlinx.collections.immutable.toPersistentList

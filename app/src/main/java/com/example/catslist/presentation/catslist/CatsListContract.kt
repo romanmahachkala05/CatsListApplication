@@ -1,7 +1,7 @@
-package com.example.catslist.feature.catslist
+package com.example.catslist.presentation.catslist
 
 import androidx.compose.runtime.Immutable
-import com.example.catslist.core.ui.TextSource
+import com.example.catslist.presentation.TextSource
 import com.example.catslist.domain.model.Cat
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf

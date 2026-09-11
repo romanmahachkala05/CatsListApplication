@@ -1,9 +1,9 @@
-package com.example.catslist.feature.favoritecats
+package com.example.catslist.presentation.favoritecats
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.catslist.core.download.CatImageDownloader
-import com.example.catslist.core.mvi.StateOwner
+import com.example.catslist.presentation.StateOwner
+import com.example.catslist.domain.usecase.DownloadCatImageUseCase
 import com.example.catslist.domain.usecase.GetFavoriteCatsUseCase
 import com.example.catslist.domain.usecase.RemoveFavoriteUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -17,7 +17,7 @@ class FavoriteCatsViewModel @Inject constructor(
     private val stateHolder: IFavoriteCatsStateHolder,
     getFavoriteCats: GetFavoriteCatsUseCase,
     private val removeFavorite: RemoveFavoriteUseCase,
-    private val imageDownloader: CatImageDownloader,
+    private val downloadCatImage: DownloadCatImageUseCase,
 ) : ViewModel(), StateOwner<FavoriteCatsState> by stateHolder {
 
     init {
@@ -31,7 +31,7 @@ class FavoriteCatsViewModel @Inject constructor(
     fun onEvent(event: FavoriteCatsEvent) {
         when (event) {
             is FavoriteCatsEvent.RemoveFavorite -> viewModelScope.launch { removeFavorite(event.cat) }
-            is FavoriteCatsEvent.Download -> imageDownloader.download(event.cat.url, event.cat.id)
+            is FavoriteCatsEvent.Download -> downloadCatImage(event.cat)
         }
     }
 }

@@ -1,4 +1,4 @@
-package com.example.catslist.feature.favoritecats
+package com.example.catslist.presentation.favoritecats
 
 import androidx.compose.runtime.Immutable
 import com.example.catslist.domain.model.Cat
