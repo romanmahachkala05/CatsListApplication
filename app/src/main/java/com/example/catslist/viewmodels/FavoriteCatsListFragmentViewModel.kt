@@ -7,31 +7,27 @@ import android.os.Environment
 import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.catslist.database.CatsDatabaseRepository
-import com.example.catslist.models.Cat
-import com.example.catslist.models.CatDatabaseEntity
-import com.example.catslist.tools.CatStorage
+import com.example.catslist.domain.model.Cat
+import com.example.catslist.domain.usecase.GetFavoriteCatsUseCase
+import com.example.catslist.domain.usecase.RemoveFavoriteUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class FavoriteCatsListFragmentViewModel @Inject constructor(
-    private val catsDatabaseRepository: CatsDatabaseRepository
+    getFavoriteCats: GetFavoriteCatsUseCase,
+    private val removeFavorite: RemoveFavoriteUseCase,
 ) : ViewModel() {
 
-    private val tag = "FavoriteCatsListFragmentViewModel"
+    val favoriteCats: StateFlow<List<Cat>> = getFavoriteCats()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     fun onFavoriteButtonClick(cat: Cat) {
-        viewModelScope.launch {
-            if (CatStorage.cats.any { it.id == cat.id }) {
-                cat.favorite = false
-                CatStorage.notifyChanges()
-            }
-            CatStorage.favoriteCats.remove(cat)
-            CatStorage.notifyFavChanges()
-            catsDatabaseRepository.delete(CatDatabaseEntity.fromCat(cat))
-        }
+        viewModelScope.launch { removeFavorite(cat) }
     }
 
     fun downloadCatImage(context: Context, url: String, catId: String) {

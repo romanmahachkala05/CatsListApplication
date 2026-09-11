@@ -1,22 +1,23 @@
 package com.example.catslist.views
 
 import android.os.Bundle
-import android.util.Log
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.databinding.DataBindingUtil
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.example.catslist.R
 import com.example.catslist.adapters.FavoriteCatsActionsListener
 import com.example.catslist.adapters.FavoriteCatsAdapter
 import com.example.catslist.databinding.FragmentFavoriteCatsListBinding
-import com.example.catslist.models.Cat
-import com.example.catslist.tools.CatStorage
-import com.example.catslist.tools.CatsListener
+import com.example.catslist.domain.model.Cat
 import com.example.catslist.viewmodels.FavoriteCatsListFragmentViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class FavoriteCatsListFragment : Fragment() {
@@ -44,10 +45,9 @@ class FavoriteCatsListFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        CatStorage.notifyFavChanges()
 
         adapter = FavoriteCatsAdapter(object : FavoriteCatsActionsListener {
-            override fun onAddToFavorites(cat: Cat, view: View) {
+            override fun onAddToFavorites(cat: Cat) {
                 viewModel.onFavoriteButtonClick(cat)
             }
 
@@ -56,11 +56,12 @@ class FavoriteCatsListFragment : Fragment() {
             }
 
         })
-        CatStorage.addFavListener(favoriteCatsListener)
         binding.recyclerViewWithFavoriteCats.adapter = adapter
-    }
 
-    private val favoriteCatsListener: CatsListener = {
-        adapter.favoriteCatsList = it
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.favoriteCats.collect { adapter.favoriteCatsList = it }
+            }
+        }
     }
 }

@@ -7,16 +7,18 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.databinding.DataBindingUtil
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.RecyclerView
 import com.example.catslist.R
 import com.example.catslist.adapters.CatsActionsListener
 import com.example.catslist.adapters.CatsAdapter
 import com.example.catslist.databinding.FragmentCatsListBinding
-import com.example.catslist.models.Cat
-import com.example.catslist.tools.CatStorage
-import com.example.catslist.tools.CatsListener
+import com.example.catslist.domain.model.Cat
 import com.example.catslist.viewmodels.CatsListFragmentViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class CatsListFragment : Fragment() {
@@ -46,8 +48,8 @@ class CatsListFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         adapter = CatsAdapter(object : CatsActionsListener {
-            override fun onAddToFavorites(cat: Cat, view: View) {
-                viewModel.onFavoriteButtonClick(cat, view)
+            override fun onAddToFavorites(cat: Cat) {
+                viewModel.onFavoriteButtonClick(cat)
             }
 
             override fun onDownload(cat: Cat) {
@@ -66,15 +68,16 @@ class CatsListFragment : Fragment() {
             }
         })
 
-        CatStorage.addListener(catsListener)
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.cats.collect { adapter.catsList = it }
+            }
+        }
+
         addCat()
     }
 
     fun addCat() {
         repeat(5) { viewModel.addCat() }
-    }
-
-    private val catsListener: CatsListener = {
-        adapter.catsList = it
     }
 }
