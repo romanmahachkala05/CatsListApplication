@@ -1,4 +1,4 @@
-package com.example.catslist.feature.catslist
+package com.example.catslist.presentation.catslist
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
@@ -15,11 +15,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.catslist.R
-import com.example.catslist.core.ui.TextSource
-import com.example.catslist.core.ui.components.CatItem
-import com.example.catslist.core.ui.components.ErrorMessage
-import com.example.catslist.core.ui.components.LoadingIndicator
-import com.example.catslist.core.ui.theme.CatsListTheme
+import com.example.catslist.presentation.TextSource
+import com.example.catslist.presentation.components.CatItem
+import com.example.catslist.presentation.components.ErrorMessage
+import com.example.catslist.presentation.components.LoadingIndicator
+import com.example.catslist.presentation.theme.CatsListTheme
 import com.example.catslist.domain.model.Cat
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf

@@ -1,4 +1,4 @@
-package com.example.catslist.core.ui.components
+package com.example.catslist.presentation.components
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,7 +17,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.bumptech.glide.integration.compose.GlideImage
 import com.example.catslist.R
-import com.example.catslist.core.ui.theme.CatsListTheme
+import com.example.catslist.presentation.theme.CatsListTheme
 import com.example.catslist.domain.model.Cat
 
 /** One cat card: image + download button + favorite toggle. Shared by both screens. */

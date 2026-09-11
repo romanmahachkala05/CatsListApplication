@@ -1,4 +1,4 @@
-package com.example.catslist.core.ui.components
+package com.example.catslist.presentation.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -16,9 +16,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.catslist.R
-import com.example.catslist.core.ui.TextSource
-import com.example.catslist.core.ui.resolve
-import com.example.catslist.core.ui.theme.CatsListTheme
+import com.example.catslist.presentation.TextSource
+import com.example.catslist.presentation.resolve
+import com.example.catslist.presentation.theme.CatsListTheme
 
 @Composable
 fun LoadingIndicator(modifier: Modifier = Modifier) {

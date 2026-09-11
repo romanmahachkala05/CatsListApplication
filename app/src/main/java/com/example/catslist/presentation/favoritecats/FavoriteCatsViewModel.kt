@@ -1,9 +1,9 @@
-package com.example.catslist.feature.favoritecats
+package com.example.catslist.presentation.favoritecats
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.catslist.core.download.CatImageDownloader
-import com.example.catslist.core.mvi.StateOwner
+import com.example.catslist.presentation.download.CatImageDownloader
+import com.example.catslist.presentation.StateOwner
 import com.example.catslist.domain.usecase.GetFavoriteCatsUseCase
 import com.example.catslist.domain.usecase.RemoveFavoriteUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel

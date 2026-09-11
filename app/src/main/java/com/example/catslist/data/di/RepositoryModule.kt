@@ -1,4 +1,4 @@
-package com.example.catslist.di
+package com.example.catslist.data.di
 
 import com.example.catslist.data.repository.CatRepositoryImpl
 import com.example.catslist.domain.repository.CatRepository

@@ -1,9 +1,9 @@
-package com.example.catslist.feature.catslist
+package com.example.catslist.presentation.catslist
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.catslist.core.download.CatImageDownloader
-import com.example.catslist.core.mvi.StateOwner
+import com.example.catslist.presentation.download.CatImageDownloader
+import com.example.catslist.presentation.StateOwner
 import com.example.catslist.domain.usecase.FetchNextCatUseCase
 import com.example.catslist.domain.usecase.GetCatFeedUseCase
 import com.example.catslist.domain.usecase.ToggleFavoriteUseCase

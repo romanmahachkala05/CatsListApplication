@@ -1,7 +1,7 @@
-package com.example.catslist.feature.catslist
+package com.example.catslist.presentation.catslist
 
 import com.example.catslist.R
-import com.example.catslist.core.ui.TextSource
+import com.example.catslist.presentation.TextSource
 import dagger.hilt.android.scopes.ViewModelScoped
 import javax.inject.Inject
 

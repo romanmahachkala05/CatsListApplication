@@ -1,4 +1,4 @@
-package com.example.catslist.core.download
+package com.example.catslist.presentation.download
 
 import android.app.DownloadManager
 import android.content.Context
