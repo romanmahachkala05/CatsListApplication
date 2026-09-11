@@ -4,18 +4,16 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.example.catslist.R
@@ -53,8 +51,8 @@ private fun CatsListApp() {
         stringResource(R.string.tab_favorite_cats),
     )
 
-    Scaffold { innerPadding ->
-        Column(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
+    Scaffold(
+        topBar = {
             TabRow(selectedTabIndex = selectedTab) {
                 tabTitles.forEachIndexed { index, title ->
                     Tab(
@@ -64,10 +62,11 @@ private fun CatsListApp() {
                     )
                 }
             }
-            when (selectedTab) {
-                0 -> CatsListScreen()
-                1 -> FavoriteCatsScreen()
-            }
+        }
+    ) { innerPadding ->
+        when (selectedTab) {
+            0 -> CatsListScreen(modifier = Modifier.padding(innerPadding))
+            1 -> FavoriteCatsScreen(modifier = Modifier.padding(innerPadding))
         }
     }
 }

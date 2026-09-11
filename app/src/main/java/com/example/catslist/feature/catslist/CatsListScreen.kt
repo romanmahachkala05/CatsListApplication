@@ -14,6 +14,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.catslist.R
+import com.example.catslist.core.ui.TextSource
 import com.example.catslist.core.ui.components.CatItem
 import com.example.catslist.core.ui.components.ErrorMessage
 import com.example.catslist.core.ui.components.LoadingIndicator
@@ -23,14 +25,14 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 
 @Composable
-fun CatsListScreen(viewModel: CatsListViewModel = hiltViewModel()) {
+fun CatsListScreen(modifier: Modifier = Modifier, viewModel: CatsListViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    CatsListContent(state = state, onEvent = viewModel::onEvent)
+    CatsListContent(state = state, onEvent = viewModel::onEvent, modifier = modifier)
 }
 
 @Composable
-fun CatsListContent(state: CatsListState, onEvent: (CatsListEvent) -> Unit) {
-    Surface(modifier = Modifier.fillMaxSize()) {
+fun CatsListContent(state: CatsListState, onEvent: (CatsListEvent) -> Unit, modifier: Modifier = Modifier) {
+    Surface(modifier = modifier.fillMaxSize()) {
         when (val status = state.status) {
             CatsListUiStatus.Loading -> LoadingIndicator()
             is CatsListUiStatus.Error -> ErrorMessage(
@@ -69,7 +71,7 @@ private fun CatsFeed(cats: ImmutableList<Cat>, onEvent: (CatsListEvent) -> Unit)
     }
 }
 
-@Preview(showBackground = true)
+@Preview(name = "Content", showBackground = true)
 @Composable
 private fun CatsListContentPreview() {
     CatsListTheme {
@@ -79,6 +81,22 @@ private fun CatsListContentPreview() {
                 cats = persistentListOf(
                     Cat(id = "1", url = "", width = 300, height = 300, isFavorite = false),
                     Cat(id = "2", url = "", width = 300, height = 300, isFavorite = true),
+                ),
+            ),
+            onEvent = {},
+        )
+    }
+}
+
+@Preview(name = "Error", showBackground = true)
+@Composable
+private fun CatsListErrorPreview() {
+    CatsListTheme {
+        CatsListContent(
+            state = CatsListState(
+                status = CatsListUiStatus.Error(
+                    message = TextSource.Res(R.string.error_loading_cats),
+                    retryable = true,
                 ),
             ),
             onEvent = {},

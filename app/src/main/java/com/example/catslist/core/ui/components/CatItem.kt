@@ -13,9 +13,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.bumptech.glide.integration.compose.GlideImage
 import com.example.catslist.R
+import com.example.catslist.core.ui.theme.CatsListTheme
 import com.example.catslist.domain.model.Cat
 
 /** One cat card: image + download button + favorite toggle. Shared by both screens. */
@@ -60,5 +62,29 @@ fun CatItem(
                 tint = if (cat.isFavorite) MaterialTheme.colorScheme.primary else Color.White,
             )
         }
+    }
+}
+
+@Preview(name = "Not favorite", showBackground = true)
+@Composable
+private fun CatItemPreview() {
+    CatsListTheme {
+        CatItem(
+            cat = Cat(id = "1", url = "", width = 300, height = 300, isFavorite = false),
+            onFavoriteClick = {},
+            onDownloadClick = {},
+        )
+    }
+}
+
+@Preview(name = "Favorite", showBackground = true)
+@Composable
+private fun CatItemFavoritePreview() {
+    CatsListTheme {
+        CatItem(
+            cat = Cat(id = "1", url = "", width = 300, height = 300, isFavorite = true),
+            onFavoriteClick = {},
+            onDownloadClick = {},
+        )
     }
 }

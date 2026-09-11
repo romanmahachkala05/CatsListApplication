@@ -19,14 +19,18 @@ import com.example.catslist.domain.model.Cat
 import kotlinx.collections.immutable.persistentListOf
 
 @Composable
-fun FavoriteCatsScreen(viewModel: FavoriteCatsViewModel = hiltViewModel()) {
+fun FavoriteCatsScreen(modifier: Modifier = Modifier, viewModel: FavoriteCatsViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    FavoriteCatsContent(state = state, onEvent = viewModel::onEvent)
+    FavoriteCatsContent(state = state, onEvent = viewModel::onEvent, modifier = modifier)
 }
 
 @Composable
-fun FavoriteCatsContent(state: FavoriteCatsState, onEvent: (FavoriteCatsEvent) -> Unit) {
-    Surface(modifier = Modifier.fillMaxSize()) {
+fun FavoriteCatsContent(
+    state: FavoriteCatsState,
+    onEvent: (FavoriteCatsEvent) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(modifier = modifier.fillMaxSize()) {
         when (state.status) {
             FavoriteCatsUiStatus.Loading -> LoadingIndicator()
             FavoriteCatsUiStatus.Empty -> EmptyMessage(TextSource.Res(R.string.empty_favorites_message))
@@ -43,7 +47,7 @@ fun FavoriteCatsContent(state: FavoriteCatsState, onEvent: (FavoriteCatsEvent) -
     }
 }
 
-@Preview(showBackground = true)
+@Preview(name = "Content", showBackground = true)
 @Composable
 private fun FavoriteCatsContentPreview() {
     CatsListTheme {
@@ -54,6 +58,17 @@ private fun FavoriteCatsContentPreview() {
                     Cat(id = "1", url = "", width = 300, height = 300, isFavorite = true),
                 ),
             ),
+            onEvent = {},
+        )
+    }
+}
+
+@Preview(name = "Empty", showBackground = true)
+@Composable
+private fun FavoriteCatsEmptyPreview() {
+    CatsListTheme {
+        FavoriteCatsContent(
+            state = FavoriteCatsState(status = FavoriteCatsUiStatus.Empty),
             onEvent = {},
         )
     }
