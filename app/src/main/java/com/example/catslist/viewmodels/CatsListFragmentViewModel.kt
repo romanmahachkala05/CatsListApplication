@@ -1,6 +1,5 @@
 package com.example.catslist.viewmodels
 
-import android.app.Application
 import android.app.DownloadManager
 import android.content.Context
 import android.net.Uri
@@ -9,25 +8,27 @@ import android.util.Log
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.widget.AppCompatImageButton
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.catslist.R
+import com.example.catslist.database.CatsDatabaseRepository
 import com.example.catslist.models.Cat
 import com.example.catslist.models.CatDatabaseEntity
-import com.example.catslist.database.CatsDatabaseRepository
 import com.example.catslist.tools.CatStorage
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers.Main
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class CatsListFragmentViewModel(app: Application) : AndroidViewModel(app) {
+@HiltViewModel
+class CatsListFragmentViewModel @Inject constructor(
+    private val catsDatabaseRepository: CatsDatabaseRepository
+) : ViewModel() {
 
-
-    private val catsDatabaseRepository = CatsDatabaseRepository(app)
     private val tag = "CatsListFragmentViewModel"
 
     init {
         Log.v(tag, "init")
-        CoroutineScope(Main).launch {
+        viewModelScope.launch {
             catsDatabaseRepository.getAllCats().forEach { CatStorage.favoriteCats.add(it.toCat()) }
             Log.v(
                 tag,
@@ -42,7 +43,7 @@ class CatsListFragmentViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun onFavoriteButtonClick(cat: Cat, view: View) {
-        CoroutineScope(Main).launch {
+        viewModelScope.launch {
             val icon = view.findViewById<AppCompatImageButton>(R.id.item_cat_star_button)
             if (!(CatStorage.favoriteCats.any { it.id == cat.id })) {
                 cat.favorite = true

@@ -1,8 +1,8 @@
 package com.example.catslist.views
 
-import androidx.lifecycle.ViewModelProvider
 import android.os.Bundle
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -28,7 +28,7 @@ class CatsListFragment : Fragment() {
         fun newInstance() = CatsListFragment()
     }
 
-    private lateinit var viewModel: CatsListFragmentViewModel
+    private val viewModel: CatsListFragmentViewModel by viewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -44,7 +44,6 @@ class CatsListFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        viewModel = ViewModelProvider(this)[CatsListFragmentViewModel::class.java]
 
         adapter = CatsAdapter(object : CatsActionsListener {
             override fun onAddToFavorites(cat: Cat, view: View) {

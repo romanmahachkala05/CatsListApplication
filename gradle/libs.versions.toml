@@ -5,6 +5,7 @@ ksp = "2.2.20-2.0.4"
 
 androidxCoreKtx = "1.13.1"
 appcompat = "1.7.0"
+fragmentKtx = "1.8.6"
 material = "1.12.0"
 constraintlayout = "2.2.0"
 recyclerview = "1.3.2"
@@ -22,6 +23,7 @@ espressoCore = "3.6.1"
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidxCoreKtx" }
 androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
+androidx-fragment-ktx = { module = "androidx.fragment:fragment-ktx", version.ref = "fragmentKtx" }
 material = { module = "com.google.android.material:material", version.ref = "material" }
 androidx-constraintlayout = { module = "androidx.constraintlayout:constraintlayout", version.ref = "constraintlayout" }
 androidx-recyclerview = { module = "androidx.recyclerview:recyclerview", version.ref = "recyclerview" }
