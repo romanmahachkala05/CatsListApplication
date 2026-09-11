@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.example.catslist.data.local.CatDao
 import com.example.catslist.data.local.CatDatabase
+import com.example.catslist.data.local.MIGRATION_2_3
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -19,7 +20,7 @@ object DatabaseModule {
     @Singleton
     fun provideCatDatabase(@ApplicationContext context: Context): CatDatabase =
         Room.databaseBuilder(context, CatDatabase::class.java, "cats_database")
-            .fallbackToDestructiveMigration()
+            .addMigrations(MIGRATION_2_3)
             .build()
 
     @Provides

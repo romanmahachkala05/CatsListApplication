@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt.android)
+    alias(libs.plugins.androidx.room)
     id("org.jetbrains.kotlin.kapt") // required by data binding and Hilt's ViewModel compiler; Room is on KSP
 }
 
@@ -49,6 +50,12 @@ java {
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(17))
     }
+}
+
+room {
+    // Committed history of every schema version, checked by Room at compile
+    // time against each Migration and usable by MigrationTestHelper.
+    schemaDirectory("$projectDir/schemas")
 }
 
 dependencies {
