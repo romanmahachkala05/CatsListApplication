@@ -8,7 +8,6 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.databinding.DataBindingUtil
 import androidx.recyclerview.widget.RecyclerView
-import com.example.catslist.App
 import com.example.catslist.R
 import com.example.catslist.adapters.CatsActionsListener
 import com.example.catslist.adapters.CatsAdapter
@@ -17,13 +16,13 @@ import com.example.catslist.models.Cat
 import com.example.catslist.tools.CatStorage
 import com.example.catslist.tools.CatsListener
 import com.example.catslist.viewmodels.CatsListFragmentViewModel
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class CatsListFragment : Fragment() {
 
     private lateinit var adapter: CatsAdapter
     private lateinit var binding: FragmentCatsListBinding
-    private val catsStorage: CatStorage
-        get() = (requireActivity().applicationContext as App).catsService
 
     companion object {
         fun newInstance() = CatsListFragment()
@@ -68,7 +67,7 @@ class CatsListFragment : Fragment() {
             }
         })
 
-        catsStorage.addListener(catsListener)
+        CatStorage.addListener(catsListener)
         addCat()
     }
 

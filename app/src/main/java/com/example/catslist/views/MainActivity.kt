@@ -5,7 +5,9 @@ import android.os.Bundle
 import com.example.catslist.databinding.ActivityMainBinding
 import com.example.catslist.adapters.ViewPageAdapter
 import com.google.android.material.tabs.TabLayoutMediator
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
 
     private val tag = "MainActivity"
