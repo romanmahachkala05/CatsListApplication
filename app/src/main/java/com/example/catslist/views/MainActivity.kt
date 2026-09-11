@@ -1,37 +1,73 @@
 package com.example.catslist.views
 
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import com.example.catslist.databinding.ActivityMainBinding
-import com.example.catslist.adapters.ViewPageAdapter
-import com.google.android.material.tabs.TabLayoutMediator
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.example.catslist.R
+import com.example.catslist.core.ui.theme.CatsListTheme
+import com.example.catslist.feature.catslist.CatsListScreen
+import com.example.catslist.feature.favoritecats.FavoriteCatsScreen
 import dagger.hilt.android.AndroidEntryPoint
 
+/**
+ * Two peer tabs, no push/pop navigation between them — a plain [TabRow] over
+ * local selection state covers this app's real navigation needs, so there's
+ * no Navigation 3 back stack to wire up here (ARCHITECTURE.md: delete a
+ * section that doesn't apply). Add one if a pushed screen (e.g. cat detail)
+ * shows up later.
+ */
 @AndroidEntryPoint
-class MainActivity : AppCompatActivity() {
-
-    private val tag = "MainActivity"
-    private lateinit var binding: ActivityMainBinding
-    private val fragmentsList = listOf(
-        CatsListFragment.newInstance(),
-        FavoriteCatsListFragment.newInstance()
-    )
+class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityMainBinding.inflate(layoutInflater)
-        setContentView(binding.root)
-        val viewPager = binding.viewPager
-        val tabLayout = binding.tabLayout
-        val viewPageAdapter = ViewPageAdapter(this, fragmentsList)
-        viewPager.adapter = viewPageAdapter
-        val fragmentsNames = listOf(
-            "Infinite Cats",
-            "Favorite Cats"
-        )
-        TabLayoutMediator(tabLayout, viewPager) { tab, pos ->
-            tab.text = fragmentsNames[pos]
-        }.attach()
+        enableEdgeToEdge()
+        setContent {
+            CatsListTheme {
+                CatsListApp()
+            }
+        }
+    }
+}
 
+@Composable
+private fun CatsListApp() {
+    var selectedTab by rememberSaveable { mutableIntStateOf(0) }
+    val tabTitles = listOf(
+        stringResource(R.string.tab_infinite_cats),
+        stringResource(R.string.tab_favorite_cats),
+    )
+
+    Scaffold { innerPadding ->
+        Column(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
+            TabRow(selectedTabIndex = selectedTab) {
+                tabTitles.forEachIndexed { index, title ->
+                    Tab(
+                        selected = selectedTab == index,
+                        onClick = { selectedTab = index },
+                        text = { Text(title) },
+                    )
+                }
+            }
+            when (selectedTab) {
+                0 -> CatsListScreen()
+                1 -> FavoriteCatsScreen()
+            }
+        }
     }
 }
