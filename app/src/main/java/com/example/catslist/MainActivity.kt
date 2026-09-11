@@ -1,4 +1,4 @@
-package com.example.catslist.views
+package com.example.catslist
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -16,7 +16,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import com.example.catslist.R
 import com.example.catslist.core.ui.theme.CatsListTheme
 import com.example.catslist.feature.catslist.CatsListScreen
 import com.example.catslist.feature.favoritecats.FavoriteCatsScreen
