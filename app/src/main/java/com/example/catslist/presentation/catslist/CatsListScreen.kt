@@ -95,7 +95,7 @@ private fun CatsListErrorPreview() {
         CatsListContent(
             state = CatsListState(
                 status = CatsListUiStatus.Error(
-                    message = TextSource.Res(R.string.error_loading_cats),
+                    message = TextSource.Res(R.string.catslist_error_loading_cats),
                     retryable = true,
                 ),
             ),

@@ -46,8 +46,8 @@ class MainActivity : ComponentActivity() {
 private fun CatsListApp() {
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
     val tabTitles = listOf(
-        stringResource(R.string.tab_infinite_cats),
-        stringResource(R.string.tab_favorite_cats),
+        stringResource(R.string.catslist_tab_title),
+        stringResource(R.string.favoritecats_tab_title),
     )
 
     Scaffold(

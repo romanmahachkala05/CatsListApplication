@@ -33,7 +33,7 @@ fun FavoriteCatsContent(
     Surface(modifier = modifier.fillMaxSize()) {
         when (state.status) {
             FavoriteCatsUiStatus.Loading -> LoadingIndicator()
-            FavoriteCatsUiStatus.Empty -> EmptyMessage(TextSource.Res(R.string.empty_favorites_message))
+            FavoriteCatsUiStatus.Empty -> EmptyMessage(TextSource.Res(R.string.favoritecats_empty_message))
             FavoriteCatsUiStatus.Content -> LazyColumn(modifier = Modifier.fillMaxSize()) {
                 items(items = state.cats, key = { it.id }) { cat ->
                     CatItem(

@@ -1,13 +1,19 @@
 <resources>
     <string name="app_name">CatsList</string>
-    <string name="empty_favorites_message">Favorite Cats list is empty</string>
-    <string name="tab_infinite_cats">Infinite Cats</string>
-    <string name="tab_favorite_cats">Favorite Cats</string>
-    <string name="cd_download_cat">Download this cat image</string>
-    <string name="cd_favorite_cat">Add or remove this cat from favorites</string>
-    <string name="download_started_message">Downloading started</string>
-    <string name="download_notification_title">Image of cat with id %1$s</string>
-    <string name="download_notification_description">Downloading image…</string>
-    <string name="error_loading_cats">Couldn\'t load a cat. Check your connection and try again.</string>
-    <string name="action_retry">Retry</string>
+
+    <!-- catslist screen -->
+    <string name="catslist_tab_title">Infinite Cats</string>
+    <string name="catslist_error_loading_cats">Couldn\'t load a cat. Check your connection and try again.</string>
+
+    <!-- favoritecats screen -->
+    <string name="favoritecats_tab_title">Favorite Cats</string>
+    <string name="favoritecats_empty_message">Favorite Cats list is empty</string>
+
+    <!-- common: used by shared components / collaborators across screens -->
+    <string name="common_cd_download_cat">Download this cat image</string>
+    <string name="common_cd_favorite_cat">Add or remove this cat from favorites</string>
+    <string name="common_download_started_message">Downloading started</string>
+    <string name="common_download_notification_title">Image of cat with id %1$s</string>
+    <string name="common_download_notification_description">Downloading image…</string>
+    <string name="common_action_retry">Retry</string>
 </resources>
