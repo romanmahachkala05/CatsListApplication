@@ -32,12 +32,13 @@ class CatRepositoryImpl @Inject constructor(
             fetchedCats.map { it.copy(isFavorite = it.id in favoriteIds) }
         }
 
-    override suspend fun fetchNextCat() {
-        var cat: Cat
-        do {
-            cat = catApiService.requestCatInfo().first().toDomain()
-        } while (fetched.value.any { it.id == cat.id })
-        fetched.value = fetched.value + cat
+    override suspend fun fetchNextBatch() {
+        val existingIds = fetched.value.mapTo(hashSetOf()) { it.id }
+        val newCats = catApiService.requestCatInfo(limit = PAGE_SIZE)
+            .map { it.toDomain() }
+            .distinctBy { it.id }
+            .filterNot { it.id in existingIds }
+        fetched.value = fetched.value + newCats
     }
 
     override suspend fun toggleFavorite(cat: Cat) {
@@ -50,5 +51,9 @@ class CatRepositoryImpl @Inject constructor(
 
     override suspend fun removeFavorite(cat: Cat) {
         catDao.deleteCat(cat.toEntity())
+    }
+
+    private companion object {
+        const val PAGE_SIZE = 10
     }
 }
