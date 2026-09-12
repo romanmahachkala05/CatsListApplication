@@ -24,3 +24,8 @@ sealed interface CatsListEvent {
     data class ToggleFavorite(val cat: Cat) : CatsListEvent
     data class Download(val cat: Cat) : CatsListEvent
 }
+
+/** One-shot signals the Screen consumes once (e.g. a Snackbar) — never part of [CatsListState]. */
+sealed interface CatsListEffect {
+    data class ShowMessage(val message: TextSource) : CatsListEffect
+}
