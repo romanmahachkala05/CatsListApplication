@@ -13,6 +13,7 @@
     <string name="common_cd_download_cat">Download this cat image</string>
     <string name="common_cd_favorite_cat">Add or remove this cat from favorites</string>
     <string name="common_download_started_message">Downloading started</string>
+    <string name="common_download_failed_message">Couldn\'t download this cat image. Try again.</string>
     <string name="common_download_notification_title">Image of cat with id %1$s</string>
     <string name="common_download_notification_description">Downloading image…</string>
     <string name="common_action_retry">Retry</string>
