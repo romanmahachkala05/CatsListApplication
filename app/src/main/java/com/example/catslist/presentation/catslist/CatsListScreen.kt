@@ -50,7 +50,7 @@ fun CatsListContent(state: CatsListState, onEvent: (CatsListEvent) -> Unit, modi
 private fun CatsFeed(cats: ImmutableList<Cat>, onEvent: (CatsListEvent) -> Unit) {
     val listState = rememberLazyListState()
 
-    val shouldLoadMore by remember {
+    val shouldLoadMore by remember(cats) {
         derivedStateOf {
             val lastVisibleIndex = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
             cats.isNotEmpty() && lastVisibleIndex >= cats.lastIndex
