@@ -5,17 +5,15 @@ import androidx.lifecycle.viewModelScope
 import com.example.catslist.R
 import com.example.catslist.presentation.StateOwner
 import com.example.catslist.presentation.TextSource
+import com.example.catslist.presentation.UiNotifier
 import com.example.catslist.domain.model.Cat
 import com.example.catslist.domain.usecase.DownloadCatImageUseCase
 import com.example.catslist.domain.usecase.FetchNextCatsUseCase
 import com.example.catslist.domain.usecase.GetCatFeedUseCase
 import com.example.catslist.domain.usecase.ToggleFavoriteUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -27,10 +25,8 @@ class CatsListViewModel @Inject constructor(
     private val fetchNextCats: FetchNextCatsUseCase,
     private val toggleFavorite: ToggleFavoriteUseCase,
     private val downloadCatImage: DownloadCatImageUseCase,
+    private val notifier: UiNotifier,
 ) : ViewModel(), StateOwner<CatsListState> by stateHolder {
-
-    private val _effect = Channel<CatsListEffect>(Channel.BUFFERED)
-    val effect: Flow<CatsListEffect> = _effect.receiveAsFlow()
 
     init {
         getCatFeed()
@@ -58,12 +54,12 @@ class CatsListViewModel @Inject constructor(
 
     private fun download(cat: Cat) {
         viewModelScope.launch {
-            val messageRes = runCatching { downloadCatImage(cat) }
+            val message = runCatching { downloadCatImage(cat) }
                 .fold(
-                    onSuccess = { R.string.common_download_started_message },
-                    onFailure = { R.string.common_download_failed_message },
+                    onSuccess = { TextSource.Res(R.string.common_download_started_message) },
+                    onFailure = { TextSource.Res(R.string.common_download_failed_message) },
                 )
-            _effect.send(CatsListEffect.ShowMessage(TextSource.Res(messageRes)))
+            notifier.showMessage(message)
         }
     }
 }

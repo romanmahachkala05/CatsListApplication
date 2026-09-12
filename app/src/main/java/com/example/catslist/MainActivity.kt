@@ -4,77 +4,24 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.saveable.rememberSaveableStateHolder
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
+import com.example.catslist.presentation.UiNotifier
+import com.example.catslist.presentation.navigation.CatsNavDisplay
 import com.example.catslist.presentation.theme.CatsListTheme
-import com.example.catslist.presentation.catslist.CatsListScreen
-import com.example.catslist.presentation.favoritecats.FavoriteCatsScreen
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
-/**
- * Two peer tabs, no push/pop navigation between them — a plain [TabRow] over
- * local selection state covers this app's real navigation needs, so there's
- * no Navigation 3 back stack to wire up here (ARCHITECTURE.md: delete a
- * section that doesn't apply). Add one if a pushed screen (e.g. cat detail)
- * shows up later.
- */
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    @Inject
+    lateinit var uiNotifier: UiNotifier
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             CatsListTheme {
-                CatsListApp()
-            }
-        }
-    }
-}
-
-@Composable
-private fun CatsListApp() {
-    var selectedTab by rememberSaveable { mutableIntStateOf(0) }
-    val tabTitles = listOf(
-        stringResource(R.string.catslist_tab_title),
-        stringResource(R.string.favoritecats_tab_title),
-    )
-    val tabStateHolder = rememberSaveableStateHolder()
-
-    Scaffold(
-        topBar = {
-            TabRow(
-                selectedTabIndex = selectedTab,
-                modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars),
-            ) {
-                tabTitles.forEachIndexed { index, title ->
-                    Tab(
-                        selected = selectedTab == index,
-                        onClick = { selectedTab = index },
-                        text = { Text(title) },
-                    )
-                }
-            }
-        }
-    ) { innerPadding ->
-        tabStateHolder.SaveableStateProvider(selectedTab) {
-            when (selectedTab) {
-                0 -> CatsListScreen(modifier = Modifier.padding(innerPadding))
-                1 -> FavoriteCatsScreen(modifier = Modifier.padding(innerPadding))
+                CatsNavDisplay(notifier = uiNotifier)
             }
         }
     }
