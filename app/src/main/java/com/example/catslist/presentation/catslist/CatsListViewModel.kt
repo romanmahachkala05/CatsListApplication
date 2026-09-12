@@ -4,8 +4,8 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.catslist.R
+import com.example.catslist.presentation.SnackbarNotifier
 import com.example.catslist.presentation.StateOwner
-import com.example.catslist.presentation.UiNotifier
 import com.example.catslist.presentation.UiText
 import com.example.catslist.domain.model.Cat
 import com.example.catslist.domain.usecase.DownloadCatImageUseCase
@@ -27,7 +27,7 @@ class CatsListViewModel @Inject constructor(
     private val fetchNextCats: FetchNextCatsUseCase,
     private val toggleFavorite: ToggleFavoriteUseCase,
     private val downloadCatImage: DownloadCatImageUseCase,
-    private val notifier: UiNotifier,
+    private val notifier: SnackbarNotifier,
 ) : ViewModel(), StateOwner<CatsListState> by stateHolder {
 
     init {

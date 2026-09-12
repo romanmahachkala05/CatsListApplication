@@ -32,7 +32,7 @@ import com.example.catslist.presentation.catslist.CatsListNavKey
 import com.example.catslist.presentation.catslist.CatsListScreen
 import com.example.catslist.presentation.favoritecats.FavoriteCatsNavKey
 import com.example.catslist.presentation.favoritecats.FavoriteCatsScreen
-import com.example.catslist.presentation.UiNotifier
+import com.example.catslist.presentation.SnackbarNotifier
 import com.example.catslist.presentation.resolve
 
 /**
@@ -41,10 +41,10 @@ import com.example.catslist.presentation.resolve
  * push), leaving room for a real pushed screen (e.g. cat detail) later. Each
  * screen's ViewModel is still created lazily by its own `hiltViewModel()`
  * default — this composable never needs to know either one's concrete type,
- * since Snackbar delivery goes through the shared [com.example.catslist.presentation.UiNotifier] instead.
+ * since Snackbar delivery goes through the shared [com.example.catslist.presentation.SnackbarNotifier] instead.
  */
 @Composable
-fun CatsNavDisplay(notifier: UiNotifier, modifier: Modifier = Modifier) {
+fun CatsNavDisplay(notifier: SnackbarNotifier, modifier: Modifier = Modifier) {
     val backStack = rememberNavBackStack(CatsListNavKey)
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
