@@ -1,5 +1,6 @@
 package com.example.catslist.presentation.catslist
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.catslist.R
@@ -12,6 +13,7 @@ import com.example.catslist.domain.usecase.FetchNextCatsUseCase
 import com.example.catslist.domain.usecase.GetCatFeedUseCase
 import com.example.catslist.domain.usecase.ToggleFavoriteUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -54,12 +56,19 @@ class CatsListViewModel @Inject constructor(
 
     private fun download(cat: Cat) {
         viewModelScope.launch {
-            val message = runCatching { downloadCatImage(cat) }
-                .fold(
-                    onSuccess = { TextSource.Res(R.string.common_download_started_message) },
-                    onFailure = { TextSource.Res(R.string.common_download_failed_message) },
-                )
-            notifier.showMessage(message)
+            try {
+                downloadCatImage(cat)
+                notifier.showMessage(TextSource.Res(R.string.common_download_started_message))
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to download cat ${cat.id}", e)
+                notifier.showMessage(TextSource.Res(R.string.common_download_failed_message))
+            }
         }
+    }
+
+    private companion object {
+        const val TAG = "CatsListViewModel"
     }
 }
