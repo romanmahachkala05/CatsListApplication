@@ -37,12 +37,6 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
-    lint {
-        // False positive: Glide ships an unused NotificationTarget on the
-        // classpath which lint reads as "this app posts notifications". The app
-        // does not post any, so it must not request POST_NOTIFICATIONS.
-        disable += "NotificationPermission"
-    }
 }
 
 java {
@@ -78,9 +72,10 @@ dependencies {
     //Retrofit
     implementation(libs.retrofit)
     implementation(libs.retrofit.converter.gson)
-    //Glide
-    implementation(libs.glide)
-    implementation(libs.glide.compose)
+    //Coil
+    implementation(platform(libs.coil.bom))
+    implementation(libs.coil.compose)
+    implementation(libs.coil.network.okhttp)
     //Room
     implementation(libs.androidx.room.runtime)
     ksp(libs.androidx.room.compiler)

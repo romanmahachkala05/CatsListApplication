@@ -11,11 +11,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.bumptech.glide.integration.compose.GlideImage
+import coil3.compose.AsyncImage
 import com.example.catslist.R
 import com.example.catslist.presentation.theme.CatsListTheme
 import com.example.catslist.domain.model.Cat
@@ -29,9 +30,10 @@ fun CatItem(
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier.fillMaxWidth()) {
-        GlideImage(
+        AsyncImage(
             model = cat.url,
             contentDescription = null,
+            contentScale = ContentScale.Crop,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(300.dp),
