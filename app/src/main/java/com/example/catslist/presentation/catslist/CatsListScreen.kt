@@ -15,7 +15,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.catslist.R
-import com.example.catslist.presentation.TextSource
+import com.example.catslist.presentation.UiText
 import com.example.catslist.presentation.components.CatItem
 import com.example.catslist.presentation.components.ErrorMessage
 import com.example.catslist.presentation.components.LoadingIndicator
@@ -97,7 +97,7 @@ private fun CatsListErrorPreview() {
         CatsListContent(
             state = CatsListState(
                 status = CatsListUiStatus.Error(
-                    message = TextSource.Res(R.string.catslist_error_loading_cats),
+                    message = UiText.Resource(R.string.catslist_error_loading_cats),
                     retryable = true,
                 ),
             ),

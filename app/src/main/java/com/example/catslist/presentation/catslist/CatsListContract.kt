@@ -1,7 +1,7 @@
 package com.example.catslist.presentation.catslist
 
 import androidx.compose.runtime.Immutable
-import com.example.catslist.presentation.TextSource
+import com.example.catslist.presentation.UiText
 import com.example.catslist.domain.model.Cat
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -10,7 +10,7 @@ import kotlinx.collections.immutable.persistentListOf
 sealed interface CatsListUiStatus {
     data object Loading : CatsListUiStatus
     data object Content : CatsListUiStatus
-    data class Error(val message: TextSource, val retryable: Boolean) : CatsListUiStatus
+    data class Error(val message: UiText, val retryable: Boolean) : CatsListUiStatus
 }
 
 @Immutable

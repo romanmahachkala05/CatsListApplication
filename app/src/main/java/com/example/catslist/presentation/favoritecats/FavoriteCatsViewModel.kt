@@ -5,8 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.catslist.R
 import com.example.catslist.presentation.StateOwner
-import com.example.catslist.presentation.TextSource
 import com.example.catslist.presentation.UiNotifier
+import com.example.catslist.presentation.UiText
 import com.example.catslist.domain.model.Cat
 import com.example.catslist.domain.usecase.DownloadCatImageUseCase
 import com.example.catslist.domain.usecase.GetFavoriteCatsUseCase
@@ -46,12 +46,12 @@ class FavoriteCatsViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 downloadCatImage(cat)
-                notifier.showMessage(TextSource.Res(R.string.common_download_started_message))
+                notifier.showMessage(UiText.Resource(R.string.common_download_started_message))
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to download cat ${cat.id}", e)
-                notifier.showMessage(TextSource.Res(R.string.common_download_failed_message))
+                notifier.showMessage(UiText.Resource(R.string.common_download_failed_message))
             }
         }
     }

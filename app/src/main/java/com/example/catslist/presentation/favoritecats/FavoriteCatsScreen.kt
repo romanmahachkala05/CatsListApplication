@@ -11,7 +11,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.catslist.R
-import com.example.catslist.presentation.TextSource
+import com.example.catslist.presentation.UiText
 import com.example.catslist.presentation.components.CatItem
 import com.example.catslist.presentation.components.EmptyMessage
 import com.example.catslist.presentation.components.LoadingIndicator
@@ -36,7 +36,7 @@ fun FavoriteCatsContent(
     Surface(modifier = modifier.fillMaxSize()) {
         when (state.status) {
             FavoriteCatsUiStatus.Loading -> LoadingIndicator()
-            FavoriteCatsUiStatus.Empty -> EmptyMessage(TextSource.Res(R.string.favoritecats_empty_message))
+            FavoriteCatsUiStatus.Empty -> EmptyMessage(UiText.Resource(R.string.favoritecats_empty_message))
             FavoriteCatsUiStatus.Content -> LazyColumn(modifier = Modifier.fillMaxSize()) {
                 items(items = state.cats, key = { it.id }) { cat ->
                     CatItem(

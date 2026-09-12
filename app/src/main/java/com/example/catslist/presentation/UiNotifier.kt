@@ -29,15 +29,15 @@ interface UiNotifier {
      * destination switch, say — are buffered and delivered once collection resumes; [showMessage]
      * suspends if that buffer fills rather than dropping.
      */
-    val messages: Flow<TextSource>
+    val messages: Flow<UiText>
 
-    suspend fun showMessage(message: TextSource)
+    suspend fun showMessage(message: UiText)
 }
 
 class DefaultUiNotifier @Inject constructor() : UiNotifier {
-    private val channel = Channel<TextSource>(Channel.BUFFERED)
-    override val messages: Flow<TextSource> = channel.receiveAsFlow()
-    override suspend fun showMessage(message: TextSource) = channel.send(message)
+    private val channel = Channel<UiText>(Channel.BUFFERED)
+    override val messages: Flow<UiText> = channel.receiveAsFlow()
+    override suspend fun showMessage(message: UiText) = channel.send(message)
 }
 
 @Module
