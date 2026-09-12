@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.catslist.presentation.StateOwner
 import com.example.catslist.domain.usecase.DownloadCatImageUseCase
-import com.example.catslist.domain.usecase.FetchNextCatUseCase
+import com.example.catslist.domain.usecase.FetchNextCatsUseCase
 import com.example.catslist.domain.usecase.GetCatFeedUseCase
 import com.example.catslist.domain.usecase.ToggleFavoriteUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -18,7 +18,7 @@ class CatsListViewModel @Inject constructor(
     private val stateHolder: ICatsListStateHolder,
     private val errorHandler: ICatsListErrorHandler,
     getCatFeed: GetCatFeedUseCase,
-    private val fetchNextCat: FetchNextCatUseCase,
+    private val fetchNextCats: FetchNextCatsUseCase,
     private val toggleFavorite: ToggleFavoriteUseCase,
     private val downloadCatImage: DownloadCatImageUseCase,
 ) : ViewModel(), StateOwner<CatsListState> by stateHolder {
@@ -42,10 +42,8 @@ class CatsListViewModel @Inject constructor(
 
     private fun loadMore() {
         viewModelScope.launch {
-            repeat(5) {
-                runCatching { fetchNextCat() }
-                    .onFailure(errorHandler::onLoadFailure)
-            }
+            runCatching { fetchNextCats() }
+                .onFailure(errorHandler::onLoadFailure)
         }
     }
 }

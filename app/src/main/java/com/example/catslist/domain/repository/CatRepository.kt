@@ -16,8 +16,8 @@ interface CatRepository {
     /** Cats persisted as favorites. */
     val favorites: Flow<List<Cat>>
 
-    /** Fetches one more (not-yet-seen) cat from the API and appends it to [feed]. */
-    suspend fun fetchNextCat()
+    /** Fetches the next batch of not-yet-seen cats from the API and appends them to [feed]. */
+    suspend fun fetchNextBatch()
 
     /** Adds [cat] to favorites if absent, removes it otherwise. */
     suspend fun toggleFavorite(cat: Cat)
