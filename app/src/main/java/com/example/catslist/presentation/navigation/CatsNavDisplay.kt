@@ -1,26 +1,33 @@
 package com.example.catslist.presentation.navigation
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
@@ -70,46 +77,65 @@ fun CatsNavDisplay(notifier: SnackbarNotifier, modifier: Modifier = Modifier) {
             )
         },
     ) { innerPadding ->
+        // Deliberately not padding the content: the bar floats over it, so cats run full-bleed
+        // underneath. The insets go to each list as contentPadding so items still scroll clear.
         NavDisplay(
             backStack = backStack,
-            modifier = Modifier.padding(innerPadding),
             entryDecorators = listOf(rememberSaveableStateHolderNavEntryDecorator()),
             entryProvider = entryProvider {
-                entry<CatsListNavKey> { CatsListScreen() }
-                entry<FavoriteCatsNavKey> { FavoriteCatsScreen() }
+                entry<CatsListNavKey> { CatsListScreen(contentPadding = innerPadding) }
+                entry<FavoriteCatsNavKey> { FavoriteCatsScreen(contentPadding = innerPadding) }
             },
         )
     }
 }
 
+/**
+ * Material3's [NavigationBar] — which brings the selection indicator, its animations and the
+ * `selectableGroup()` semantics with it — shaped into a floating pill instead of spanning the
+ * screen edge to edge. `Modifier.shadow` clips to the shape, so the bar paints its own container
+ * and needs no wrapping Surface. `IntrinsicSize.Min` keeps it hugging its two items, since
+ * [NavigationBarItem] otherwise weights itself across the full available width.
+ */
 @Composable
 private fun FloatingBottomBar(selected: NavKey?, onSelect: (NavKey) -> Unit, modifier: Modifier = Modifier) {
-    Surface(
-        modifier = modifier.padding(16.dp),
-        shape = RoundedCornerShape(50),
-        tonalElevation = 3.dp,
-        shadowElevation = 6.dp,
+    NavigationBar(
+        // The bottomBar slot lays out from the start edge, so centre the pill within it.
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(32.dp)
+            .wrapContentWidth()
+            .width(IntrinsicSize.Min)
+            .shadow(6.dp, BAR_SHAPE),
+        // The Scaffold slot already handles system bars; NavigationBar's own insets would double them.
+        windowInsets = WindowInsets(0, 0, 0, 0),
     ) {
-        Row(
-            modifier = Modifier
-                .width(IntrinsicSize.Min)
-                .padding(horizontal = 12.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            NavigationBarItem(
-                selected = selected == CatsListNavKey,
-                onClick = { onSelect(CatsListNavKey) },
-                icon = {
-                    Icon(Icons.AutoMirrored.Filled.List, contentDescription = stringResource(R.string.catslist_tab_title))
-                },
-            )
-            NavigationBarItem(
-                selected = selected == FavoriteCatsNavKey,
-                onClick = { onSelect(FavoriteCatsNavKey) },
-                icon = {
-                    Icon(Icons.Default.Star, contentDescription = stringResource(R.string.favoritecats_tab_title))
-                },
-            )
-        }
+        NavigationBarItem(
+            selected = selected == CatsListNavKey,
+            onClick = { onSelect(CatsListNavKey) },
+            // The label names the destination; a description here would announce it twice.
+            icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = null, modifier = Modifier.size(ICON_SIZE)) },
+            label = { Text(stringResource(R.string.catslist_nav_label), fontWeight = FontWeight.Normal) },
+            colors = navigationBarItemColors(),
+        )
+        NavigationBarItem(
+            selected = selected == FavoriteCatsNavKey,
+            onClick = { onSelect(FavoriteCatsNavKey) },
+            icon = { Icon(Icons.Default.Star, contentDescription = null, modifier = Modifier.size(ICON_SIZE)) },
+            label = { Text(stringResource(R.string.favoritecats_nav_label), fontWeight = FontWeight.Normal) },
+            colors = navigationBarItemColors(),
+        )
     }
 }
+
+private val BAR_SHAPE = RoundedCornerShape(50)
+
+/** Labels stay the same plain on-surface colour in both states; only the icon reflects selection. */
+@Composable
+private fun navigationBarItemColors() = NavigationBarItemDefaults.colors(
+    selectedTextColor = MaterialTheme.colorScheme.onSurface,
+    unselectedTextColor = MaterialTheme.colorScheme.onSurface,
+)
+
+/** 24.dp is [Icon]'s default; the M3 active-indicator behind it is a fixed 64x32.dp, so much past this looks cramped. */
+private val ICON_SIZE = 28.dp

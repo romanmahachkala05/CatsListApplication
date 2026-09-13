@@ -2,11 +2,11 @@
     <string name="app_name">CatsList</string>
 
     <!-- catslist screen -->
-    <string name="catslist_tab_title">Infinite Cats</string>
+    <string name="catslist_nav_label">Cats list</string>
     <string name="catslist_error_loading_cats">Couldn\'t load a cat. Check your connection and try again.</string>
 
     <!-- favoritecats screen -->
-    <string name="favoritecats_tab_title">Favorite Cats</string>
+    <string name="favoritecats_nav_label">Favorites</string>
     <string name="favoritecats_empty_message">Favorite Cats list is empty</string>
 
     <!-- common: used by shared components / collaborators across screens -->
