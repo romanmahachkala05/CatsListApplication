@@ -38,6 +38,13 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
+    testOptions {
+        unitTests {
+            // ViewModels log failures through android.util.Log, which is a stub on the JVM and
+            // throws by default. Returning defaults keeps those paths testable without Robolectric.
+            isReturnDefaultValues = true
+        }
+    }
 }
 
 java {
@@ -93,6 +100,8 @@ dependencies {
     ksp(libs.androidx.hilt.compiler)
 
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.truth)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 }
