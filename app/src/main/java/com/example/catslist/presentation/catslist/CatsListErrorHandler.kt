@@ -1,7 +1,7 @@
 package com.example.catslist.presentation.catslist
 
 import com.example.catslist.R
-import com.example.catslist.presentation.TextSource
+import com.example.catslist.presentation.UiText
 import dagger.hilt.android.scopes.ViewModelScoped
 import javax.inject.Inject
 
@@ -15,6 +15,6 @@ class CatsListErrorHandler @Inject constructor(
 ) : ICatsListErrorHandler {
 
     override fun onLoadFailure(error: Throwable) {
-        stateHolder.showError(TextSource.Res(R.string.catslist_error_loading_cats), retryable = true)
+        stateHolder.showError(UiText.Resource(R.string.catslist_error_loading_cats), retryable = true)
     }
 }

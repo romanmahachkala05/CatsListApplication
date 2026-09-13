@@ -16,7 +16,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.catslist.R
-import com.example.catslist.presentation.TextSource
+import com.example.catslist.presentation.UiText
 import com.example.catslist.presentation.resolve
 import com.example.catslist.presentation.theme.CatsListTheme
 
@@ -32,7 +32,7 @@ fun LoadingIndicator(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun EmptyMessage(message: TextSource, modifier: Modifier = Modifier) {
+fun EmptyMessage(message: UiText, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier.fillMaxSize().padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -49,7 +49,7 @@ fun EmptyMessage(message: TextSource, modifier: Modifier = Modifier) {
 
 @Composable
 fun ErrorMessage(
-    message: TextSource,
+    message: UiText,
     modifier: Modifier = Modifier,
     onRetry: (() -> Unit)? = null,
 ) {
@@ -81,13 +81,13 @@ private fun LoadingIndicatorPreview() {
 @Preview(showBackground = true)
 @Composable
 private fun EmptyMessagePreview() {
-    CatsListTheme { EmptyMessage(TextSource.Res(R.string.favoritecats_empty_message)) }
+    CatsListTheme { EmptyMessage(UiText.Resource(R.string.favoritecats_empty_message)) }
 }
 
 @Preview(showBackground = true)
 @Composable
 private fun ErrorMessagePreview() {
     CatsListTheme {
-        ErrorMessage(TextSource.Res(R.string.catslist_error_loading_cats), onRetry = {})
+        ErrorMessage(UiText.Resource(R.string.catslist_error_loading_cats), onRetry = {})
     }
 }

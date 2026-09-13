@@ -1,7 +1,7 @@
 package com.example.catslist.presentation.catslist
 
 import com.example.catslist.presentation.StateOwner
-import com.example.catslist.presentation.TextSource
+import com.example.catslist.presentation.UiText
 import com.example.catslist.domain.model.Cat
 import dagger.hilt.android.scopes.ViewModelScoped
 import kotlinx.collections.immutable.toPersistentList
@@ -13,7 +13,7 @@ import javax.inject.Inject
 
 interface ICatsListStateHolder : StateOwner<CatsListState> {
     fun showContent(cats: List<Cat>)
-    fun showError(message: TextSource, retryable: Boolean)
+    fun showError(message: UiText, retryable: Boolean)
     fun reset()
 }
 
@@ -34,7 +34,7 @@ class CatsListStateHolder @Inject constructor() : ICatsListStateHolder {
         current.copy(status = status, cats = cats.toPersistentList())
     }
 
-    override fun showError(message: TextSource, retryable: Boolean) = _state.update {
+    override fun showError(message: UiText, retryable: Boolean) = _state.update {
         it.copy(status = CatsListUiStatus.Error(message, retryable))
     }
 
