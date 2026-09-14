@@ -33,12 +33,16 @@ class CatRepositoryImpl @Inject constructor(
         }
 
     override suspend fun fetchNextBatch() {
-        val existingIds = fetched.value.mapTo(hashSetOf()) { it.id }
         val newCats = catApiService.requestCatInfo(limit = PAGE_SIZE)
             .map { it.toDomain() }
             .distinctBy { it.id }
-            .filterNot { it.id in existingIds }
-        fetched.value = fetched.value + newCats
+
+        // Read what is already in the feed only now, with nothing suspending between this
+        // and the write below. Reading it before the request would mean filtering against a
+        // snapshot that a concurrent load has since added to — two overlapping loads would
+        // then each append the same cat, and a duplicate key crashes the LazyColumn.
+        val existingIds = fetched.value.mapTo(hashSetOf()) { it.id }
+        fetched.value = fetched.value + newCats.filterNot { it.id in existingIds }
     }
 
     override suspend fun toggleFavorite(cat: Cat) = catDao.toggleFavorite(cat.toEntity())
