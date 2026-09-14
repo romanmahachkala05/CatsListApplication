@@ -1,11 +1,16 @@
 package com.example.catslist.data.repository
 
+import com.example.catslist.data.remote.CatApiService
+import com.example.catslist.data.remote.CatDto
 import com.example.catslist.testing.FakeCatApiService
 import com.example.catslist.testing.FakeCatDao
 import com.example.catslist.testing.cat
 import com.example.catslist.testing.catDto
 import com.google.common.truth.Truth.assertThat
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import java.io.IOException
@@ -61,6 +66,23 @@ class CatRepositoryImplTest {
         repository.fetchNextBatch()
 
         assertThat(repository.feed.first().map { it.id }).containsExactly("1", "2", "3").inOrder()
+    }
+
+    @Test
+    fun `two overlapping loads never put the same cat in the feed twice`() = runTest {
+        // Reachable by tapping Retry twice, or by retrying while an auto-load is in flight.
+        // Both callers would file the same page, and a duplicate key crashes the LazyColumn.
+        val gate = CompletableDeferred<Unit>()
+        val repository = CatRepositoryImpl(GatedApi(gate), FakeCatDao())
+
+        val first = launch { repository.fetchNextBatch() }
+        val second = launch { repository.fetchNextBatch() }
+        runCurrent() // let both reach the request before either gets to write
+        gate.complete(Unit)
+        first.join()
+        second.join()
+
+        assertThat(repository.feed.first().map { it.id }).containsNoDuplicates()
     }
 
     @Test(expected = IOException::class)
@@ -139,6 +161,14 @@ class CatRepositoryImplTest {
         repository.removeFavorite(cat("1"))
 
         assertThat(repository.feed.first().single().isFavorite).isFalse()
+    }
+
+    /** Holds every caller inside the request until released, so two loads genuinely overlap. */
+    private class GatedApi(private val gate: CompletableDeferred<Unit>) : CatApiService {
+        override suspend fun requestCatInfo(limit: Int): List<CatDto> {
+            gate.await()
+            return listOf(catDto("1"), catDto("2"))
+        }
     }
 
     private companion object {
