@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -37,12 +38,21 @@ class CatRepositoryImpl @Inject constructor(
             .map { it.toDomain() }
             .distinctBy { it.id }
 
-        // Read what is already in the feed only now, with nothing suspending between this
-        // and the write below. Reading it before the request would mean filtering against a
-        // snapshot that a concurrent load has since added to — two overlapping loads would
-        // then each append the same cat, and a duplicate key crashes the LazyColumn.
-        val existingIds = fetched.value.mapTo(hashSetOf()) { it.id }
-        fetched.value = fetched.value + newCats.filterNot { it.id in existingIds }
+        // Requests may overlap; this update may not. `update` is a compare-and-set loop, so
+        // the ids are read from the same `current` that gets written — two concurrent loads
+        // cannot each filter against a snapshot the other has already added to, and neither
+        // can lose the other's write. `fetched.value = fetched.value + …` would read and
+        // write separately: safe only for as long as every caller happens to resume on the
+        // same thread, which is not something this function can promise.
+        //
+        // A duplicate id would reach `items(cats, key = { it.id })` and crash the LazyColumn,
+        // and a lost write would silently drop a page.
+        //
+        // The lambda re-runs on contention, so it stays free of side effects.
+        fetched.update { current ->
+            val existingIds = current.mapTo(hashSetOf()) { it.id }
+            current + newCats.filterNot { it.id in existingIds }
+        }
     }
 
     override suspend fun toggleFavorite(cat: Cat) = catDao.toggleFavorite(cat.toEntity())
