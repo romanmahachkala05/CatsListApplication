@@ -1,5 +1,12 @@
 # CatsListApplication
 
+## Documentation
+
+- [Contributing](CONTRIBUTING.md) — build commands, the verification gate, conventions
+- [Architecture](docs/ARCHITECTURE.md) — what the codebase does
+- [Decisions](docs/DECISIONS.md) — why, and what was rejected
+
+
 Todo: 
 - enable minify/proguard?
 - add application icon?
