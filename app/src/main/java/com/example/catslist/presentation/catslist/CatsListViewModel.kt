@@ -12,6 +12,7 @@ import com.example.catslist.domain.usecase.FetchNextCatsUseCase
 import com.example.catslist.domain.usecase.GetCatFeedUseCase
 import com.example.catslist.domain.usecase.ToggleFavoriteUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import javax.inject.Inject
@@ -30,6 +31,10 @@ class CatsListViewModel @Inject constructor(
     init {
         getCatFeed()
             .onEach(stateHolder::showContent)
+            // Without this a throwing Room query would escape viewModelScope and kill the
+            // process. `catch` rethrows the coroutine's own cancellation, so unlike
+            // `runCatching` it needs no manual guard for that.
+            .catch { errorHandler.onFeedFailure(it) }
             .launchIn(viewModelScope)
         loadMore()
     }

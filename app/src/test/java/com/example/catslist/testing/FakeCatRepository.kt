@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.onEach
 
 /**
  * In-memory [CatRepository] with the same observable behaviour as the real one:
@@ -25,15 +26,22 @@ class FakeCatRepository : CatRepository {
     /** When set, [toggleFavorite] and [removeFavorite] fail with it instead of writing. */
     var favoriteError: Throwable? = null
 
+    /** When set, [feed] fails with it on every emission, as a broken Room query would. */
+    var feedError: Throwable? = null
+
+    /** When set, [favorites] fails with it on every emission. */
+    var favoritesError: Throwable? = null
+
     var fetchCount: Int = 0
         private set
 
-    override val favorites: Flow<List<Cat>> = favorited.asStateFlow()
+    override val favorites: Flow<List<Cat>> =
+        favorited.asStateFlow().onEach { favoritesError?.let { error -> throw error } }
 
     override val feed: Flow<List<Cat>> = combine(fetched, favorited) { cats, favorites ->
         val favoriteIds = favorites.mapTo(hashSetOf()) { it.id }
         cats.map { it.copy(isFavorite = it.id in favoriteIds) }
-    }
+    }.onEach { feedError?.let { error -> throw error } }
 
     /** Queues one batch per [fetchNextBatch] call, in order. Exhausted queue means empty batches. */
     fun enqueueBatch(vararg cats: Cat) = batches.addLast(cats.toList())

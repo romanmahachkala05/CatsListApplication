@@ -11,6 +11,7 @@ import com.example.catslist.domain.usecase.DownloadCatImageUseCase
 import com.example.catslist.domain.usecase.GetFavoriteCatsUseCase
 import com.example.catslist.domain.usecase.RemoveFavoriteUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import javax.inject.Inject
@@ -18,6 +19,7 @@ import javax.inject.Inject
 @HiltViewModel
 class FavoriteCatsViewModel @Inject constructor(
     private val stateHolder: IFavoriteCatsStateHolder,
+    private val errorHandler: IFavoriteCatsErrorHandler,
     getFavoriteCats: GetFavoriteCatsUseCase,
     private val removeFavorite: RemoveFavoriteUseCase,
     private val downloadCatImage: DownloadCatImageUseCase,
@@ -27,6 +29,10 @@ class FavoriteCatsViewModel @Inject constructor(
     init {
         getFavoriteCats()
             .onEach(stateHolder::showFavorites)
+            // Without this a throwing Room query would escape viewModelScope and kill the
+            // process. `catch` rethrows the coroutine's own cancellation, so unlike
+            // `runCatching` it needs no manual guard for that.
+            .catch { errorHandler.onFavoritesFailure(it) }
             .launchIn(viewModelScope)
     }
 

@@ -57,6 +57,27 @@ class CatsListViewModelTest {
     }
 
     @Test
+    fun `a feed that ends in an error is shown, not thrown`() = runTest {
+        // An exception escaping viewModelScope reaches the default handler and kills the process.
+        repository.feedError = IOException("database is corrupt")
+
+        val viewModel = viewModel()
+
+        assertThat(viewModel.state.value.status).isEqualTo(
+            CatsListUiStatus.Error(UiText.Resource(R.string.catslist_error_feed_stopped), retryable = false),
+        )
+    }
+
+    @Test
+    fun `a dead feed offers no retry, since the stream will not emit again`() = runTest {
+        repository.feedError = IOException("database is corrupt")
+
+        val viewModel = viewModel()
+
+        assertThat((viewModel.state.value.status as CatsListUiStatus.Error).retryable).isFalse()
+    }
+
+    @Test
     fun `LoadMore appends the next page`() = runTest {
         repository.enqueueBatch(cat("1"))
         repository.enqueueBatch(cat("2"))

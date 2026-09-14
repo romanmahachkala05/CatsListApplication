@@ -44,6 +44,17 @@ class FavoriteCatsViewModelTest {
     }
 
     @Test
+    fun `favorites that end in an error are shown, not thrown`() = runTest {
+        repository.favoritesError = IOException("database is corrupt")
+
+        val viewModel = viewModel()
+
+        assertThat(viewModel.state.value.status).isEqualTo(
+            FavoriteCatsUiStatus.Error(UiText.Resource(R.string.favoritecats_error_loading_favorites)),
+        )
+    }
+
+    @Test
     fun `RemoveFavorite drops the cat from the screen`() = runTest {
         repository.setFavorites(cat("1"), cat("2"))
         val viewModel = viewModel()
@@ -120,11 +131,15 @@ class FavoriteCatsViewModelTest {
         assertThat(notifier.shown).isEmpty()
     }
 
-    private fun viewModel() = FavoriteCatsViewModel(
-        stateHolder = FavoriteCatsStateHolder(),
-        getFavoriteCats = GetFavoriteCatsUseCase(repository),
-        removeFavorite = RemoveFavoriteUseCase(repository),
-        downloadCatImage = DownloadCatImageUseCase(downloader),
-        notifier = notifier,
-    )
+    private fun viewModel(): FavoriteCatsViewModel {
+        val stateHolder = FavoriteCatsStateHolder()
+        return FavoriteCatsViewModel(
+            stateHolder = stateHolder,
+            errorHandler = FavoriteCatsErrorHandler(stateHolder),
+            getFavoriteCats = GetFavoriteCatsUseCase(repository),
+            removeFavorite = RemoveFavoriteUseCase(repository),
+            downloadCatImage = DownloadCatImageUseCase(downloader),
+            notifier = notifier,
+        )
+    }
 }

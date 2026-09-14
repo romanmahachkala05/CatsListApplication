@@ -2,6 +2,7 @@ package com.example.catslist.presentation.favoritecats
 
 import androidx.compose.runtime.Immutable
 import com.example.catslist.domain.model.Cat
+import com.example.catslist.presentation.UiText
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 
@@ -10,6 +11,10 @@ sealed interface FavoriteCatsUiStatus {
     data object Loading : FavoriteCatsUiStatus
     data object Content : FavoriteCatsUiStatus
     data object Empty : FavoriteCatsUiStatus
+
+    /** No `retryable` flag: the only thing that fails here is the stream itself, and a
+     * terminated Flow won't emit again whatever the user taps. */
+    data class Error(val message: UiText) : FavoriteCatsUiStatus
 }
 
 @Immutable
