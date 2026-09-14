@@ -55,6 +55,19 @@ class FavoriteCatsViewModelTest {
     }
 
     @Test
+    fun `Retry resubscribes to favorites that had ended in an error`() = runTest {
+        repository.favoritesError = IOException("database is corrupt")
+        val viewModel = viewModel()
+        repository.favoritesError = null
+        repository.setFavorites(cat("1"))
+
+        viewModel.onEvent(FavoriteCatsEvent.Retry)
+
+        assertThat(viewModel.state.value.status).isEqualTo(FavoriteCatsUiStatus.Content)
+        assertThat(viewModel.state.value.cats.map { it.id }).containsExactly("1")
+    }
+
+    @Test
     fun `RemoveFavorite drops the cat from the screen`() = runTest {
         repository.setFavorites(cat("1"), cat("2"))
         val viewModel = viewModel()

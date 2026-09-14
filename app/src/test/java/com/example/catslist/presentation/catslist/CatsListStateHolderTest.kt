@@ -47,24 +47,29 @@ class CatsListStateHolderTest {
     fun `showing an error keeps the cats already on screen`() {
         stateHolder.showContent(listOf(cat("1")))
 
-        stateHolder.showError(MESSAGE, retryable = true)
+        stateHolder.showError(MESSAGE)
 
         val state = stateHolder.state.value
-        assertThat(state.status).isEqualTo(CatsListUiStatus.Error(MESSAGE, retryable = true))
+        assertThat(state.status).isEqualTo(CatsListUiStatus.Error(MESSAGE))
         assertThat(state.cats.map { it.id }).containsExactly("1")
     }
 
     @Test
-    fun `a non-retryable error is reported as such`() {
-        stateHolder.showError(MESSAGE, retryable = false)
+    fun `going back to loading keeps the cats already on screen`() {
+        stateHolder.showContent(listOf(cat("1")))
+        stateHolder.showError(MESSAGE)
 
-        assertThat((stateHolder.state.value.status as CatsListUiStatus.Error).retryable).isFalse()
+        stateHolder.showLoading()
+
+        val state = stateHolder.state.value
+        assertThat(state.status).isEqualTo(CatsListUiStatus.Loading)
+        assertThat(state.cats.map { it.id }).containsExactly("1")
     }
 
     @Test
     fun `reset returns to the initial state`() {
         stateHolder.showContent(listOf(cat("1")))
-        stateHolder.showError(MESSAGE, retryable = true)
+        stateHolder.showError(MESSAGE)
 
         stateHolder.reset()
 

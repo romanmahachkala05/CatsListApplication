@@ -13,6 +13,7 @@ import javax.inject.Inject
 
 interface IFavoriteCatsStateHolder : StateOwner<FavoriteCatsState> {
     fun showFavorites(cats: List<Cat>)
+    fun showLoading()
     fun showError(message: UiText)
     fun reset()
 }
@@ -28,6 +29,11 @@ class FavoriteCatsStateHolder @Inject constructor() : IFavoriteCatsStateHolder {
             status = if (cats.isEmpty()) FavoriteCatsUiStatus.Empty else FavoriteCatsUiStatus.Content,
             cats = cats.toPersistentList(),
         )
+    }
+
+    /** Keeps the cats already on screen: a retry redisplays them rather than starting blank. */
+    override fun showLoading() = _state.update {
+        it.copy(status = FavoriteCatsUiStatus.Loading)
     }
 
     override fun showError(message: UiText) = _state.update {

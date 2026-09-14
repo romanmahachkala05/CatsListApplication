@@ -53,7 +53,7 @@ fun FavoriteCatsContent(
             }
             FavoriteCatsUiStatus.Empty -> EmptyMessage(UiText.Resource(R.string.favoritecats_empty_message))
             FavoriteCatsUiStatus.Loading -> LoadingIndicator()
-            is FavoriteCatsUiStatus.Error -> ErrorMessage(message = status.message, onRetry = null)
+            is FavoriteCatsUiStatus.Error -> ErrorMessage(message = status.message, onRetry = { onEvent(FavoriteCatsEvent.Retry) })
         }
     }
 }

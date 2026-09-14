@@ -13,7 +13,8 @@ import javax.inject.Inject
 
 interface ICatsListStateHolder : StateOwner<CatsListState> {
     fun showContent(cats: List<Cat>)
-    fun showError(message: UiText, retryable: Boolean)
+    fun showLoading()
+    fun showError(message: UiText)
     fun reset()
 }
 
@@ -34,8 +35,13 @@ class CatsListStateHolder @Inject constructor() : ICatsListStateHolder {
         current.copy(status = status, cats = cats.toPersistentList())
     }
 
-    override fun showError(message: UiText, retryable: Boolean) = _state.update {
-        it.copy(status = CatsListUiStatus.Error(message, retryable))
+    /** Keeps the cats already on screen: a retry redisplays them rather than starting blank. */
+    override fun showLoading() = _state.update {
+        it.copy(status = CatsListUiStatus.Loading)
+    }
+
+    override fun showError(message: UiText) = _state.update {
+        it.copy(status = CatsListUiStatus.Error(message))
     }
 
     override fun reset() = _state.update { CatsListState() }

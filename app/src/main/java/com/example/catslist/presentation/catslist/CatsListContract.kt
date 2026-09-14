@@ -12,7 +12,9 @@ sealed interface CatsListUiStatus {
     // branch order is checkable against this list instead of being an unverifiable claim.
     data object Content : CatsListUiStatus
     data object Loading : CatsListUiStatus
-    data class Error(val message: UiText, val retryable: Boolean) : CatsListUiStatus
+
+    /** No `retryable` flag: [CatsListEvent.Retry] recovers from every failure the screen has. */
+    data class Error(val message: UiText) : CatsListUiStatus
 }
 
 @Immutable
@@ -22,7 +24,12 @@ data class CatsListState(
 )
 
 sealed interface CatsListEvent {
+    /** Reaching the end of the list. Appends a page; does nothing about a broken feed. */
     data object LoadMore : CatsListEvent
+
+    /** The user asking to recover from an error: resubscribes to the feed and loads a page. */
+    data object Retry : CatsListEvent
+
     data class ToggleFavorite(val cat: Cat) : CatsListEvent
     data class Download(val cat: Cat) : CatsListEvent
 }

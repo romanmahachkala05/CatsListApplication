@@ -50,9 +50,7 @@ fun CatsListContent(
             CatsListUiStatus.Loading -> LoadingIndicator()
             is CatsListUiStatus.Error -> ErrorMessage(
                 message = status.message,
-                onRetry = if (status.retryable) {
-                    { onEvent(CatsListEvent.LoadMore) }
-                } else null,
+                onRetry = { onEvent(CatsListEvent.Retry) },
             )
         }
     }
@@ -106,10 +104,7 @@ private fun CatsListErrorPreview() {
     CatsListTheme {
         CatsListContent(
             state = CatsListState(
-                status = CatsListUiStatus.Error(
-                    message = UiText.Resource(R.string.catslist_error_loading_cats),
-                    retryable = true,
-                ),
+                status = CatsListUiStatus.Error(UiText.Resource(R.string.catslist_error_loading_cats)),
             ),
             onEvent = {},
         )
