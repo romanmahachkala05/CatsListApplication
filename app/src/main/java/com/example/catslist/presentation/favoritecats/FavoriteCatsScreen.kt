@@ -42,9 +42,6 @@ fun FavoriteCatsContent(
 ) {
     Surface(modifier = modifier.fillMaxSize()) {
         when (val status = state.status) {
-            FavoriteCatsUiStatus.Loading -> LoadingIndicator()
-            is FavoriteCatsUiStatus.Error -> ErrorMessage(message = status.message, onRetry = null)
-            FavoriteCatsUiStatus.Empty -> EmptyMessage(UiText.Resource(R.string.favoritecats_empty_message))
             FavoriteCatsUiStatus.Content -> LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = contentPadding) {
                 items(items = state.cats, key = { it.id }) { cat ->
                     CatItem(
@@ -54,6 +51,9 @@ fun FavoriteCatsContent(
                     )
                 }
             }
+            FavoriteCatsUiStatus.Empty -> EmptyMessage(UiText.Resource(R.string.favoritecats_empty_message))
+            FavoriteCatsUiStatus.Loading -> LoadingIndicator()
+            is FavoriteCatsUiStatus.Error -> ErrorMessage(message = status.message, onRetry = null)
         }
     }
 }

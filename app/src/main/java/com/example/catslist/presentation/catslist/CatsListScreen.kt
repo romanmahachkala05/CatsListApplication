@@ -46,6 +46,7 @@ fun CatsListContent(
 ) {
     Surface(modifier = modifier.fillMaxSize()) {
         when (val status = state.status) {
+            CatsListUiStatus.Content -> CatsFeed(cats = state.cats, onEvent = onEvent, contentPadding = contentPadding)
             CatsListUiStatus.Loading -> LoadingIndicator()
             is CatsListUiStatus.Error -> ErrorMessage(
                 message = status.message,
@@ -53,7 +54,6 @@ fun CatsListContent(
                     { onEvent(CatsListEvent.LoadMore) }
                 } else null,
             )
-            CatsListUiStatus.Content -> CatsFeed(cats = state.cats, onEvent = onEvent, contentPadding = contentPadding)
         }
     }
 }
