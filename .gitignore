@@ -53,7 +53,6 @@ Thumbs.db
 
 # --- AI coding-agent scaffolding (kept local, not part of the app) ---
 AGENTS.md
-ARCHITECTURE.md
 CLAUDE.md
 CLAUDE.local.md
 .claude/
