@@ -41,13 +41,7 @@ class CatRepositoryImpl @Inject constructor(
         fetched.value = fetched.value + newCats
     }
 
-    override suspend fun toggleFavorite(cat: Cat) {
-        if (catDao.isFavorite(cat.id)) {
-            catDao.deleteCat(cat.toEntity())
-        } else {
-            catDao.insertCat(cat.toEntity())
-        }
-    }
+    override suspend fun toggleFavorite(cat: Cat) = catDao.toggleFavorite(cat.toEntity())
 
     override suspend fun removeFavorite(cat: Cat) {
         catDao.deleteCat(cat.toEntity())
