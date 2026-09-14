@@ -104,6 +104,39 @@ class CatsListViewModelTest {
     }
 
     @Test
+    fun `a failed favorite toggle is reported instead of crashing the screen`() = runTest {
+        repository.enqueueBatch(cat("1"))
+        val viewModel = viewModel()
+        repository.favoriteError = IOException("database is locked")
+
+        viewModel.onEvent(CatsListEvent.ToggleFavorite(cat("1")))
+
+        assertThat(notifier.shown).containsExactly(UiText.Resource(R.string.common_favorite_failed_message))
+        assertThat(viewModel.state.value.status).isEqualTo(CatsListUiStatus.Content)
+    }
+
+    @Test
+    fun `a cancelled favorite toggle is not reported as a failure`() = runTest {
+        repository.favoriteError = CancellationException("screen left")
+        val viewModel = viewModel()
+
+        viewModel.onEvent(CatsListEvent.ToggleFavorite(cat("1")))
+
+        assertThat(notifier.shown).isEmpty()
+    }
+
+    @Test
+    fun `a cancelled load is not shown as an error`() = runTest {
+        // Leaving the screen mid-fetch cancels the load; that is not something to
+        // put a "couldn't load" message on screen for.
+        repository.fetchError = CancellationException("screen left")
+
+        val viewModel = viewModel()
+
+        assertThat(viewModel.state.value.status).isEqualTo(CatsListUiStatus.Loading)
+    }
+
+    @Test
     fun `Download hands the cat to the downloader and says so`() = runTest {
         val cat = cat("1")
         repository.enqueueBatch(cat)

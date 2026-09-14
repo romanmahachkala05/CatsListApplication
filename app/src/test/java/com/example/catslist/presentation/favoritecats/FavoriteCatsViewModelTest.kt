@@ -64,6 +64,29 @@ class FavoriteCatsViewModelTest {
     }
 
     @Test
+    fun `a failed removal is reported instead of crashing the screen`() = runTest {
+        repository.setFavorites(cat("1"))
+        val viewModel = viewModel()
+        repository.favoriteError = IOException("database is locked")
+
+        viewModel.onEvent(FavoriteCatsEvent.RemoveFavorite(cat("1")))
+
+        assertThat(notifier.shown).containsExactly(UiText.Resource(R.string.common_favorite_failed_message))
+        assertThat(viewModel.state.value.cats.map { it.id }).containsExactly("1")
+    }
+
+    @Test
+    fun `a cancelled removal is not reported as a failure`() = runTest {
+        repository.setFavorites(cat("1"))
+        val viewModel = viewModel()
+        repository.favoriteError = CancellationException("screen left")
+
+        viewModel.onEvent(FavoriteCatsEvent.RemoveFavorite(cat("1")))
+
+        assertThat(notifier.shown).isEmpty()
+    }
+
+    @Test
     fun `Download hands the cat to the downloader and says so`() = runTest {
         val cat = cat("1", isFavorite = true)
         repository.setFavorites(cat)

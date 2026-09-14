@@ -22,6 +22,9 @@ class FakeCatRepository : CatRepository {
     /** When set, every [fetchNextBatch] fails with it instead of returning cats. */
     var fetchError: Throwable? = null
 
+    /** When set, [toggleFavorite] and [removeFavorite] fail with it instead of writing. */
+    var favoriteError: Throwable? = null
+
     var fetchCount: Int = 0
         private set
 
@@ -48,10 +51,12 @@ class FakeCatRepository : CatRepository {
     }
 
     override suspend fun toggleFavorite(cat: Cat) {
+        favoriteError?.let { throw it }
         if (favorited.value.any { it.id == cat.id }) removeFavorite(cat) else addFavorite(cat)
     }
 
     override suspend fun removeFavorite(cat: Cat) {
+        favoriteError?.let { throw it }
         favorited.value = favorited.value.filterNot { it.id == cat.id }
     }
 
