@@ -98,6 +98,22 @@ class CatRepositoryImplTest {
     }
 
     @Test
+    fun `toggling the same cat repeatedly ends where it started`() = runTest {
+        // Each tap used to be a separate read-then-write, so a toggle could insert a row that
+        // was already there — an ABORT on the primary key. It is one transactional call now.
+        repeat(times = 6) { repository.toggleFavorite(cat("1")) }
+
+        assertThat(repository.favorites.first()).isEmpty()
+    }
+
+    @Test
+    fun `an odd number of toggles leaves the cat favorited`() = runTest {
+        repeat(times = 5) { repository.toggleFavorite(cat("1")) }
+
+        assertThat(repository.favorites.first().map { it.id }).containsExactly("1")
+    }
+
+    @Test
     fun `favorites come back marked as favorites`() = runTest {
         repository.toggleFavorite(cat("1"))
 
