@@ -44,7 +44,7 @@ that fail without the fix. They are here because finding them was the work.
 | [0017](#adr-0017) | Version-scoped destructive fallback | Accepted |
 | [0018](#adr-0018) | Two-tier verification | Accepted |
 | [0019](#adr-0019) | Make the feed resubscribable instead | Accepted |
-| [0020](#adr-0020) | One serialization library | **Proposed** |
+| [0020](#adr-0020) | One serialization library | Accepted |
 
 ---
 
@@ -661,20 +661,44 @@ ever became subscription-scoped, that test is what would fail.
 
 ### One serialization library
 
-**Proposed** · 2026-09-14
+**Accepted** · 2026-09-14
 
-**Context.** The app ships two: Gson for Retrofit (`CatDto`, `NetworkModule`)
+**Context.** The app shipped two: Gson for Retrofit (`CatDto`, `NetworkModule`)
 and kotlinx.serialization for the Navigation 3 keys. Nobody chose that — Gson
 came from 2022, kotlinx.serialization arrived with ADR-0009, and they were never
 reconciled.
 
-**Proposal.** Drop Gson for `retrofit2-kotlinx-serialization-converter`.
+**Decision.** Gson is gone. Retrofit uses
+`retrofit2-kotlinx-serialization-converter`, and `CatDto` is `@Serializable`
+with `@SerialName` in place of `@SerializedName`.
 
 **Reasoning.** Gson resolves models reflectively, which makes the shrinker
 configuration more dependent on keep rules than generated serializers are — and
-R8 is on the list for the next release. kotlinx.serialization generates its
-serializers at compile time, reducing that reflective surface. Two libraries
-doing one job is also two ways to spell the same thing.
+R8 is next on the list. kotlinx.serialization generates its serializers at
+compile time, reducing that reflective surface. Two libraries doing one job is
+also two ways to spell the same thing.
 
-**Status.** Not yet done. Recorded here so it is a decision rather than an
-accident.
+**The behavioural difference that matters.** Gson silently ignores a JSON key
+the model does not declare; kotlinx.serialization rejects it. Swapping one for
+the other therefore changes how the app reacts to an upstream field being added:
+from ignoring it to failing every response. `Json { ignoreUnknownKeys = true }`
+restores the tolerant behaviour deliberately rather than by default.
+
+Worth being precise, because the first version of that comment was wrong: the
+search endpoint currently returns exactly the four fields `CatDto` declares, so
+nothing was broken without the setting. It is forward-compatibility for a wire
+model this project does not own, not a fix for a present failure.
+
+**Consequences.** One serialization library, no reflective model lookup in the
+release build, and `kotlinx-serialization-core` was replaced by `-json`, which
+includes it — so the Navigation 3 keys are unaffected. Gson is off the runtime
+classpath entirely, confirmed against the resolved dependency graph rather than
+assumed.
+
+The unit tests could not have caught a failure here — they use fakes, and the
+converter only runs against real JSON. Verified by installing on a device and
+confirming the feed loads.
+
+**Review when:** the wire models grow enough that polymorphic or custom
+serialization is needed, or a dependency forces a different JSON library back
+into the graph.
