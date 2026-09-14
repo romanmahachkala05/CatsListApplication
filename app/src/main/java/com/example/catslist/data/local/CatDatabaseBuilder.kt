@@ -25,4 +25,4 @@ fun catDatabaseBuilder(
         // This restores the old outcome and, unlike the old blanket call, says so for
         // exactly one version: any other missing migration still fails loudly in review.
         // `dropAllTables` clears v1's `favoriteCats` too, which is not an entity any more.
-        .fallbackToDestructiveMigrationFrom(true, 1)
+        .fallbackToDestructiveMigrationFrom(dropAllTables = true, 1)
