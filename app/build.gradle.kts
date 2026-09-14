@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.androidx.room)
     alias(libs.plugins.ktlint)
+    alias(libs.plugins.detekt)
 }
 
 android {
@@ -51,6 +52,30 @@ android {
 java {
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(17))
+    }
+}
+
+detekt {
+    // Only the deviations are in the file; everything else keeps detekt's defaults.
+    buildUponDefaultConfig = true
+    config.setFrom(rootProject.file("config/detekt/detekt.yml"))
+    // androidTest is not in the default source set, and the instrumented tests are the ones
+    // guarding the data-loss paths. Note detekt's own defaults exclude test directories from
+    // most naming and style rules — test code has different norms — so what this actually
+    // brings to bear there are the correctness rules, which is the point.
+    source.setFrom(
+        "src/main/java",
+        "src/test/java",
+        "src/androidTest/java",
+    )
+}
+
+tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
+    jvmTarget = "17"
+    reports {
+        html.required.set(true)
+        sarif.required.set(false)
+        md.required.set(false)
     }
 }
 
