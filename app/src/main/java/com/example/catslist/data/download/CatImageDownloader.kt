@@ -9,9 +9,9 @@ import com.example.catslist.data.di.CatsListDispatcher
 import com.example.catslist.data.di.Dispatcher
 import com.example.catslist.domain.ImageDownloader
 import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
-import javax.inject.Inject
 
 /** Kicks off a system download of a cat image. The one place that talks to [DownloadManager]. */
 class CatImageDownloader @Inject constructor(

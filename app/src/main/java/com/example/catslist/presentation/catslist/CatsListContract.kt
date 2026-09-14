@@ -1,8 +1,8 @@
 package com.example.catslist.presentation.catslist
 
 import androidx.compose.runtime.Immutable
-import com.example.catslist.presentation.UiText
 import com.example.catslist.domain.model.Cat
+import com.example.catslist.presentation.UiText
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 
@@ -14,7 +14,9 @@ sealed interface CatsListUiStatus {
     data object Loading : CatsListUiStatus
 
     /** No `retryable` flag: [CatsListEvent.Retry] recovers from every failure the screen has. */
-    data class Error(val message: UiText) : CatsListUiStatus
+    data class Error(
+        val message: UiText,
+    ) : CatsListUiStatus
 }
 
 @Immutable
@@ -30,6 +32,10 @@ sealed interface CatsListEvent {
     /** The user asking to recover from an error: resubscribes to the feed and loads a page. */
     data object Retry : CatsListEvent
 
-    data class ToggleFavorite(val cat: Cat) : CatsListEvent
-    data class Download(val cat: Cat) : CatsListEvent
+    data class ToggleFavorite(
+        val cat: Cat,
+    ) : CatsListEvent
+    data class Download(
+        val cat: Cat,
+    ) : CatsListEvent
 }

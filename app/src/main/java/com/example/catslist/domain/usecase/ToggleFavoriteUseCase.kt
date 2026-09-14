@@ -5,7 +5,7 @@ import com.example.catslist.domain.repository.CatRepository
 import javax.inject.Inject
 
 class ToggleFavoriteUseCase @Inject constructor(
-    private val repository: CatRepository
+    private val repository: CatRepository,
 ) {
     suspend operator fun invoke(cat: Cat) = repository.toggleFavorite(cat)
 }

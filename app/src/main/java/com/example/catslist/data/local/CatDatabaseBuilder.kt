@@ -11,10 +11,7 @@ const val CAT_DATABASE_NAME = "cats_database"
  * One place where the database is configured, so a test exercises the same upgrade
  * behaviour the app ships with rather than a copy that can drift from it.
  */
-fun catDatabaseBuilder(
-    context: Context,
-    name: String = CAT_DATABASE_NAME,
-): RoomDatabase.Builder<CatDatabase> =
+fun catDatabaseBuilder(context: Context, name: String = CAT_DATABASE_NAME): RoomDatabase.Builder<CatDatabase> =
     Room.databaseBuilder(context, CatDatabase::class.java, name)
         .addMigrations(MIGRATION_2_3)
         // v1 stored a different table (`favoriteCats`, with a `favourite` column) and was

@@ -16,12 +16,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.catslist.R
+import com.example.catslist.domain.model.Cat
 import com.example.catslist.presentation.UiText
 import com.example.catslist.presentation.components.CatItem
 import com.example.catslist.presentation.components.ErrorMessage
 import com.example.catslist.presentation.components.LoadingIndicator
 import com.example.catslist.presentation.theme.CatsListTheme
-import com.example.catslist.domain.model.Cat
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 
@@ -57,7 +57,11 @@ fun CatsListContent(
 }
 
 @Composable
-private fun CatsFeed(cats: ImmutableList<Cat>, onEvent: (CatsListEvent) -> Unit, contentPadding: PaddingValues) {
+private fun CatsFeed(
+    cats: ImmutableList<Cat>,
+    onEvent: (CatsListEvent) -> Unit,
+    contentPadding: PaddingValues,
+) {
     val listState = rememberLazyListState()
 
     val shouldLoadMore by remember(cats) {

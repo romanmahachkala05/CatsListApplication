@@ -1,15 +1,15 @@
 package com.example.catslist.presentation.favoritecats
 
+import com.example.catslist.domain.model.Cat
 import com.example.catslist.presentation.StateOwner
 import com.example.catslist.presentation.UiText
-import com.example.catslist.domain.model.Cat
 import dagger.hilt.android.scopes.ViewModelScoped
+import javax.inject.Inject
 import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import javax.inject.Inject
 
 interface IFavoriteCatsStateHolder : StateOwner<FavoriteCatsState> {
     fun showFavorites(cats: List<Cat>)

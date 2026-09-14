@@ -18,8 +18,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.example.catslist.R
-import com.example.catslist.presentation.theme.CatsListTheme
 import com.example.catslist.domain.model.Cat
+import com.example.catslist.presentation.theme.CatsListTheme
 
 /** One cat card: image + download button + favorite toggle. Shared by both screens. */
 @Composable
@@ -58,7 +58,7 @@ fun CatItem(
         ) {
             Icon(
                 painter = painterResource(
-                    if (cat.isFavorite) R.drawable.ic_star_filled else R.drawable.ic_star_empty
+                    if (cat.isFavorite) R.drawable.ic_star_filled else R.drawable.ic_star_empty,
                 ),
                 contentDescription = stringResource(R.string.common_cd_favorite_cat),
                 tint = if (cat.isFavorite) MaterialTheme.colorScheme.primary else Color.White,

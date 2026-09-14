@@ -5,7 +5,7 @@ import com.example.catslist.domain.repository.CatRepository
 import javax.inject.Inject
 
 class RemoveFavoriteUseCase @Inject constructor(
-    private val repository: CatRepository
+    private val repository: CatRepository,
 ) {
     suspend operator fun invoke(cat: Cat) = repository.removeFavorite(cat)
 }

@@ -12,9 +12,17 @@ import androidx.compose.ui.res.stringResource
  * put one of these in state; only a Composable resolves it to an actual String.
  */
 sealed interface UiText {
-    data class Raw(val value: String) : UiText
-    data class Resource(@StringRes val id: Int, val args: List<Any> = emptyList()) : UiText
-    data class Plural(@PluralsRes val id: Int, val count: Int) : UiText
+    data class Raw(
+        val value: String,
+    ) : UiText
+    data class Resource(
+        @StringRes val id: Int,
+        val args: List<Any> = emptyList(),
+    ) : UiText
+    data class Plural(
+        @PluralsRes val id: Int,
+        val count: Int,
+    ) : UiText
 }
 
 @Composable

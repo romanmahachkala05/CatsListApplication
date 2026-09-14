@@ -3,14 +3,15 @@ package com.example.catslist.presentation.favoritecats
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.catslist.R
+import com.example.catslist.domain.usecase.DownloadCatImageUseCase
+import com.example.catslist.domain.usecase.GetFavoriteCatsUseCase
+import com.example.catslist.domain.usecase.RemoveFavoriteUseCase
 import com.example.catslist.presentation.SnackbarNotifier
 import com.example.catslist.presentation.StateOwner
 import com.example.catslist.presentation.UiText
 import com.example.catslist.presentation.launchCatching
-import com.example.catslist.domain.usecase.DownloadCatImageUseCase
-import com.example.catslist.domain.usecase.GetFavoriteCatsUseCase
-import com.example.catslist.domain.usecase.RemoveFavoriteUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.catch
@@ -18,7 +19,6 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
-import javax.inject.Inject
 
 @HiltViewModel
 class FavoriteCatsViewModel @Inject constructor(
@@ -28,7 +28,8 @@ class FavoriteCatsViewModel @Inject constructor(
     private val removeFavorite: RemoveFavoriteUseCase,
     private val downloadCatImage: DownloadCatImageUseCase,
     private val notifier: SnackbarNotifier,
-) : ViewModel(), StateOwner<FavoriteCatsState> by stateHolder {
+) : ViewModel(),
+    StateOwner<FavoriteCatsState> by stateHolder {
 
     /** Bumped to resubscribe to the favorites stream. Its value carries no meaning. */
     private val subscriptions = MutableStateFlow(0)

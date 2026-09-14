@@ -17,8 +17,7 @@ object DatabaseModule {
 
     @Provides
     @Singleton
-    fun provideCatDatabase(@ApplicationContext context: Context): CatDatabase =
-        catDatabaseBuilder(context).build()
+    fun provideCatDatabase(@ApplicationContext context: Context): CatDatabase = catDatabaseBuilder(context).build()
 
     @Provides
     fun provideCatDao(database: CatDatabase): CatDao = database.catDao()
