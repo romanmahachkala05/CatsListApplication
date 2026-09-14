@@ -1,0 +1,6 @@
+# Bulk reformatting commits, hidden from `git blame` so they do not mask real authorship.
+# GitHub honours this file automatically; locally, enable it once with:
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+
+# [TECH] Add ktlint and format the codebase — import ordering and trailing commas only.
+48d8c765f4b553440f2efc72401dc8a535407bde
