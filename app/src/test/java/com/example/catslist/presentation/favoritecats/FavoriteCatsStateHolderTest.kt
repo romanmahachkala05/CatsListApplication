@@ -1,5 +1,6 @@
 package com.example.catslist.presentation.favoritecats
 
+import com.example.catslist.presentation.UiText
 import com.example.catslist.testing.cat
 import com.google.common.truth.Truth.assertThat
 import org.junit.Test
@@ -42,11 +43,26 @@ class FavoriteCatsStateHolderTest {
     }
 
     @Test
+    fun `showing an error keeps the favorites already on screen`() {
+        stateHolder.showFavorites(listOf(cat("1", isFavorite = true)))
+
+        stateHolder.showError(MESSAGE)
+
+        val state = stateHolder.state.value
+        assertThat(state.status).isEqualTo(FavoriteCatsUiStatus.Error(MESSAGE))
+        assertThat(state.cats.map { it.id }).containsExactly("1")
+    }
+
+    @Test
     fun `reset returns to the initial state`() {
         stateHolder.showFavorites(listOf(cat("1", isFavorite = true)))
 
         stateHolder.reset()
 
         assertThat(stateHolder.state.value).isEqualTo(FavoriteCatsState())
+    }
+
+    private companion object {
+        val MESSAGE = UiText.Raw("Something went wrong")
     }
 }

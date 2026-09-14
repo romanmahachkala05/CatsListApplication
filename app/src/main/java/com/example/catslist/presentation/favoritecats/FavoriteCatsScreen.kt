@@ -15,6 +15,7 @@ import com.example.catslist.R
 import com.example.catslist.presentation.UiText
 import com.example.catslist.presentation.components.CatItem
 import com.example.catslist.presentation.components.EmptyMessage
+import com.example.catslist.presentation.components.ErrorMessage
 import com.example.catslist.presentation.components.LoadingIndicator
 import com.example.catslist.presentation.theme.CatsListTheme
 import com.example.catslist.domain.model.Cat
@@ -40,9 +41,7 @@ fun FavoriteCatsContent(
     contentPadding: PaddingValues = PaddingValues(),
 ) {
     Surface(modifier = modifier.fillMaxSize()) {
-        when (state.status) {
-            FavoriteCatsUiStatus.Loading -> LoadingIndicator()
-            FavoriteCatsUiStatus.Empty -> EmptyMessage(UiText.Resource(R.string.favoritecats_empty_message))
+        when (val status = state.status) {
             FavoriteCatsUiStatus.Content -> LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = contentPadding) {
                 items(items = state.cats, key = { it.id }) { cat ->
                     CatItem(
@@ -52,6 +51,9 @@ fun FavoriteCatsContent(
                     )
                 }
             }
+            FavoriteCatsUiStatus.Empty -> EmptyMessage(UiText.Resource(R.string.favoritecats_empty_message))
+            FavoriteCatsUiStatus.Loading -> LoadingIndicator()
+            is FavoriteCatsUiStatus.Error -> ErrorMessage(message = status.message, onRetry = null)
         }
     }
 }

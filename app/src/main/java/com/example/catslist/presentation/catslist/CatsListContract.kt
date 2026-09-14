@@ -8,8 +8,10 @@ import kotlinx.collections.immutable.persistentListOf
 
 @Immutable
 sealed interface CatsListUiStatus {
-    data object Loading : CatsListUiStatus
+    // Declared most-likely first, and every `when` over this mirrors the order — so the
+    // branch order is checkable against this list instead of being an unverifiable claim.
     data object Content : CatsListUiStatus
+    data object Loading : CatsListUiStatus
     data class Error(val message: UiText, val retryable: Boolean) : CatsListUiStatus
 }
 

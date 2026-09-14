@@ -11,4 +11,7 @@ abstract class FavoriteCatsBindsModule {
 
     @Binds
     abstract fun bindStateHolder(impl: FavoriteCatsStateHolder): IFavoriteCatsStateHolder
+
+    @Binds
+    abstract fun bindErrorHandler(impl: FavoriteCatsErrorHandler): IFavoriteCatsErrorHandler
 }

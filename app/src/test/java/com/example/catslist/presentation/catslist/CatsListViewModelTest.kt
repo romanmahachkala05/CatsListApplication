@@ -57,6 +57,27 @@ class CatsListViewModelTest {
     }
 
     @Test
+    fun `a feed that ends in an error is shown, not thrown`() = runTest {
+        // An exception escaping viewModelScope reaches the default handler and kills the process.
+        repository.feedError = IOException("database is corrupt")
+
+        val viewModel = viewModel()
+
+        assertThat(viewModel.state.value.status).isEqualTo(
+            CatsListUiStatus.Error(UiText.Resource(R.string.catslist_error_feed_stopped), retryable = false),
+        )
+    }
+
+    @Test
+    fun `a dead feed offers no retry, since the stream will not emit again`() = runTest {
+        repository.feedError = IOException("database is corrupt")
+
+        val viewModel = viewModel()
+
+        assertThat((viewModel.state.value.status as CatsListUiStatus.Error).retryable).isFalse()
+    }
+
+    @Test
     fun `LoadMore appends the next page`() = runTest {
         repository.enqueueBatch(cat("1"))
         repository.enqueueBatch(cat("2"))
@@ -101,6 +122,39 @@ class CatsListViewModelTest {
         viewModel.onEvent(CatsListEvent.ToggleFavorite(cat("1")))
 
         assertThat(viewModel.state.value.cats.single().isFavorite).isFalse()
+    }
+
+    @Test
+    fun `a failed favorite toggle is reported instead of crashing the screen`() = runTest {
+        repository.enqueueBatch(cat("1"))
+        val viewModel = viewModel()
+        repository.favoriteError = IOException("database is locked")
+
+        viewModel.onEvent(CatsListEvent.ToggleFavorite(cat("1")))
+
+        assertThat(notifier.shown).containsExactly(UiText.Resource(R.string.common_favorite_failed_message))
+        assertThat(viewModel.state.value.status).isEqualTo(CatsListUiStatus.Content)
+    }
+
+    @Test
+    fun `a cancelled favorite toggle is not reported as a failure`() = runTest {
+        repository.favoriteError = CancellationException("screen left")
+        val viewModel = viewModel()
+
+        viewModel.onEvent(CatsListEvent.ToggleFavorite(cat("1")))
+
+        assertThat(notifier.shown).isEmpty()
+    }
+
+    @Test
+    fun `a cancelled load is not shown as an error`() = runTest {
+        // Leaving the screen mid-fetch cancels the load; that is not something to
+        // put a "couldn't load" message on screen for.
+        repository.fetchError = CancellationException("screen left")
+
+        val viewModel = viewModel()
+
+        assertThat(viewModel.state.value.status).isEqualTo(CatsListUiStatus.Loading)
     }
 
     @Test
