@@ -7,13 +7,13 @@ import com.example.catslist.data.remote.CatApiService
 import com.example.catslist.data.remote.toDomain
 import com.example.catslist.domain.model.Cat
 import com.example.catslist.domain.repository.CatRepository
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
 class CatRepositoryImpl @Inject constructor(

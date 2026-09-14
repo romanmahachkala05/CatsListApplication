@@ -3,10 +3,10 @@ package com.example.catslist.domain.usecase
 import com.example.catslist.testing.FakeCatRepository
 import com.example.catslist.testing.cat
 import com.google.common.truth.Truth.assertThat
+import java.io.IOException
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
-import java.io.IOException
 
 class FetchNextCatsUseCaseTest {
 

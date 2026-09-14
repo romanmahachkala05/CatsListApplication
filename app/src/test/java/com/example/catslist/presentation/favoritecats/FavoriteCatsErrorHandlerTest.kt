@@ -3,8 +3,8 @@ package com.example.catslist.presentation.favoritecats
 import com.example.catslist.R
 import com.example.catslist.presentation.UiText
 import com.google.common.truth.Truth.assertThat
-import org.junit.Test
 import java.io.IOException
+import org.junit.Test
 
 class FavoriteCatsErrorHandlerTest {
 

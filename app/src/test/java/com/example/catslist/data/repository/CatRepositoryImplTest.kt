@@ -7,13 +7,13 @@ import com.example.catslist.testing.FakeCatDao
 import com.example.catslist.testing.cat
 import com.example.catslist.testing.catDto
 import com.google.common.truth.Truth.assertThat
+import java.io.IOException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
-import java.io.IOException
 
 class CatRepositoryImplTest {
 
@@ -164,7 +164,9 @@ class CatRepositoryImplTest {
     }
 
     /** Holds every caller inside the request until released, so two loads genuinely overlap. */
-    private class GatedApi(private val gate: CompletableDeferred<Unit>) : CatApiService {
+    private class GatedApi(
+        private val gate: CompletableDeferred<Unit>,
+    ) : CatApiService {
         override suspend fun requestCatInfo(limit: Int): List<CatDto> {
             gate.await()
             return listOf(catDto("1"), catDto("2"))

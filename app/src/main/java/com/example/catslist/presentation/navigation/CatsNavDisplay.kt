@@ -35,11 +35,11 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.example.catslist.R
+import com.example.catslist.presentation.SnackbarNotifier
 import com.example.catslist.presentation.catslist.CatsListNavKey
 import com.example.catslist.presentation.catslist.CatsListScreen
 import com.example.catslist.presentation.favoritecats.FavoriteCatsNavKey
 import com.example.catslist.presentation.favoritecats.FavoriteCatsScreen
-import com.example.catslist.presentation.SnackbarNotifier
 import com.example.catslist.presentation.resolve
 
 /**
@@ -98,7 +98,11 @@ fun CatsNavDisplay(notifier: SnackbarNotifier, modifier: Modifier = Modifier) {
  * [NavigationBarItem] otherwise weights itself across the full available width.
  */
 @Composable
-private fun FloatingBottomBar(selected: NavKey?, onSelect: (NavKey) -> Unit, modifier: Modifier = Modifier) {
+private fun FloatingBottomBar(
+    selected: NavKey?,
+    onSelect: (NavKey) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     NavigationBar(
         // The bottomBar slot lays out from the start edge, so centre the pill within it.
         modifier = modifier
@@ -114,7 +118,9 @@ private fun FloatingBottomBar(selected: NavKey?, onSelect: (NavKey) -> Unit, mod
             selected = selected == CatsListNavKey,
             onClick = { onSelect(CatsListNavKey) },
             // The label names the destination; a description here would announce it twice.
-            icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = null, modifier = Modifier.size(ICON_SIZE)) },
+            icon = {
+                Icon(Icons.AutoMirrored.Filled.List, contentDescription = null, modifier = Modifier.size(ICON_SIZE))
+            },
             label = { Text(stringResource(R.string.catslist_nav_label), fontWeight = FontWeight.Normal) },
             colors = navigationBarItemColors(),
         )

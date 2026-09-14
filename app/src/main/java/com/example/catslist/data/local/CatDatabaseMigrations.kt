@@ -20,13 +20,13 @@ val MIGRATION_2_3 = object : Migration(2, 3) {
                 width INTEGER NOT NULL,
                 height INTEGER NOT NULL
             )
-            """.trimIndent()
+            """.trimIndent(),
         )
         db.execSQL(
             """
             INSERT INTO favoriteCatsTable_new (id, url, width, height)
             SELECT id, url, width, height FROM favoriteCatsTable
-            """.trimIndent()
+            """.trimIndent(),
         )
         db.execSQL("DROP TABLE favoriteCatsTable")
         db.execSQL("ALTER TABLE favoriteCatsTable_new RENAME TO favoriteCatsTable")

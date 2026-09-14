@@ -15,7 +15,9 @@ sealed interface FavoriteCatsUiStatus {
     data object Loading : FavoriteCatsUiStatus
 
     /** No `retryable` flag: [FavoriteCatsEvent.Retry] recovers from the one failure there is. */
-    data class Error(val message: UiText) : FavoriteCatsUiStatus
+    data class Error(
+        val message: UiText,
+    ) : FavoriteCatsUiStatus
 }
 
 @Immutable
@@ -28,6 +30,10 @@ sealed interface FavoriteCatsEvent {
     /** The user asking to recover from an error: resubscribes to the favorites stream. */
     data object Retry : FavoriteCatsEvent
 
-    data class RemoveFavorite(val cat: Cat) : FavoriteCatsEvent
-    data class Download(val cat: Cat) : FavoriteCatsEvent
+    data class RemoveFavorite(
+        val cat: Cat,
+    ) : FavoriteCatsEvent
+    data class Download(
+        val cat: Cat,
+    ) : FavoriteCatsEvent
 }

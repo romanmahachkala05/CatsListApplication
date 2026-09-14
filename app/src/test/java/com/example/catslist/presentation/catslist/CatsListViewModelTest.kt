@@ -12,11 +12,11 @@ import com.example.catslist.testing.FakeSnackbarNotifier
 import com.example.catslist.testing.MainDispatcherRule
 import com.example.catslist.testing.cat
 import com.google.common.truth.Truth.assertThat
+import java.io.IOException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
-import java.io.IOException
 
 class CatsListViewModelTest {
 

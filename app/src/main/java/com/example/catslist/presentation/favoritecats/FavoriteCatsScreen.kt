@@ -12,13 +12,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.catslist.R
+import com.example.catslist.domain.model.Cat
 import com.example.catslist.presentation.UiText
 import com.example.catslist.presentation.components.CatItem
 import com.example.catslist.presentation.components.EmptyMessage
 import com.example.catslist.presentation.components.ErrorMessage
 import com.example.catslist.presentation.components.LoadingIndicator
 import com.example.catslist.presentation.theme.CatsListTheme
-import com.example.catslist.domain.model.Cat
 import kotlinx.collections.immutable.persistentListOf
 
 /** The download/favorite Snackbar for [viewModel] is collected by the app's shared
@@ -30,7 +30,12 @@ fun FavoriteCatsScreen(
     viewModel: FavoriteCatsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    FavoriteCatsContent(state = state, onEvent = viewModel::onEvent, contentPadding = contentPadding, modifier = modifier)
+    FavoriteCatsContent(
+        state = state,
+        onEvent = viewModel::onEvent,
+        contentPadding = contentPadding,
+        modifier = modifier,
+    )
 }
 
 @Composable
@@ -42,7 +47,10 @@ fun FavoriteCatsContent(
 ) {
     Surface(modifier = modifier.fillMaxSize()) {
         when (val status = state.status) {
-            FavoriteCatsUiStatus.Content -> LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = contentPadding) {
+            FavoriteCatsUiStatus.Content -> LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = contentPadding,
+            ) {
                 items(items = state.cats, key = { it.id }) { cat ->
                     CatItem(
                         cat = cat,
@@ -53,7 +61,9 @@ fun FavoriteCatsContent(
             }
             FavoriteCatsUiStatus.Empty -> EmptyMessage(UiText.Resource(R.string.favoritecats_empty_message))
             FavoriteCatsUiStatus.Loading -> LoadingIndicator()
-            is FavoriteCatsUiStatus.Error -> ErrorMessage(message = status.message, onRetry = { onEvent(FavoriteCatsEvent.Retry) })
+            is FavoriteCatsUiStatus.Error -> ErrorMessage(message = status.message, onRetry = {
+                onEvent(FavoriteCatsEvent.Retry)
+            })
         }
     }
 }

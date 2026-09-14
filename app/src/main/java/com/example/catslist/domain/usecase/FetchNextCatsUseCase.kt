@@ -4,7 +4,7 @@ import com.example.catslist.domain.repository.CatRepository
 import javax.inject.Inject
 
 class FetchNextCatsUseCase @Inject constructor(
-    private val repository: CatRepository
+    private val repository: CatRepository,
 ) {
     suspend operator fun invoke() = repository.fetchNextBatch()
 }

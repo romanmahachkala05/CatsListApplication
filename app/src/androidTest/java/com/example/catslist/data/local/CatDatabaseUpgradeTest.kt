@@ -67,7 +67,7 @@ class CatDatabaseUpgradeTest {
                     height INTEGER NOT NULL,
                     favourite INTEGER NOT NULL
                 )
-                """.trimIndent()
+                """.trimIndent(),
             )
             db.execSQL("INSERT INTO favoriteCats VALUES ('1', 'https://cdn.example/1.jpg', 300, 200, 1)")
             db.version = 1
@@ -85,7 +85,7 @@ class CatDatabaseUpgradeTest {
                     height INTEGER NOT NULL,
                     favorite INTEGER NOT NULL
                 )
-                """.trimIndent()
+                """.trimIndent(),
             )
             db.execSQL("INSERT INTO favoriteCatsTable VALUES ('1', 'https://cdn.example/1.jpg', 300, 200, 1)")
             db.version = 2
