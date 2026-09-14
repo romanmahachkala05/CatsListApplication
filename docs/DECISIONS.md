@@ -615,13 +615,14 @@ CI is the enforcement point; the local command is deliberately identical to the
 one CI runs, so a failed gate can be reproduced locally without translating a
 YAML step back into Gradle tasks.
 
-The honest limit: until CI runs `verify` as a required status check, a local
-task is a convenience and not a gate — "run this before a PR" depends on memory.
-That is the next piece of work. These tasks exist so that when it lands, CI and
-humans run the same thing rather than two lists that drift apart.
+`verify` is a required status check on `dev`, so the gate is enforced rather
+than remembered. `verifyOnDevice` is not: the instrumented tests still depend on
+someone attaching a device, which is the remaining hole and the reason the tests
+that guard the data-loss paths are the least-run tests in the project.
 
-**Review when:** CI runs `verify` as a required status check, at which point this
-entry should be updated to say so rather than describing the gap.
+**Review when:** the instrumented tests run in CI — via a Gradle Managed Device
+or an emulator action — at which point the two tiers may collapse into one and
+this decision stops being needed.
 
 ---
 
