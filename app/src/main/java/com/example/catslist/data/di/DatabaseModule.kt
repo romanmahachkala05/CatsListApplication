@@ -1,10 +1,9 @@
 package com.example.catslist.data.di
 
 import android.content.Context
-import androidx.room.Room
 import com.example.catslist.data.local.CatDao
 import com.example.catslist.data.local.CatDatabase
-import com.example.catslist.data.local.MIGRATION_2_3
+import com.example.catslist.data.local.catDatabaseBuilder
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -19,9 +18,7 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideCatDatabase(@ApplicationContext context: Context): CatDatabase =
-        Room.databaseBuilder(context, CatDatabase::class.java, "cats_database")
-            .addMigrations(MIGRATION_2_3)
-            .build()
+        catDatabaseBuilder(context).build()
 
     @Provides
     fun provideCatDao(database: CatDatabase): CatDao = database.catDao()
