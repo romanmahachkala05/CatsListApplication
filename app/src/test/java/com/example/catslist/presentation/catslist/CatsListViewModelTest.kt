@@ -46,13 +46,13 @@ class CatsListViewModelTest {
     }
 
     @Test
-    fun `a failed first load becomes a retryable error`() = runTest {
+    fun `a failed first load becomes an error`() = runTest {
         repository.fetchError = IOException("offline")
 
         val viewModel = viewModel()
 
         assertThat(viewModel.state.value.status).isEqualTo(
-            CatsListUiStatus.Error(UiText.Resource(R.string.catslist_error_loading_cats), retryable = true),
+            CatsListUiStatus.Error(UiText.Resource(R.string.catslist_error_loading_cats)),
         )
     }
 
@@ -64,17 +64,45 @@ class CatsListViewModelTest {
         val viewModel = viewModel()
 
         assertThat(viewModel.state.value.status).isEqualTo(
-            CatsListUiStatus.Error(UiText.Resource(R.string.catslist_error_feed_stopped), retryable = false),
+            CatsListUiStatus.Error(UiText.Resource(R.string.catslist_error_feed_stopped)),
         )
     }
 
     @Test
-    fun `a dead feed offers no retry, since the stream will not emit again`() = runTest {
+    fun `Retry resubscribes to a feed that had ended in an error`() = runTest {
         repository.feedError = IOException("database is corrupt")
+        val viewModel = viewModel()
+        repository.feedError = null
+        repository.enqueueBatch(cat("1"))
 
+        viewModel.onEvent(CatsListEvent.Retry)
+
+        assertThat(viewModel.state.value.status).isEqualTo(CatsListUiStatus.Content)
+        assertThat(viewModel.state.value.cats.map { it.id }).containsExactly("1")
+    }
+
+    @Test
+    fun `Retry recovers from a failed page load too`() = runTest {
+        repository.fetchError = IOException("offline")
+        val viewModel = viewModel()
+        repository.fetchError = null
+        repository.enqueueBatch(cat("1"))
+
+        viewModel.onEvent(CatsListEvent.Retry)
+
+        assertThat(viewModel.state.value.status).isEqualTo(CatsListUiStatus.Content)
+        assertThat(viewModel.state.value.cats.map { it.id }).containsExactly("1")
+    }
+
+    @Test
+    fun `Retry on a healthy feed keeps the cats already fetched`() = runTest {
+        repository.enqueueBatch(cat("1"))
+        repository.enqueueBatch(cat("2"))
         val viewModel = viewModel()
 
-        assertThat((viewModel.state.value.status as CatsListUiStatus.Error).retryable).isFalse()
+        viewModel.onEvent(CatsListEvent.Retry)
+
+        assertThat(viewModel.state.value.cats.map { it.id }).containsExactly("1", "2").inOrder()
     }
 
     @Test

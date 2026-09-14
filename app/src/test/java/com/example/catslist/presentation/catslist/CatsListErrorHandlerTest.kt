@@ -12,26 +12,20 @@ class CatsListErrorHandlerTest {
     private val errorHandler = CatsListErrorHandler(stateHolder)
 
     @Test
-    fun `a load failure becomes a retryable error on screen`() {
+    fun `a load failure becomes an error on screen`() {
         errorHandler.onLoadFailure(IOException("offline"))
 
         assertThat(stateHolder.state.value.status).isEqualTo(
-            CatsListUiStatus.Error(
-                message = UiText.Resource(R.string.catslist_error_loading_cats),
-                retryable = true,
-            ),
+            CatsListUiStatus.Error(UiText.Resource(R.string.catslist_error_loading_cats)),
         )
     }
 
     @Test
-    fun `a dead feed is a non-retryable error, with its own message`() {
+    fun `a dead feed gets its own message`() {
         errorHandler.onFeedFailure(IOException("database is corrupt"))
 
         assertThat(stateHolder.state.value.status).isEqualTo(
-            CatsListUiStatus.Error(
-                message = UiText.Resource(R.string.catslist_error_feed_stopped),
-                retryable = false,
-            ),
+            CatsListUiStatus.Error(UiText.Resource(R.string.catslist_error_feed_stopped)),
         )
     }
 

@@ -54,6 +54,18 @@ class FavoriteCatsStateHolderTest {
     }
 
     @Test
+    fun `going back to loading keeps the favorites already on screen`() {
+        stateHolder.showFavorites(listOf(cat("1", isFavorite = true)))
+        stateHolder.showError(MESSAGE)
+
+        stateHolder.showLoading()
+
+        val state = stateHolder.state.value
+        assertThat(state.status).isEqualTo(FavoriteCatsUiStatus.Loading)
+        assertThat(state.cats.map { it.id }).containsExactly("1")
+    }
+
+    @Test
     fun `reset returns to the initial state`() {
         stateHolder.showFavorites(listOf(cat("1", isFavorite = true)))
 

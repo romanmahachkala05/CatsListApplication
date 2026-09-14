@@ -12,9 +12,13 @@ import com.example.catslist.domain.usecase.FetchNextCatsUseCase
 import com.example.catslist.domain.usecase.GetCatFeedUseCase
 import com.example.catslist.domain.usecase.ToggleFavoriteUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.update
 import javax.inject.Inject
 
 @HiltViewModel
@@ -28,13 +32,20 @@ class CatsListViewModel @Inject constructor(
     private val notifier: SnackbarNotifier,
 ) : ViewModel(), StateOwner<CatsListState> by stateHolder {
 
+    /** Bumped to resubscribe to the feed. Its value carries no meaning beyond "different". */
+    private val feedSubscriptions = MutableStateFlow(0)
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val feed = feedSubscriptions.flatMapLatest {
+        // `catch` sits on the inner flow on purpose. Downstream of flatMapLatest it would
+        // terminate the whole chain including the trigger, and the retry would be a dead
+        // button — the bug this replaces. Here only the failed subscription ends.
+        getCatFeed().catch { errorHandler.onFeedFailure(it) }
+    }
+
     init {
-        getCatFeed()
+        feed
             .onEach(stateHolder::showContent)
-            // Without this a throwing Room query would escape viewModelScope and kill the
-            // process. `catch` rethrows the coroutine's own cancellation, so unlike
-            // `runCatching` it needs no manual guard for that.
-            .catch { errorHandler.onFeedFailure(it) }
             .launchIn(viewModelScope)
         loadMore()
     }
@@ -44,6 +55,8 @@ class CatsListViewModel @Inject constructor(
     fun onEvent(event: CatsListEvent) {
         when (event) {
             CatsListEvent.LoadMore -> loadMore()
+
+            CatsListEvent.Retry -> retry()
 
             // A failed toggle leaves the feed itself intact, so it's a Snackbar rather
             // than an error status — same treatment as the download below.
@@ -60,6 +73,17 @@ class CatsListViewModel @Inject constructor(
                 notifier.showMessage(DOWNLOAD_STARTED)
             }
         }
+    }
+
+    /**
+     * Recovers from either failure with one action, so the screen needs no record of which
+     * one it hit. Resubscribing to a feed that was healthy all along is cheap and loses
+     * nothing — the cats live in the repository, not in the subscription.
+     */
+    private fun retry() {
+        stateHolder.showLoading()
+        feedSubscriptions.update { it + 1 }
+        loadMore()
     }
 
     /** A feed that wouldn't load is something the screen has to stay in, so it goes to state. */

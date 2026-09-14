@@ -11,9 +11,13 @@ import com.example.catslist.domain.usecase.DownloadCatImageUseCase
 import com.example.catslist.domain.usecase.GetFavoriteCatsUseCase
 import com.example.catslist.domain.usecase.RemoveFavoriteUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.update
 import javax.inject.Inject
 
 @HiltViewModel
@@ -26,13 +30,22 @@ class FavoriteCatsViewModel @Inject constructor(
     private val notifier: SnackbarNotifier,
 ) : ViewModel(), StateOwner<FavoriteCatsState> by stateHolder {
 
+    /** Bumped to resubscribe to the favorites stream. Its value carries no meaning. */
+    private val subscriptions = MutableStateFlow(0)
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val favorites = subscriptions.flatMapLatest {
+        // Without this a throwing Room query would escape viewModelScope and kill the
+        // process. `catch` rethrows the coroutine's own cancellation, so unlike
+        // `runCatching` it needs no manual guard for that. It sits on the inner flow so
+        // that a failure ends only this subscription, leaving the retry able to start
+        // another one.
+        getFavoriteCats().catch { errorHandler.onFavoritesFailure(it) }
+    }
+
     init {
-        getFavoriteCats()
+        favorites
             .onEach(stateHolder::showFavorites)
-            // Without this a throwing Room query would escape viewModelScope and kill the
-            // process. `catch` rethrows the coroutine's own cancellation, so unlike
-            // `runCatching` it needs no manual guard for that.
-            .catch { errorHandler.onFavoritesFailure(it) }
             .launchIn(viewModelScope)
     }
 
@@ -40,6 +53,8 @@ class FavoriteCatsViewModel @Inject constructor(
 
     fun onEvent(event: FavoriteCatsEvent) {
         when (event) {
+            FavoriteCatsEvent.Retry -> retry()
+
             is FavoriteCatsEvent.RemoveFavorite -> launchCatching(
                 onFailure = { notifier.showMessage(FAVORITE_FAILED) },
             ) {
@@ -53,6 +68,11 @@ class FavoriteCatsViewModel @Inject constructor(
                 notifier.showMessage(DOWNLOAD_STARTED)
             }
         }
+    }
+
+    private fun retry() {
+        stateHolder.showLoading()
+        subscriptions.update { it + 1 }
     }
 
     private companion object {
