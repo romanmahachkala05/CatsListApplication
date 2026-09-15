@@ -40,6 +40,7 @@ captures/
 # Signing material — never commit
 *.jks
 *.keystore
+keystore.properties
 
 # Crash / profiling dumps
 *.hprof

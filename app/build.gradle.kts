@@ -10,6 +10,16 @@ plugins {
     alias(libs.plugins.detekt)
 }
 
+// Declared once, in parts, with versionCode derived from them. The 2022 app shipped
+// versionCode 1 for *both* v1.0.1 and v1.0.2: Play rejects an upload whose versionCode has
+// not increased, so the second of those could never have shipped. Deriving the number means
+// the two cannot drift apart again — bumping the name necessarily bumps the code.
+//
+// Minor and patch are allowed 0-99 each, which is a wider range than this project will use.
+val versionMajor = 2
+val versionMinor = 0
+val versionPatch = 0
+
 android {
     namespace = "com.example.catslist"
     compileSdk = 36
@@ -18,8 +28,8 @@ android {
         applicationId = "com.example.catslist"
         minSdk = 27
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0.2"
+        versionCode = versionMajor * 10_000 + versionMinor * 100 + versionPatch
+        versionName = "$versionMajor.$versionMinor.$versionPatch"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
