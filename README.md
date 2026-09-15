@@ -112,6 +112,7 @@ JDK 17. No API key required — TheCatAPI's search endpoint is open.
 - [**Contributing**](CONTRIBUTING.md) — commands, conventions, commit and branch rules
 - [**Architecture**](docs/ARCHITECTURE.md) — the rules the code follows
 - [**Decisions**](docs/DECISIONS.md) — why those rules, and what was rejected
+- [**Releasing**](RELEASING.md) — signing setup and how a release is cut
 
 ## Known gaps
 
