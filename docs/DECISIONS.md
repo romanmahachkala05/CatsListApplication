@@ -45,6 +45,7 @@ that fail without the fix. They are here because finding them was the work.
 | [0018](#adr-0018) | Two-tier verification | Accepted |
 | [0019](#adr-0019) | Make the feed resubscribable instead | Accepted |
 | [0020](#adr-0020) | One serialization library | Accepted |
+| [0021](#adr-0021) | Derive versionCode from the version name | Accepted |
 
 ---
 
@@ -702,3 +703,45 @@ confirming the feed loads.
 **Review when:** the wire models grow enough that polymorphic or custom
 serialization is needed, or a dependency forces a different JSON library back
 into the graph.
+
+---
+
+## ADR-0021
+
+### Derive versionCode from the version name
+
+**Accepted** · 2026-09-15
+
+**Context.** The app declared `versionCode = 1` and `versionName = "1.0.2"`, and the
+repository carries tags `v1.0.1` and `v1.0.2`. Both of those releases shipped
+`versionCode` 1, because nobody remembered to bump a number that no developer ever
+looks at. Play rejects an upload whose `versionCode` has not increased, so the
+second release could not have shipped, and the 2.0.0 release could not either.
+
+**Decision.** Declare the version once, in parts, and compute both values:
+
+```kotlin
+val versionMajor = 2
+val versionMinor = 0
+val versionPatch = 0
+
+versionCode = versionMajor * 10_000 + versionMinor * 100 + versionPatch
+versionName = "$versionMajor.$versionMinor.$versionPatch"
+```
+
+**Alternatives rejected.** Bumping `versionCode` by hand is the status quo, and it
+already failed twice — a rule that depends on remembering is the thing being
+removed. Deriving it from the git commit count or a CI build number makes the
+number monotonic too, but couples the app's identity to the build environment: the
+same commit built locally and on CI would produce different versions, and the value
+is not reproducible from the source alone.
+
+**Consequences.** Bumping the name necessarily bumps the code, so the class of bug
+is gone rather than fixed once. Minor and patch are limited to 0-99 each, which is
+wider than this project will use. The new code is 20000, comfortably above the 1
+that history left behind, so nothing is blocked by the old mistake.
+
+**Review when:** the app is published somewhere with its own versioning expectations,
+or CI needs a distinct build number per build rather than per version — at which
+point the build number belongs beside this scheme, not instead of it.
+
