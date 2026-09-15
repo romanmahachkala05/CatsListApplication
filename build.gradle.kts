@@ -8,6 +8,7 @@ plugins {
     alias(libs.plugins.hilt.android) apply false
     alias(libs.plugins.androidx.room) apply false
     alias(libs.plugins.ktlint) apply false
+    alias(libs.plugins.detekt) apply false
 }
 
 tasks.register<Delete>("clean") {
@@ -23,8 +24,8 @@ tasks.register<Delete>("clean") {
  */
 tasks.register("verify") {
     group = "verification"
-    description = "Checks formatting, assembles the debug APK, runs every unit test. No device needed."
-    dependsOn(":app:ktlintCheck", ":app:assembleDebug", ":app:testDebugUnitTest", ":app:test")
+    description = "Checks formatting and static analysis, assembles the debug APK, runs every unit test. No device needed."
+    dependsOn(":app:ktlintCheck", ":app:detekt", ":app:assembleDebug", ":app:testDebugUnitTest", ":app:test")
 }
 
 /**

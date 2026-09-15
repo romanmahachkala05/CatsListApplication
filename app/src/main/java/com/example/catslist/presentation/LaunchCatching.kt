@@ -22,6 +22,7 @@ import kotlinx.coroutines.launch
  * (a feed that wouldn't load) belongs in state via its `ErrorHandler`; a one-off
  * action that failed while the screen itself is still fine gets a Snackbar.
  */
+@Suppress("TooGenericExceptionCaught") // Catching broadly is the point; see the KDoc and ADR-0013.
 fun ViewModel.launchCatching(onFailure: suspend (Throwable) -> Unit, block: suspend () -> Unit): Job =
     viewModelScope.launch {
         try {

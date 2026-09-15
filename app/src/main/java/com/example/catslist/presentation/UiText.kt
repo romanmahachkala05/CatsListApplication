@@ -25,6 +25,9 @@ sealed interface UiText {
     ) : UiText
 }
 
+// The spread is how `stringResource`/`getString` take format arguments; detekt warns about
+// the array copy, which is not worth restructuring for the 0-2 arguments these ever carry.
+@Suppress("SpreadOperator")
 @Composable
 fun UiText.resolve(): String = when (this) {
     is UiText.Raw -> value
@@ -33,6 +36,7 @@ fun UiText.resolve(): String = when (this) {
 }
 
 /** For resolving outside composition, e.g. inside a [LaunchedEffect] collecting a one-shot effect. */
+@Suppress("SpreadOperator")
 fun UiText.resolve(context: Context): String = when (this) {
     is UiText.Raw -> value
     is UiText.Resource -> context.getString(id, *args.toTypedArray())
