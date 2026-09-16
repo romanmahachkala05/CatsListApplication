@@ -55,6 +55,30 @@ class CatsListStateHolderTest {
     }
 
     @Test
+    fun `an empty emission while showing an error does not clear it`() {
+        // Reachable from an unrelated feed emission (e.g. favorites changing) that carries no
+        // new cats — unlike a LoadMore that actually appends something, it isn't real recovery.
+        stateHolder.showContent(listOf(cat("1")))
+        stateHolder.showError(MESSAGE)
+
+        stateHolder.showContent(emptyList())
+
+        assertThat(stateHolder.state.value.status).isEqualTo(CatsListUiStatus.Error(MESSAGE))
+    }
+
+    @Test
+    fun `a non-empty emission while showing an error is treated as recovery`() {
+        stateHolder.showContent(listOf(cat("1")))
+        stateHolder.showError(MESSAGE)
+
+        stateHolder.showContent(listOf(cat("1"), cat("2")))
+
+        val state = stateHolder.state.value
+        assertThat(state.status).isEqualTo(CatsListUiStatus.Content)
+        assertThat(state.cats.map { it.id }).containsExactly("1", "2").inOrder()
+    }
+
+    @Test
     fun `going back to loading keeps the cats already on screen`() {
         stateHolder.showContent(listOf(cat("1")))
         stateHolder.showError(MESSAGE)

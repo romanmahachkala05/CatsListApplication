@@ -25,12 +25,15 @@ class CatsListStateHolder @Inject constructor() : ICatsListStateHolder {
     override val state: StateFlow<CatsListState> = _state.asStateFlow()
 
     override fun showContent(cats: List<Cat>) = _state.update { current ->
-        // The feed starts empty and fills in as fetches complete — don't flash
-        // an empty Content state before the first cat actually arrives.
-        val status = if (cats.isEmpty() && current.status is CatsListUiStatus.Loading) {
-            CatsListUiStatus.Loading
-        } else {
-            CatsListUiStatus.Content
+        // An empty emission carries no evidence anything changed, so it must not flash empty
+        // Content over Loading, nor silently clear an Error an unrelated feed emission (e.g.
+        // favorites changing) didn't actually fix. Non-empty cats mean fetchNextCats() really
+        // did append something, which is genuine recovery either way.
+        val status = when {
+            cats.isNotEmpty() -> CatsListUiStatus.Content
+            current.status is CatsListUiStatus.Loading -> CatsListUiStatus.Loading
+            current.status is CatsListUiStatus.Error -> current.status
+            else -> CatsListUiStatus.Content
         }
         current.copy(status = status, cats = cats.toPersistentList())
     }
