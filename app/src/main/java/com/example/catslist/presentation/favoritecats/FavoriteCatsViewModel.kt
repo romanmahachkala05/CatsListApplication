@@ -2,14 +2,14 @@ package com.example.catslist.presentation.favoritecats
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.catslist.R
 import com.example.catslist.domain.usecase.DownloadCatImageUseCase
 import com.example.catslist.domain.usecase.GetFavoriteCatsUseCase
 import com.example.catslist.domain.usecase.RemoveFavoriteUseCase
+import com.example.catslist.presentation.FAVORITE_FAILED
 import com.example.catslist.presentation.RetryableFlow
 import com.example.catslist.presentation.SnackbarNotifier
 import com.example.catslist.presentation.StateOwner
-import com.example.catslist.presentation.UiText
+import com.example.catslist.presentation.downloadCat
 import com.example.catslist.presentation.launchCatching
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -48,23 +48,12 @@ class FavoriteCatsViewModel @Inject constructor(
                 removeFavorite(event.cat)
             }
 
-            is FavoriteCatsEvent.Download -> launchCatching(
-                onFailure = { notifier.showMessage(DOWNLOAD_FAILED) },
-            ) {
-                downloadCatImage(event.cat)
-                notifier.showMessage(DOWNLOAD_STARTED)
-            }
+            is FavoriteCatsEvent.Download -> downloadCat(event.cat, downloadCatImage, notifier)
         }
     }
 
     private fun retry() {
         stateHolder.showLoading()
         favorites.retry()
-    }
-
-    private companion object {
-        val FAVORITE_FAILED = UiText.Resource(R.string.common_favorite_failed_message)
-        val DOWNLOAD_FAILED = UiText.Resource(R.string.common_download_failed_message)
-        val DOWNLOAD_STARTED = UiText.Resource(R.string.common_download_started_message)
     }
 }
