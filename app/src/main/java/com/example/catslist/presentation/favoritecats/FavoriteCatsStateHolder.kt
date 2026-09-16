@@ -5,14 +5,14 @@ import com.example.catslist.presentation.StateOwner
 import com.example.catslist.presentation.UiText
 import dagger.hilt.android.scopes.ViewModelScoped
 import javax.inject.Inject
-import kotlinx.collections.immutable.toPersistentList
+import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
 interface IFavoriteCatsStateHolder : StateOwner<FavoriteCatsState> {
-    fun showFavorites(cats: List<Cat>)
+    fun showFavorites(cats: ImmutableList<Cat>)
     fun showLoading()
     fun showError(message: UiText)
     fun reset()
@@ -24,10 +24,10 @@ class FavoriteCatsStateHolder @Inject constructor() : IFavoriteCatsStateHolder {
     private val _state = MutableStateFlow(FavoriteCatsState())
     override val state: StateFlow<FavoriteCatsState> = _state.asStateFlow()
 
-    override fun showFavorites(cats: List<Cat>) = _state.update {
+    override fun showFavorites(cats: ImmutableList<Cat>) = _state.update {
         it.copy(
             status = if (cats.isEmpty()) FavoriteCatsUiStatus.Empty else FavoriteCatsUiStatus.Content,
-            cats = cats.toPersistentList(),
+            cats = cats,
         )
     }
 

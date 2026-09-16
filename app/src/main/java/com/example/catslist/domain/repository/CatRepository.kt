@@ -1,6 +1,7 @@
 package com.example.catslist.domain.repository
 
 import com.example.catslist.domain.model.Cat
+import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -11,10 +12,10 @@ import kotlinx.coroutines.flow.Flow
 interface CatRepository {
 
     /** Cats fetched so far this session, each reflecting current favorite status. */
-    val feed: Flow<List<Cat>>
+    val feed: Flow<ImmutableList<Cat>>
 
     /** Cats persisted as favorites. */
-    val favorites: Flow<List<Cat>>
+    val favorites: Flow<ImmutableList<Cat>>
 
     /** Fetches the next batch of not-yet-seen cats from the API and appends them to [feed]. */
     suspend fun fetchNextBatch()

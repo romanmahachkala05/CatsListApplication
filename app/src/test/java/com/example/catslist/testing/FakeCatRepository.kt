@@ -2,10 +2,13 @@ package com.example.catslist.testing
 
 import com.example.catslist.domain.model.Cat
 import com.example.catslist.domain.repository.CatRepository
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 
 /**
@@ -35,12 +38,14 @@ class FakeCatRepository : CatRepository {
     var fetchCount: Int = 0
         private set
 
-    override val favorites: Flow<List<Cat>> =
-        favorited.asStateFlow().onEach { favoritesError?.let { error -> throw error } }
+    override val favorites: Flow<ImmutableList<Cat>> =
+        favorited.asStateFlow()
+            .map { it.toPersistentList() }
+            .onEach { favoritesError?.let { error -> throw error } }
 
-    override val feed: Flow<List<Cat>> = combine(fetched, favorited) { cats, favorites ->
+    override val feed: Flow<ImmutableList<Cat>> = combine(fetched, favorited) { cats, favorites ->
         val favoriteIds = favorites.mapTo(hashSetOf()) { it.id }
-        cats.map { it.copy(isFavorite = it.id in favoriteIds) }
+        cats.map { it.copy(isFavorite = it.id in favoriteIds) }.toPersistentList()
     }.onEach { feedError?.let { error -> throw error } }
 
     /** Queues one batch per [fetchNextBatch] call, in order. Exhausted queue means empty batches. */

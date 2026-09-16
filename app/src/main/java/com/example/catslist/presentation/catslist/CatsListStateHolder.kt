@@ -5,14 +5,14 @@ import com.example.catslist.presentation.StateOwner
 import com.example.catslist.presentation.UiText
 import dagger.hilt.android.scopes.ViewModelScoped
 import javax.inject.Inject
-import kotlinx.collections.immutable.toPersistentList
+import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
 interface ICatsListStateHolder : StateOwner<CatsListState> {
-    fun showContent(cats: List<Cat>)
+    fun showContent(cats: ImmutableList<Cat>)
     fun showLoading()
     fun showError(message: UiText)
     fun reset()
@@ -24,7 +24,7 @@ class CatsListStateHolder @Inject constructor() : ICatsListStateHolder {
     private val _state = MutableStateFlow(CatsListState())
     override val state: StateFlow<CatsListState> = _state.asStateFlow()
 
-    override fun showContent(cats: List<Cat>) = _state.update { current ->
+    override fun showContent(cats: ImmutableList<Cat>) = _state.update { current ->
         // An empty emission carries no evidence anything changed, so it must not flash empty
         // Content over Loading, nor silently clear an Error an unrelated feed emission (e.g.
         // favorites changing) didn't actually fix. Non-empty cats mean fetchNextCats() really
@@ -35,7 +35,7 @@ class CatsListStateHolder @Inject constructor() : ICatsListStateHolder {
             current.status is CatsListUiStatus.Error -> current.status
             else -> CatsListUiStatus.Content
         }
-        current.copy(status = status, cats = cats.toPersistentList())
+        current.copy(status = status, cats = cats)
     }
 
     /** Keeps the cats already on screen: a retry redisplays them rather than starting blank. */
