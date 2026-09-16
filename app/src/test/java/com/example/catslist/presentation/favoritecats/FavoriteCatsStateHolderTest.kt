@@ -3,6 +3,7 @@ package com.example.catslist.presentation.favoritecats
 import com.example.catslist.presentation.UiText
 import com.example.catslist.testing.cat
 import com.google.common.truth.Truth.assertThat
+import kotlinx.collections.immutable.persistentListOf
 import org.junit.Test
 
 class FavoriteCatsStateHolderTest {
@@ -17,7 +18,7 @@ class FavoriteCatsStateHolderTest {
 
     @Test
     fun `showing favorites switches to content`() {
-        stateHolder.showFavorites(listOf(cat("1", isFavorite = true)))
+        stateHolder.showFavorites(persistentListOf(cat("1", isFavorite = true)))
 
         val state = stateHolder.state.value
         assertThat(state.status).isEqualTo(FavoriteCatsUiStatus.Content)
@@ -27,16 +28,16 @@ class FavoriteCatsStateHolderTest {
     @Test
     fun `no favorites is empty, not loading`() {
         // Unlike the feed, an empty favorites table is a real answer, not a pending one.
-        stateHolder.showFavorites(emptyList())
+        stateHolder.showFavorites(persistentListOf())
 
         assertThat(stateHolder.state.value.status).isEqualTo(FavoriteCatsUiStatus.Empty)
     }
 
     @Test
     fun `removing the last favorite goes back to empty`() {
-        stateHolder.showFavorites(listOf(cat("1", isFavorite = true)))
+        stateHolder.showFavorites(persistentListOf(cat("1", isFavorite = true)))
 
-        stateHolder.showFavorites(emptyList())
+        stateHolder.showFavorites(persistentListOf())
 
         assertThat(stateHolder.state.value.status).isEqualTo(FavoriteCatsUiStatus.Empty)
         assertThat(stateHolder.state.value.cats).isEmpty()
@@ -44,7 +45,7 @@ class FavoriteCatsStateHolderTest {
 
     @Test
     fun `showing an error keeps the favorites already on screen`() {
-        stateHolder.showFavorites(listOf(cat("1", isFavorite = true)))
+        stateHolder.showFavorites(persistentListOf(cat("1", isFavorite = true)))
 
         stateHolder.showError(MESSAGE)
 
@@ -55,7 +56,7 @@ class FavoriteCatsStateHolderTest {
 
     @Test
     fun `going back to loading keeps the favorites already on screen`() {
-        stateHolder.showFavorites(listOf(cat("1", isFavorite = true)))
+        stateHolder.showFavorites(persistentListOf(cat("1", isFavorite = true)))
         stateHolder.showError(MESSAGE)
 
         stateHolder.showLoading()
@@ -67,7 +68,7 @@ class FavoriteCatsStateHolderTest {
 
     @Test
     fun `reset returns to the initial state`() {
-        stateHolder.showFavorites(listOf(cat("1", isFavorite = true)))
+        stateHolder.showFavorites(persistentListOf(cat("1", isFavorite = true)))
 
         stateHolder.reset()
 

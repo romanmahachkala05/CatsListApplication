@@ -3,6 +3,7 @@ package com.example.catslist.presentation.catslist
 import com.example.catslist.presentation.UiText
 import com.example.catslist.testing.cat
 import com.google.common.truth.Truth.assertThat
+import kotlinx.collections.immutable.persistentListOf
 import org.junit.Test
 
 class CatsListStateHolderTest {
@@ -17,7 +18,7 @@ class CatsListStateHolderTest {
 
     @Test
     fun `showing cats switches to content`() {
-        stateHolder.showContent(listOf(cat("1"), cat("2")))
+        stateHolder.showContent(persistentListOf(cat("1"), cat("2")))
 
         val state = stateHolder.state.value
         assertThat(state.status).isEqualTo(CatsListUiStatus.Content)
@@ -27,7 +28,7 @@ class CatsListStateHolderTest {
     @Test
     fun `an empty first emission stays loading rather than flashing empty content`() {
         // The feed flow emits its empty initial value before the first fetch completes.
-        stateHolder.showContent(emptyList())
+        stateHolder.showContent(persistentListOf())
 
         assertThat(stateHolder.state.value.status).isEqualTo(CatsListUiStatus.Loading)
         assertThat(stateHolder.state.value.cats).isEmpty()
@@ -35,9 +36,9 @@ class CatsListStateHolderTest {
 
     @Test
     fun `an empty emission after content is content, not loading`() {
-        stateHolder.showContent(listOf(cat("1")))
+        stateHolder.showContent(persistentListOf(cat("1")))
 
-        stateHolder.showContent(emptyList())
+        stateHolder.showContent(persistentListOf())
 
         assertThat(stateHolder.state.value.status).isEqualTo(CatsListUiStatus.Content)
         assertThat(stateHolder.state.value.cats).isEmpty()
@@ -45,7 +46,7 @@ class CatsListStateHolderTest {
 
     @Test
     fun `showing an error keeps the cats already on screen`() {
-        stateHolder.showContent(listOf(cat("1")))
+        stateHolder.showContent(persistentListOf(cat("1")))
 
         stateHolder.showError(MESSAGE)
 
@@ -55,8 +56,32 @@ class CatsListStateHolderTest {
     }
 
     @Test
+    fun `an empty emission while showing an error does not clear it`() {
+        // Reachable from an unrelated feed emission (e.g. favorites changing) that carries no
+        // new cats — unlike a LoadMore that actually appends something, it isn't real recovery.
+        stateHolder.showContent(persistentListOf(cat("1")))
+        stateHolder.showError(MESSAGE)
+
+        stateHolder.showContent(persistentListOf())
+
+        assertThat(stateHolder.state.value.status).isEqualTo(CatsListUiStatus.Error(MESSAGE))
+    }
+
+    @Test
+    fun `a non-empty emission while showing an error is treated as recovery`() {
+        stateHolder.showContent(persistentListOf(cat("1")))
+        stateHolder.showError(MESSAGE)
+
+        stateHolder.showContent(persistentListOf(cat("1"), cat("2")))
+
+        val state = stateHolder.state.value
+        assertThat(state.status).isEqualTo(CatsListUiStatus.Content)
+        assertThat(state.cats.map { it.id }).containsExactly("1", "2").inOrder()
+    }
+
+    @Test
     fun `going back to loading keeps the cats already on screen`() {
-        stateHolder.showContent(listOf(cat("1")))
+        stateHolder.showContent(persistentListOf(cat("1")))
         stateHolder.showError(MESSAGE)
 
         stateHolder.showLoading()
@@ -68,7 +93,7 @@ class CatsListStateHolderTest {
 
     @Test
     fun `reset returns to the initial state`() {
-        stateHolder.showContent(listOf(cat("1")))
+        stateHolder.showContent(persistentListOf(cat("1")))
         stateHolder.showError(MESSAGE)
 
         stateHolder.reset()

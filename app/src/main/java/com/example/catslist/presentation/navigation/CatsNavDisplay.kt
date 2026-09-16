@@ -22,15 +22,20 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.runtime.rememberDecoratedNavEntries
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
@@ -43,16 +48,17 @@ import com.example.catslist.presentation.favoritecats.FavoriteCatsScreen
 import com.example.catslist.presentation.resolve
 
 /**
- * The app's one back stack — [CatsListNavKey] and [FavoriteCatsNavKey] are peer
- * top-level destinations switched via the floating bottom bar (replace, not
- * push), leaving room for a real pushed screen (e.g. cat detail) later. Each
- * screen's ViewModel is still created lazily by its own `hiltViewModel()`
- * default — this composable never needs to know either one's concrete type,
- * since Snackbar delivery goes through the shared [com.example.catslist.presentation.SnackbarNotifier] instead.
+ * [CatsListNavKey] and [FavoriteCatsNavKey] are peer top-level destinations switched via the
+ * floating bottom bar, each with its own back stack — so switching tabs shows that screen's own
+ * preserved scroll position and ViewModel instead of resetting them, the way a single shared,
+ * cleared-and-replaced back stack would. Mirrors Navigation 3's own `MultipleBackStackSample`.
+ * Each screen's ViewModel is still created lazily by its own `hiltViewModel()` default — this
+ * composable never needs to know either one's concrete type, since Snackbar delivery goes
+ * through the shared [com.example.catslist.presentation.SnackbarNotifier] instead.
  */
 @Composable
 fun CatsNavDisplay(notifier: SnackbarNotifier, modifier: Modifier = Modifier) {
-    val backStack = rememberNavBackStack(CatsListNavKey)
+    var selected by remember { mutableStateOf<NavKey>(CatsListNavKey) }
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
 
@@ -66,25 +72,45 @@ fun CatsNavDisplay(notifier: SnackbarNotifier, modifier: Modifier = Modifier) {
         modifier = modifier,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
-            FloatingBottomBar(
-                selected = backStack.lastOrNull(),
-                onSelect = { key ->
-                    if (backStack.lastOrNull() != key) {
-                        backStack.clear()
-                        backStack.add(key)
-                    }
-                },
-            )
+            FloatingBottomBar(selected = selected, onSelect = { selected = it })
         },
     ) { innerPadding ->
         // Deliberately not padding the content: the bar floats over it, so cats run full-bleed
         // underneath. The insets go to each list as contentPadding so items still scroll clear.
-        NavDisplay(
-            backStack = backStack,
-            entryDecorators = listOf(rememberSaveableStateHolderNavEntryDecorator()),
+        //
+        // Each tab's rememberDecoratedNavEntries call runs on every recomposition regardless of
+        // which tab is selected, so its SaveableStateHolder/ViewModelStore decorators — and
+        // whatever they're holding — stay alive the whole time. NavDisplay below only ever
+        // renders the entries for the tab that's currently selected.
+        val catsListBackStack = rememberNavBackStack(CatsListNavKey)
+        val catsListEntries = rememberDecoratedNavEntries(
+            backStack = catsListBackStack,
+            entryDecorators = listOf(
+                rememberSaveableStateHolderNavEntryDecorator(),
+                rememberViewModelStoreNavEntryDecorator(),
+            ),
             entryProvider = entryProvider {
                 entry<CatsListNavKey> { CatsListScreen(contentPadding = innerPadding) }
+            },
+        )
+
+        val favoriteCatsBackStack = rememberNavBackStack(FavoriteCatsNavKey)
+        val favoriteCatsEntries = rememberDecoratedNavEntries(
+            backStack = favoriteCatsBackStack,
+            entryDecorators = listOf(
+                rememberSaveableStateHolderNavEntryDecorator(),
+                rememberViewModelStoreNavEntryDecorator(),
+            ),
+            entryProvider = entryProvider {
                 entry<FavoriteCatsNavKey> { FavoriteCatsScreen(contentPadding = innerPadding) }
+            },
+        )
+
+        NavDisplay(
+            entries = if (selected == CatsListNavKey) catsListEntries else favoriteCatsEntries,
+            onBack = {
+                val backStack = if (selected == CatsListNavKey) catsListBackStack else favoriteCatsBackStack
+                backStack.removeLastOrNull()
             },
         )
     }
@@ -147,4 +173,4 @@ private fun navigationBarItemColors() = NavigationBarItemDefaults.colors(
  * 24.dp is [Icon]'s default; the M3 active-indicator behind it is a fixed 64x32.dp,
  * so much past this looks cramped.
  */
-private val ICON_SIZE = 28.dp
+private val ICON_SIZE = 48.dp

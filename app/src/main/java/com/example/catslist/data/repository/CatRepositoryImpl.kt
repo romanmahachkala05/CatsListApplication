@@ -9,6 +9,8 @@ import com.example.catslist.domain.model.Cat
 import com.example.catslist.domain.repository.CatRepository
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
@@ -24,13 +26,18 @@ class CatRepositoryImpl @Inject constructor(
     /** Cats fetched this session, before favorite status is layered on. Not persisted. */
     private val fetched = MutableStateFlow<List<Cat>>(emptyList())
 
-    override val favorites: Flow<List<Cat>> =
-        catDao.getAllCats().map { entities -> entities.map { it.toDomain() } }
+    override val favorites: Flow<ImmutableList<Cat>> =
+        catDao.getAllCats().map { entities -> entities.map { it.toDomain() }.toPersistentList() }
 
-    override val feed: Flow<List<Cat>> =
+    override val feed: Flow<ImmutableList<Cat>> =
         combine(fetched, favorites) { fetchedCats, favoriteCats ->
             val favoriteIds = favoriteCats.mapTo(hashSetOf()) { it.id }
-            fetchedCats.map { it.copy(isFavorite = it.id in favoriteIds) }
+            // Only cats whose favorite status actually changed get a new instance — favoriting
+            // one cat should not reallocate every other cat fetched this session.
+            fetchedCats.map { cat ->
+                val isFavorite = cat.id in favoriteIds
+                if (cat.isFavorite == isFavorite) cat else cat.copy(isFavorite = isFavorite)
+            }.toPersistentList()
         }
 
     override suspend fun fetchNextBatch() {
