@@ -6,19 +6,15 @@ import com.example.catslist.R
 import com.example.catslist.domain.usecase.DownloadCatImageUseCase
 import com.example.catslist.domain.usecase.GetFavoriteCatsUseCase
 import com.example.catslist.domain.usecase.RemoveFavoriteUseCase
+import com.example.catslist.presentation.RetryableFlow
 import com.example.catslist.presentation.SnackbarNotifier
 import com.example.catslist.presentation.StateOwner
 import com.example.catslist.presentation.UiText
 import com.example.catslist.presentation.launchCatching
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.update
 
 @HiltViewModel
 class FavoriteCatsViewModel @Inject constructor(
@@ -31,21 +27,11 @@ class FavoriteCatsViewModel @Inject constructor(
 ) : ViewModel(),
     StateOwner<FavoriteCatsState> by stateHolder {
 
-    /** Bumped to resubscribe to the favorites stream. Its value carries no meaning. */
-    private val subscriptions = MutableStateFlow(0)
-
-    @OptIn(ExperimentalCoroutinesApi::class)
-    private val favorites = subscriptions.flatMapLatest {
-        // Without this a throwing Room query would escape viewModelScope and kill the
-        // process. `catch` rethrows the coroutine's own cancellation, so unlike
-        // `runCatching` it needs no manual guard for that. It sits on the inner flow so
-        // that a failure ends only this subscription, leaving the retry able to start
-        // another one.
-        getFavoriteCats().catch { errorHandler.onFavoritesFailure(it) }
-    }
+    // Without this a throwing Room query would escape viewModelScope and kill the process.
+    private val favorites = RetryableFlow(source = { getFavoriteCats() }, onFailure = errorHandler::onFavoritesFailure)
 
     init {
-        favorites
+        favorites.flow
             .onEach(stateHolder::showFavorites)
             .launchIn(viewModelScope)
     }
@@ -73,7 +59,7 @@ class FavoriteCatsViewModel @Inject constructor(
 
     private fun retry() {
         stateHolder.showLoading()
-        subscriptions.update { it + 1 }
+        favorites.retry()
     }
 
     private companion object {

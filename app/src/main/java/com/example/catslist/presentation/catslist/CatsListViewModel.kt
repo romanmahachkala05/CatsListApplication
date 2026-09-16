@@ -7,19 +7,15 @@ import com.example.catslist.domain.usecase.DownloadCatImageUseCase
 import com.example.catslist.domain.usecase.FetchNextCatsUseCase
 import com.example.catslist.domain.usecase.GetCatFeedUseCase
 import com.example.catslist.domain.usecase.ToggleFavoriteUseCase
+import com.example.catslist.presentation.RetryableFlow
 import com.example.catslist.presentation.SnackbarNotifier
 import com.example.catslist.presentation.StateOwner
 import com.example.catslist.presentation.UiText
 import com.example.catslist.presentation.launchCatching
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.update
 
 @HiltViewModel
 class CatsListViewModel @Inject constructor(
@@ -33,19 +29,10 @@ class CatsListViewModel @Inject constructor(
 ) : ViewModel(),
     StateOwner<CatsListState> by stateHolder {
 
-    /** Bumped to resubscribe to the feed. Its value carries no meaning beyond "different". */
-    private val feedSubscriptions = MutableStateFlow(0)
-
-    @OptIn(ExperimentalCoroutinesApi::class)
-    private val feed = feedSubscriptions.flatMapLatest {
-        // `catch` sits on the inner flow on purpose. Downstream of flatMapLatest it would
-        // terminate the whole chain including the trigger, and the retry would be a dead
-        // button — the bug this replaces. Here only the failed subscription ends.
-        getCatFeed().catch { errorHandler.onFeedFailure(it) }
-    }
+    private val feed = RetryableFlow(source = { getCatFeed() }, onFailure = errorHandler::onFeedFailure)
 
     init {
-        feed
+        feed.flow
             .onEach(stateHolder::showContent)
             .launchIn(viewModelScope)
         loadMore()
@@ -83,7 +70,7 @@ class CatsListViewModel @Inject constructor(
      */
     private fun retry() {
         stateHolder.showLoading()
-        feedSubscriptions.update { it + 1 }
+        feed.retry()
         loadMore()
     }
 
