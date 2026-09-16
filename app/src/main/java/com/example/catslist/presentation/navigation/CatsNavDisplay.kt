@@ -29,6 +29,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
@@ -81,7 +82,13 @@ fun CatsNavDisplay(notifier: SnackbarNotifier, modifier: Modifier = Modifier) {
         // underneath. The insets go to each list as contentPadding so items still scroll clear.
         NavDisplay(
             backStack = backStack,
-            entryDecorators = listOf(rememberSaveableStateHolderNavEntryDecorator()),
+            // Without the ViewModelStore decorator, CatsListViewModel/FavoriteCatsViewModel
+            // resolve to the Activity's store instead of this entry's — they never clear on
+            // tab switch, and a screen left mid-Error can still receive a stale emission.
+            entryDecorators = listOf(
+                rememberSaveableStateHolderNavEntryDecorator(),
+                rememberViewModelStoreNavEntryDecorator(),
+            ),
             entryProvider = entryProvider {
                 entry<CatsListNavKey> { CatsListScreen(contentPadding = innerPadding) }
                 entry<FavoriteCatsNavKey> { FavoriteCatsScreen(contentPadding = innerPadding) }
