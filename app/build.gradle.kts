@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -16,6 +18,22 @@ plugins {
 // the two cannot drift apart again — bumping the name necessarily bumps the code.
 //
 // Minor and patch are allowed 0-99 each, which is a wider range than this project will use.
+// Release signing credentials, if this machine has them. Read once, defensively: a fresh
+// clone and CI have no keystore, and reading them unconditionally would fail *configuration*
+// for everyone — not just release builds. `keystore.properties` is gitignored; CI would use
+// the environment instead.
+val keystoreProperties = Properties().apply {
+    val file = rootProject.file("keystore.properties")
+    if (file.exists()) file.inputStream().use(::load)
+}
+
+fun releaseSigningValue(key: String): String? =
+    keystoreProperties.getProperty(key) ?: System.getenv("CATSLIST_${key.uppercase()}")
+
+/** Only true when every part is present; a half-configured signing config fails at package time. */
+val hasReleaseSigning = listOf("storeFile", "storePassword", "keyAlias", "keyPassword")
+    .all { !releaseSigningValue(it).isNullOrBlank() }
+
 val versionMajor = 2
 val versionMinor = 0
 val versionPatch = 0
@@ -34,8 +52,23 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = rootProject.file(releaseSigningValue("storeFile")!!)
+                storePassword = releaseSigningValue("storePassword")
+                keyAlias = releaseSigningValue("keyAlias")
+                keyPassword = releaseSigningValue("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
+            // Null where no keystore is configured, which produces an unsigned release APK
+            // rather than failing the build. That keeps `assembleRelease` runnable by anyone
+            // who clones this, and means only a machine holding the key can ship a signed one.
+            signingConfig = signingConfigs.findByName("release")
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
