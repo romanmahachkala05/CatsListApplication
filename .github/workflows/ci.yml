@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [dev, master]
+  # dev itself is verified too, so a bad merge is caught even when every PR into
+  # it was green on its own base.
+  push:
+    branches: [dev]
+
+# A new push supersedes the run it interrupted; nothing is learned from finishing
+# the old one.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      # Caches the Gradle user home and the configuration cache between runs.
+      - uses: gradle/actions/setup-gradle@v6
+
+      # gradlew is committed without the executable bit, which Linux needs.
+      - name: Make the Gradle wrapper executable
+        run: chmod +x gradlew
+
+      # The same task a developer runs locally — one definition of the gate,
+      # so a red check here can be reproduced without translating YAML back
+      # into Gradle tasks. See docs/DECISIONS.md ADR-0018.
+      - name: Verify
+        run: ./gradlew verify
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-reports
+          path: |
+            app/build/reports/tests/
+            app/build/test-results/
+          retention-days: 7
