@@ -15,7 +15,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.catslist.R
+import com.example.catslist.core.designsystem.R
 import com.example.catslist.presentation.UiText
 import com.example.catslist.presentation.resolve
 import com.example.catslist.presentation.theme.CatsListTheme
@@ -81,13 +81,14 @@ private fun LoadingIndicatorPreview() {
 @Preview(showBackground = true)
 @Composable
 private fun EmptyMessagePreview() {
-    CatsListTheme { EmptyMessage(UiText.Resource(R.string.favoritecats_empty_message)) }
+    // A feature-owned message, not a designsystem one — Raw stands in for it here.
+    CatsListTheme { EmptyMessage(UiText.Raw("Favorite Cats list is empty")) }
 }
 
 @Preview(showBackground = true)
 @Composable
 private fun ErrorMessagePreview() {
     CatsListTheme {
-        ErrorMessage(UiText.Resource(R.string.catslist_error_loading_cats), onRetry = {})
+        ErrorMessage(UiText.Raw("Couldn't load a cat. Check your connection and try again."), onRetry = {})
     }
 }

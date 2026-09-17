@@ -1,0 +1,5 @@
+<resources>
+    <string name="common_cd_download_cat">Download this cat image</string>
+    <string name="common_cd_favorite_cat">Add or remove this cat from favorites</string>
+    <string name="common_action_retry">Retry</string>
+</resources>

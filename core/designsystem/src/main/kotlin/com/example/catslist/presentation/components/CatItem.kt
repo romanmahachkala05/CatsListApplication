@@ -17,7 +17,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
-import com.example.catslist.R
+import com.example.catslist.core.designsystem.R
 import com.example.catslist.domain.model.Cat
 import com.example.catslist.presentation.theme.CatsListTheme
 
