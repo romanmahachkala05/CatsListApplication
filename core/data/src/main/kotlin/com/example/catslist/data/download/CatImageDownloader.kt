@@ -4,7 +4,7 @@ import android.app.DownloadManager
 import android.content.Context
 import android.net.Uri
 import android.os.Environment
-import com.example.catslist.R
+import com.example.catslist.core.data.R
 import com.example.catslist.data.di.CatsListDispatcher
 import com.example.catslist.data.di.Dispatcher
 import com.example.catslist.domain.ImageDownloader

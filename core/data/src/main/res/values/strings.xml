@@ -1,0 +1,5 @@
+<resources>
+    <!-- Used directly by CatImageDownloader for the system download notification. -->
+    <string name="common_download_notification_title">Image of cat with id %1$s</string>
+    <string name="common_download_notification_description">Downloading image…</string>
+</resources>

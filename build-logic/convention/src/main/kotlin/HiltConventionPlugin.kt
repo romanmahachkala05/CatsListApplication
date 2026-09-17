@@ -12,8 +12,8 @@ class HiltConventionPlugin : Plugin<Project> {
             }
 
             dependencies {
-                add("implementation", libs.findLibrary("hilt-android").get())
-                add("ksp", libs.findLibrary("hilt-android-compiler").get())
+                add("implementation", versionCatalog.findLibrary("hilt-android").get())
+                add("ksp", versionCatalog.findLibrary("hilt-android-compiler").get())
             }
         }
     }

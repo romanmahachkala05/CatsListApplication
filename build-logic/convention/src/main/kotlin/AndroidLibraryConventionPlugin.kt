@@ -8,9 +8,10 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinAndroidProjectExtension
 
 /**
  * Used by every module except `:app` (which stays an application module for signing/versioning)
- * and `:core:model` (which stays framework-free) — Compose + the shared Android defaults.
- * Deliberately no Hilt here: a pure-UI module like `:core:designsystem` has nothing to inject,
- * so DI is a separate, additive [HiltConventionPlugin] applied only where it is actually used.
+ * and `:core:model` (which stays framework-free) — the shared Android defaults only.
+ * Deliberately no Compose or Hilt here: `:core:data` has no UI and nothing to inject, so both
+ * are separate, additive plugins ([ComposeConventionPlugin], [HiltConventionPlugin]) applied
+ * only by the modules that actually use them.
  */
 class AndroidLibraryConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) {
@@ -18,7 +19,7 @@ class AndroidLibraryConventionPlugin : Plugin<Project> {
             with(pluginManager) {
                 apply("com.android.library")
                 apply("org.jetbrains.kotlin.android")
-                apply("org.jetbrains.kotlin.plugin.compose")
+                apply("catslist.quality")
             }
 
             extensions.configure<LibraryExtension> {
@@ -31,10 +32,6 @@ class AndroidLibraryConventionPlugin : Plugin<Project> {
                 compileOptions {
                     sourceCompatibility = JavaVersion.VERSION_17
                     targetCompatibility = JavaVersion.VERSION_17
-                }
-
-                buildFeatures {
-                    compose = true
                 }
             }
 

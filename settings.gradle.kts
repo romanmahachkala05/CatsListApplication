@@ -21,3 +21,5 @@ dependencyResolutionManagement {
 rootProject.name = "CatsList"
 include(":app")
 include(":core:model")
+include(":core:data")
+include(":core:testing")

@@ -15,6 +15,8 @@ dependencies {
     // artifacts themselves on the classpath, not just an `id(...)`/`alias(...)` reference.
     compileOnly(libs.android.gradlePlugin)
     compileOnly(libs.kotlin.gradlePlugin)
+    compileOnly(libs.ktlint.gradlePlugin)
+    compileOnly(libs.detekt.gradlePlugin)
 }
 
 gradlePlugin {
@@ -30,6 +32,14 @@ gradlePlugin {
         register("hilt") {
             id = "catslist.hilt"
             implementationClass = "HiltConventionPlugin"
+        }
+        register("compose") {
+            id = "catslist.compose"
+            implementationClass = "ComposeConventionPlugin"
+        }
+        register("quality") {
+            id = "catslist.quality"
+            implementationClass = "QualityConventionPlugin"
         }
     }
 }
