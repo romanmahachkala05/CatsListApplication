@@ -1,7 +1,7 @@
 package com.example.catslist.presentation
 
 import androidx.lifecycle.ViewModel
-import com.example.catslist.R
+import com.example.catslist.core.ui.R
 import com.example.catslist.domain.model.Cat
 import com.example.catslist.domain.usecase.DownloadCatImageUseCase
 import kotlinx.coroutines.Job

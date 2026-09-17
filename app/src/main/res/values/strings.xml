@@ -12,11 +12,8 @@
     <string name="favoritecats_error_loading_favorites">Couldn\'t load your favorites. Try again.</string>
     <string name="favoritecats_empty_message">Favorite Cats list is empty</string>
 
-    <!-- common: used by shared components / collaborators across screens -->
+    <!-- common: used by shared components across screens -->
     <string name="common_cd_download_cat">Download this cat image</string>
     <string name="common_cd_favorite_cat">Add or remove this cat from favorites</string>
-    <string name="common_favorite_failed_message">Couldn\'t update favorites. Try again.</string>
-    <string name="common_download_started_message">Downloading started</string>
-    <string name="common_download_failed_message">Couldn\'t download this cat image. Try again.</string>
     <string name="common_action_retry">Retry</string>
 </resources>

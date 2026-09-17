@@ -4,6 +4,9 @@ import com.example.catslist.R
 import com.example.catslist.domain.usecase.DownloadCatImageUseCase
 import com.example.catslist.domain.usecase.GetFavoriteCatsUseCase
 import com.example.catslist.domain.usecase.RemoveFavoriteUseCase
+import com.example.catslist.presentation.DOWNLOAD_FAILED
+import com.example.catslist.presentation.DOWNLOAD_STARTED
+import com.example.catslist.presentation.FAVORITE_FAILED
 import com.example.catslist.presentation.UiText
 import com.example.catslist.testing.FakeCatRepository
 import com.example.catslist.testing.FakeImageDownloader
@@ -95,7 +98,7 @@ class FavoriteCatsViewModelTest {
 
         viewModel.onEvent(FavoriteCatsEvent.RemoveFavorite(cat("1")))
 
-        assertThat(notifier.shown).containsExactly(UiText.Resource(R.string.common_favorite_failed_message))
+        assertThat(notifier.shown).containsExactly(FAVORITE_FAILED)
         assertThat(viewModel.state.value.cats.map { it.id }).containsExactly("1")
     }
 
@@ -119,7 +122,7 @@ class FavoriteCatsViewModelTest {
         viewModel.onEvent(FavoriteCatsEvent.Download(cat))
 
         assertThat(downloader.downloaded).containsExactly(cat.url to cat.id)
-        assertThat(notifier.shown).containsExactly(UiText.Resource(R.string.common_download_started_message))
+        assertThat(notifier.shown).containsExactly(DOWNLOAD_STARTED)
     }
 
     @Test
@@ -130,7 +133,7 @@ class FavoriteCatsViewModelTest {
 
         viewModel.onEvent(FavoriteCatsEvent.Download(cat("1")))
 
-        assertThat(notifier.shown).containsExactly(UiText.Resource(R.string.common_download_failed_message))
+        assertThat(notifier.shown).containsExactly(DOWNLOAD_FAILED)
         assertThat(viewModel.state.value.cats.map { it.id }).containsExactly("1")
     }
 
