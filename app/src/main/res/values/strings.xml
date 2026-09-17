@@ -1,14 +1,7 @@
 <resources>
     <string name="app_name">CatsList</string>
 
-    <!-- catslist screen -->
+    <!-- bottom bar labels: CatsNavDisplay lives here, the screens themselves do not -->
     <string name="catslist_nav_label">Cats list</string>
-    <string name="catslist_error_loading_cats">Couldn\'t load a cat. Check your connection and try again.</string>
-
-    <string name="catslist_error_feed_stopped">Something went wrong. Try again.</string>
-
-    <!-- favoritecats screen -->
     <string name="favoritecats_nav_label">Favorites</string>
-    <string name="favoritecats_error_loading_favorites">Couldn\'t load your favorites. Try again.</string>
-    <string name="favoritecats_empty_message">Favorite Cats list is empty</string>
 </resources>

@@ -33,6 +33,14 @@ class AndroidLibraryConventionPlugin : Plugin<Project> {
                     sourceCompatibility = JavaVersion.VERSION_17
                     targetCompatibility = JavaVersion.VERSION_17
                 }
+
+                testOptions {
+                    unitTests {
+                        // Code that logs failures through android.util.Log — a stub on the JVM
+                        // that throws by default — stays testable without Robolectric.
+                        isReturnDefaultValues = true
+                    }
+                }
             }
 
             extensions.configure<KotlinAndroidProjectExtension> {

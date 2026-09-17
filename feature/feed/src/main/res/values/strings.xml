@@ -1,0 +1,4 @@
+<resources>
+    <string name="catslist_error_loading_cats">Couldn\'t load a cat. Check your connection and try again.</string>
+    <string name="catslist_error_feed_stopped">Something went wrong. Try again.</string>
+</resources>
