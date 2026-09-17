@@ -1,4 +1,5 @@
 pluginManagement {
+    includeBuild("build-logic")
     repositories {
         gradlePluginPortal()
         google()
@@ -19,3 +20,10 @@ dependencyResolutionManagement {
 }
 rootProject.name = "CatsList"
 include(":app")
+include(":core:model")
+include(":core:data")
+include(":core:testing")
+include(":core:ui")
+include(":core:designsystem")
+include(":feature:feed")
+include(":feature:favorites")
