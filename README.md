@@ -18,23 +18,29 @@ pull request at a time, with the build green at every commit.
 
 ## Architecture
 
-Single module, Clean Architecture, one direction of dependency:
+Eight Gradle modules, Clean Architecture, one direction of dependency:
 
 ```
-presentation  ──►  domain  ◄──  data
+:app  ──►  :feature:feed, :feature:favorites  ──►  :core:model, :core:data,
+                                                     :core:ui, :core:designsystem
 ```
 
-`domain` knows nothing about Android — no SDK, no Compose, no Room, no Hilt.
-`data` implements interfaces that `domain` declares. `presentation` never
-touches a repository or the database directly.
+`:core:model` knows nothing about Android — no SDK, no Compose, no Room, no
+Hilt. `:core:data` implements the repository a use case declares. Each feature
+module exposes exactly two public things, its `NavKey` and one entry
+`@Composable`; everything else — ViewModel, StateHolder, ErrorHandler — is
+`internal`, enforced by the compiler rather than by convention.
 
 Every screen is the same six pieces: an immutable `State` with one sealed
 `UiStatus` (never boolean flags), an `Event` type, a `StateHolder` that is the
 only thing allowed to mutate state, an `ErrorHandler`, a ViewModel that merely
 orchestrates, and a stateless `Content` composable the previews render.
 
-Single module is a decision with a stated trigger for splitting, not an
-oversight — see [ADR-0001](docs/DECISIONS.md#adr-0001).
+This started single-module and split once a second feature and a shared
+component were actually about to need it, not ahead of time — see
+[ADR-0001](docs/DECISIONS.md#adr-0001) (the original call) and
+[ADR-0022](docs/DECISIONS.md#adr-0022) (the split, and why it happened for a
+different reason than ADR-0001 predicted).
 
 ## Built with
 
@@ -51,8 +57,10 @@ oversight — see [ADR-0001](docs/DECISIONS.md#adr-0001).
 
 ## Tests
 
-**78 unit tests, 11 instrumented.** No mocking library — every test double is a
-real in-memory implementation ([ADR-0012](docs/DECISIONS.md#adr-0012)).
+**80 unit tests, 11 instrumented.** No mocking library — every test double is a
+real in-memory implementation ([ADR-0012](docs/DECISIONS.md#adr-0012)). Tests
+live beside the code they test — in the same Gradle module, same package —
+rather than in one shared test source set.
 
 The instrumented ones are not optional extras. They are the only place three
 data-loss failures can be checked, because all three are Room behaviour that no
@@ -67,9 +75,9 @@ fail proves nothing.
 ## Engineering notes
 
 The interesting part of this repo is not the cat list. It is
-[`docs/DECISIONS.md`](docs/DECISIONS.md): 20 decision records with the rejected
-alternative and the consequences, including one decision superseded by a later
-one. A sample:
+[`docs/DECISIONS.md`](docs/DECISIONS.md): 22 decision records with the rejected
+alternative and the consequences, including two decisions superseded by a
+later one. A sample:
 
 - **[ADR-0014](docs/DECISIONS.md#adr-0014)** — a double tap on the favorite
   button crashed the app. `OnConflictStrategy.REPLACE` would have stopped the
@@ -86,6 +94,9 @@ one. A sample:
 - **[ADR-0016 → ADR-0019](docs/DECISIONS.md#adr-0016)** — a decision that was
   right for the design it was made in, and was superseded once the design
   changed.
+- **[ADR-0001 → ADR-0022](docs/DECISIONS.md#adr-0001)** — single-module was a
+  decision with a stated trigger for splitting; the split happened for a
+  related but different reason than the one that was written down.
 
 Several of those were introduced during this rebuild, not inherited. They are
 recorded because finding them was the work.
@@ -117,7 +128,7 @@ JDK 17. No API key required — TheCatAPI's search endpoint is open.
 ## Known gaps
 
 Tracked honestly rather than hidden: no app icon, `minifyEnabled` is off for
-release, `versionCode` needs correcting before the next release, Gson and
-kotlinx.serialization both ship where one would do
-([ADR-0020](docs/DECISIONS.md#adr-0020)), and the instrumented tests do not yet
-run in CI ([ADR-0018](docs/DECISIONS.md#adr-0018)).
+release ([RELEASING.md](RELEASING.md#known-limitations)), the instrumented
+tests do not yet run in CI ([ADR-0018](docs/DECISIONS.md#adr-0018)), and Coil
+and Retrofit still build two separate `OkHttpClient` instances rather than
+sharing one configured client ([ADR-0006](docs/DECISIONS.md#adr-0006)).

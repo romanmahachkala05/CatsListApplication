@@ -15,11 +15,14 @@ Two gates, both real tasks in the root `build.gradle.kts`:
     ./gradlew verify           # every change, every time. No device needed.
     ./gradlew verifyOnDevice   # before opening a PR. Needs a device/emulator.
 
-- **`verify`** = `:app:assembleDebug` + `:app:testDebugUnitTest` + `:app:test`.
-  Both test tasks are listed on purpose: an Android module has only
-  `testDebugUnitTest`, a pure-Kotlin module (`:core:model`, `:core:domain`,
-  `:core:testing`, …) only `test`. Naming one silently skips the other's tests.
-- **`verifyOnDevice`** = `verify` + `:app:connectedDebugAndroidTest`.
+- **`verify`** = `:app:assembleDebug` + every subproject's own `check` task —
+  ktlint, detekt, and the unit tests all attach themselves to `check` by
+  default, and the module list keeps growing, so `verify` depends on `check`
+  itself rather than naming module-specific task paths. Adding a module wires
+  it into `verify` automatically; nothing to remember to update.
+- **`verifyOnDevice`** = `verify` + every module's `connectedDebugAndroidTest`
+  (currently only `:core:data` has instrumented tests, but this is computed
+  the same way — no hardcoded module list).
 
 CI runs `verify` on every pull request. The local command is deliberately the
 same one, so a red check can be reproduced without translating a CI step back
@@ -57,23 +60,31 @@ Build JDK: **17**, via the Gradle toolchain.
 
 ## Where things live
 
-| Thing | Location |
-| --- | --- |
-| Business models, repository interfaces, use cases | `app/src/main/java/com/example/catslist/domain/` |
-| Repository impls, remote/local sources, mappers, DI modules | `…/data/` |
-| Room entity / DAO / database / migrations | `…/data/local/` |
-| Committed Room schemas | `app/schemas/` |
-| One MVI screen (State/Event/StateHolder/VM/Screen/ErrorHandler) | `…/presentation/<name>/` |
-| Shared UI: theme, components, `UiText`, `SnackbarNotifier` | `…/presentation/` |
-| `NavDisplay` + back stack | `…/presentation/navigation/` |
-| `MainDispatcherRule` and shared test fakes | `app/src/test/java/com/example/catslist/testing/` |
-| Device tests (Room behaviour, migrations, upgrades) | `app/src/androidTest/` |
-| Every dependency and version | `gradle/libs.versions.toml` |
-| `verify` / `verifyOnDevice` | root `build.gradle.kts` |
+Eight Gradle modules — see [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) §2b
+for the full dependency graph and the rules behind it.
 
-The Kotlin package mirrors the directory path. The project is single-module by
-decision, not by accident — see [ADR-0001](docs/DECISIONS.md#adr-0001) for the
-target module graph and the trigger for splitting.
+| Thing | Module | Location |
+| --- | --- | --- |
+| Domain model | `:core:model` | `src/main/kotlin/…/domain/model/` |
+| Repository interface + impl, use cases, API service, Room entity/DAO/migrations, DI modules | `:core:data` | `src/main/kotlin/…/domain/`, `…/data/` |
+| Committed Room schemas | `:core:data` | `schemas/` |
+| ViewModel-facing shared primitives: `UiText`, `launchCatching`, `RetryableFlow`, `StateOwner`, `SnackbarNotifier` | `:core:ui` | `src/main/kotlin/…/presentation/` |
+| Theme, shared components (e.g. the cat image card) | `:core:designsystem` | `src/main/kotlin/…/presentation/theme/`, `…/components/` |
+| `MainDispatcherRule` and shared test fakes | `:core:testing` | `src/main/kotlin/…/testing/` |
+| One MVI screen (State/Event/StateHolder/VM/Screen/ErrorHandler) | `:feature:feed`, `:feature:favorites` | `src/main/kotlin/…/presentation/<name>/` |
+| Unit tests | same module as the code they test | `src/test/kotlin/` |
+| Device tests (Room behaviour, migrations, upgrades) | `:core:data` | `src/androidTest/kotlin/` |
+| `App`, `MainActivity`, `NavDisplay` + back stack — composition root only | `:app` | `src/main/java/…/`, `…/presentation/navigation/` |
+| Convention plugins (`catslist.android.library`, `.jvm.library`, `.compose`, `.hilt`, `.quality`) | `build-logic` | `build-logic/convention/src/main/kotlin/` |
+| Every dependency and version | — | `gradle/libs.versions.toml` |
+| `verify` / `verifyOnDevice` | — | root `build.gradle.kts` |
+
+The Kotlin package does not need to mirror its module — most files kept their
+original package when they moved into a new module; only each file's own
+generated `R` class reference changes. A `:feature:*` module exposes only its
+`NavKey` and one entry `@Composable`; everything else in it is `internal`.
+This is the outcome ADR-0001 anticipated and deferred — see
+[ADR-0022](docs/DECISIONS.md#adr-0022) for why the split happened, and when.
 
 ---
 
@@ -82,7 +93,8 @@ target module graph and the trigger for splitting.
 - `gradle/libs.versions.toml` version bumps — call them out explicitly in the PR;
   never bump a version as a side effect of another change.
 - `gradle/wrapper/`, `gradlew`, `gradlew.bat`.
-- `build-logic/`, once it exists — its convention plugins configure every module.
+- `build-logic/` — its convention plugins configure every module; a change
+  here affects all of them at once.
 - `.idea/` and generated `build/` directories.
 
 ---
@@ -110,6 +122,16 @@ target module graph and the trigger for splitting.
   leaving a screen mid-request gets reported to the user as a failure. See
   [ADR-0013](docs/DECISIONS.md#adr-0013).
 - **A feature never depends on another feature.**
+- **A `:feature:*` module's ViewModel, StateHolder, ErrorHandler and contracts
+  are `internal`.** Only the `NavKey` and the entry `@Composable` are public.
+  If a public `@Composable` needs to take the ViewModel as a parameter (for
+  `hiltViewModel()`'s default), split it into a public overload with no
+  ViewModel parameter and a `private` one that takes it — a public function
+  cannot take an `internal` type as a parameter.
+- **A module with a `@Serializable` type needs `kotlin.plugin.serialization`
+  applied directly in its own `build.gradle.kts`** — it is not pulled in by
+  `catslist.hilt` or any other convention plugin. Missing it compiles fine and
+  crashes only at runtime, on first use of the type.
 
 ---
 
