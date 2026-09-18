@@ -56,7 +56,8 @@ Thumbs.db
 AGENTS.md
 CLAUDE.md
 CLAUDE.local.md
-.claude/
+.claude/*
+!.claude/skills/
 .cursor/
 .cursorrules
 .aider*

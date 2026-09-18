@@ -1,24 +1,7 @@
 <resources>
     <string name="app_name">CatsList</string>
 
-    <!-- catslist screen -->
+    <!-- bottom bar labels: CatsNavDisplay lives here, the screens themselves do not -->
     <string name="catslist_nav_label">Cats list</string>
-    <string name="catslist_error_loading_cats">Couldn\'t load a cat. Check your connection and try again.</string>
-
-    <string name="catslist_error_feed_stopped">Something went wrong. Try again.</string>
-
-    <!-- favoritecats screen -->
     <string name="favoritecats_nav_label">Favorites</string>
-    <string name="favoritecats_error_loading_favorites">Couldn\'t load your favorites. Try again.</string>
-    <string name="favoritecats_empty_message">Favorite Cats list is empty</string>
-
-    <!-- common: used by shared components / collaborators across screens -->
-    <string name="common_cd_download_cat">Download this cat image</string>
-    <string name="common_cd_favorite_cat">Add or remove this cat from favorites</string>
-    <string name="common_favorite_failed_message">Couldn\'t update favorites. Try again.</string>
-    <string name="common_download_started_message">Downloading started</string>
-    <string name="common_download_failed_message">Couldn\'t download this cat image. Try again.</string>
-    <string name="common_download_notification_title">Image of cat with id %1$s</string>
-    <string name="common_download_notification_description">Downloading image…</string>
-    <string name="common_action_retry">Retry</string>
 </resources>

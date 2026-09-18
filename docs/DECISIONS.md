@@ -25,7 +25,7 @@ that fail without the fix. They are here because finding them was the work.
 
 | # | Decision | Status |
 | --- | --- | --- |
-| [0001](#adr-0001) | Single-module Clean Architecture | Accepted |
+| [0001](#adr-0001) | Single-module Clean Architecture | **Superseded** by 0022 |
 | [0002](#adr-0002) | Kotlin DSL + version catalog, no hardcoded versions | Accepted |
 | [0003](#adr-0003) | Compose with an explicit MVI screen contract | Accepted |
 | [0004](#adr-0004) | Hilt for dependency injection | Accepted |
@@ -46,6 +46,7 @@ that fail without the fix. They are here because finding them was the work.
 | [0019](#adr-0019) | Make the feed resubscribable instead | Accepted |
 | [0020](#adr-0020) | One serialization library | Accepted |
 | [0021](#adr-0021) | Derive versionCode from the version name | Accepted |
+| [0022](#adr-0022) | Split the app into Gradle modules | Accepted |
 
 ---
 
@@ -53,7 +54,7 @@ that fail without the fix. They are here because finding them was the work.
 
 ### Single-module Clean Architecture
 
-**Accepted** · 2026-09-11
+**Superseded** by [ADR-0022](#adr-0022) · 2026-09-11
 
 **Context.** The 2022 codebase had no layering: an activity reached into a Room
 database through a `CatStorage` singleton, and models carried Room annotations
@@ -77,6 +78,15 @@ feature team or a build slow enough to notice — not repo size.
 **Review when:** a second team needs to own a feature independently, the build
 is slow enough that parallel module compilation would pay, or the layering has
 been violated often enough that review is clearly not catching it.
+
+**Why it was superseded.** None of those three triggers happened — there was
+never a second team, and the build was never measured as slow. What actually
+drove the split was different: a second animal type and a unified favorites
+screen were about to need the same domain model and image card from two
+places, which package boundaries cannot stop from drifting apart the way this
+project's own retry-resubscription logic already had to be de-duplicated once.
+ADR-0022 is the split this ADR's §2b anticipated, arrived at for a related but
+not identical reason.
 
 ---
 
@@ -194,6 +204,15 @@ larger feature surface; none of that surface was in use here.
 Not yet done: Coil and Retrofit each build their own default `OkHttpClient`, so
 the app runs two. Supplying one shared, configured client to both is a loose end,
 not a decision.
+
+Partially closed by ADR-0022: splitting Retrofit and Coil into separate Gradle
+modules (`:core:data`, `:core:designsystem`) surfaced that they'd been
+resolving to *different* OkHttp versions — Retrofit's own transitive floor
+(3.14.9) predates the Kotlin extension `:core:data` calls, and only Coil's
+newer one, sharing the single-module classpath, was masking it. Both now
+resolve to one pinned version (`libs.versions.toml`'s `okhttp`). They are
+still two separate `OkHttpClient` instances, each with its own connection pool
+and cache — that part of this gap is unchanged.
 
 ---
 
@@ -745,4 +764,97 @@ that history left behind, so nothing is blocked by the old mistake.
 **Review when:** the app is published somewhere with its own versioning expectations,
 or CI needs a distinct build number per build rather than per version — at which
 point the build number belongs beside this scheme, not instead of it.
+
+---
+
+## ADR-0022
+
+### Split the app into Gradle modules
+
+**Accepted** · 2026-09-17 · supersedes [ADR-0001](#adr-0001)
+
+**Context.** The app is one `:app` module of roughly 40 source files across the
+presentation/domain/data packages. Three features are next: a second animal type
+(dogs, behind a `GET v1/images/search` endpoint on a sibling API that returns the
+same `id`/`url`/`width`/`height` shape as the one already in use), a favorites
+screen unified across both animal types with filtering and sorting, and a shared
+image card (shimmer while loading, a placeholder on download failure instead of
+the failure covering the whole screen). All three touch the same seam: a domain
+model and a card component that today live inside the cats screen's own package
+and would otherwise get copy-pasted into a second one, the way the retry and
+download-feedback logic already had to be de-duplicated once in this project's
+history. Module boundaries turn "don't reach into the other screen's package" from
+a convention into a compile error.
+
+**Decision.** Eight modules:
+
+```
+:app                — Hilt app, MainActivity, nav graph, DI wiring only
+:core:model         — domain model, plain Kotlin/JVM: no Android, Compose, or
+                      Hilt dependency
+:core:data          — repository, API services, Room
+:core:designsystem  — theme, the shared image card, buttons
+:core:ui            — UiText, launchCatching, RetryableFlow, StateOwner,
+                      SnackbarNotifier
+:core:testing       — MainDispatcherRule, fakes
+:feature:feed       — one paginated list screen
+:feature:favorites  — the unified favorites screen
+```
+
+Each feature module exposes exactly two things — its `NavKey` and one entry
+`@Composable` — everything else (ViewModel, StateHolder, contract, screen
+internals) stays `internal`, enforced by the compiler rather than by convention.
+
+Four convention plugins in a `build-logic` included build: `catslist.android.library`
+(the standard Android library defaults, used by everything except `:app` and
+`:core:model`) and `catslist.jvm.library` (plain Kotlin, used only by
+`:core:model`) as the two bases, plus `catslist.compose` and `catslist.hilt` as
+additive plugins applied only by the modules that actually render Compose UI
+or declare a Hilt `@Module` — `:core:data` has neither reason to carry Compose,
+and applying the Compose compiler where there is no Compose runtime on the
+classpath fails outright rather than just wasting a build step. `catslist.quality`
+(ktlint + detekt) rides along on both base plugins, so no module is quietly
+uncovered by the checks the rest of the app runs.
+
+The domain model itself is not generalized from `Cat` to a species-agnostic
+`Animal` in this change. That rename belongs to the dogs feature, not to moving
+existing files into new module boundaries — doing both at once would make a
+large, mechanical diff (file moves, package renames) hard to tell apart from a
+small, meaningful one (the domain model actually changing shape).
+
+**Alternatives rejected.** An `-api`/`-impl` split per feature module (the
+pattern a large multi-team codebase uses to keep incremental builds fast and
+enforce that one team can't reach into another's internals) has nothing on the
+other side of the boundary to protect yet — no feature module is consumed by
+another feature module, only by `:app`. It would double the feature module
+count for a guarantee `internal` visibility already gives for free at this
+scale. Splitting each feature further into its own `domain`/`data`/`presentation`
+modules was also rejected: with one shared domain model and two feature
+screens, that multiplies module count without a matching payoff, and repeats
+the same mistake a pre-release review already found in this codebase — six
+use cases that only forward to a single repository method — a layer added
+because it is a known-good pattern, not because something today needs it.
+
+**Consequences.** Eight modules instead of one; every existing file's module
+location changes, but packages did not need to — `com.example.catslist.domain.model`
+is still the package `Cat` lives in, just under a different module's source
+root, so the only import ever needing a fix was each file's own generated `R`
+class. `:core:model` is checked dependency-free by construction (the
+`jvm-library` convention plugin declares no Android/Compose/Hilt dependencies
+for anything using it, so adding one is a build-file change, not a silent
+accretion). Gradle can skip recompiling modules whose public surface did not
+change, so a `:feature:favorites`-only edit no longer triggers a
+`:feature:feed` recompile. The migration landed as one branch of individually
+reviewable commits — convention plugins and `:core:model` first, then one
+module's worth of code at a time — rather than one sweeping change, and each
+commit was verified on-device, not just compiled: it caught two
+`@Serializable`-without-the-compiler-plugin regressions that would otherwise
+have shipped a crash on first launch.
+
+**Review when:** a feature module needs to be consumed by another feature
+module rather than only by `:app` — that is the trigger to reconsider the
+`-api`/`-impl` split, not size or file count on their own. Or when `:core:data`
+grows enough (e.g. a download manager needing its own persistence) that
+"everything data-related in one module" stops being one responsibility —
+split by what it does then, not ahead of time.
 

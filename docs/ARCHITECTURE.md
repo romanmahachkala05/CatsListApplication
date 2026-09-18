@@ -29,73 +29,88 @@ kotlinx.collections.immutable (latest), Truth 1.4.x.
 
 ## 2. Architecture
 
-Pick the variant that matches this project's **current** module setup.
+### 2a. Single-module (historical)
 
-### 2a. Single-module
+This project shipped single-module — `presentation → domain ← data`, `domain`
+depending on nothing Android — from ADR-0001 until ADR-0022. Kept here because
+a project starting fresh at two screens should make the same call: module
+boundaries buy compile-time layering enforcement and parallel builds, and
+neither pays for itself yet. Package boundaries carry the same design with
+none of the ceremony. Split when a real trigger shows up — see ADR-0001's
+**Review when** and, for what actually triggered it here, ADR-0022.
 
-Use Clean Architecture:
-
-    presentation → domain
-    data → domain
-
-domain MUST NOT depend on:
-- Android SDK
-- Compose
-- Room
-- Hilt
-- presentation
-- data
-
-presentation MUST NOT access repositories or Room directly.
-
-data implements interfaces defined in domain.
-
-### 2b. Multi-module
-
-This project is single-module (2a) until a real `:feature:*`/`:core:*` split
-happens — switch to this variant then.
-
-Use Clean Architecture over a multi-module Gradle build.
+### 2b. Multi-module (current)
 
 Module graph (arrows = "depends on"):
 
-    :app  ──▶ :feature:*  ──▶ :core:ui, :core:domain, :core:model
-      │                        (feature tests ──▶ :core:testing)
-      └──▶ :core:data ──▶ :core:domain, :core:model, :core:database
+    :app  ──▶ :feature:feed, :feature:favorites
+      │          └──▶ :core:model, :core:data, :core:ui, :core:designsystem
+      └──▶ :core:model, :core:data, :core:ui, :core:designsystem
 
-    :core:domain    ──▶ :core:model            (pure Kotlin, no Android)
-    :core:model     ──▶ (nothing)              (pure Kotlin)
-    :core:database  ──▶ (Room only)
-    :core:ui        ──▶ (Compose only)
-    :core:testing   ──▶ :core:domain, :core:model, :core:database
+    :core:data          ──▶ :core:model                    (pure Kotlin, no Android)
+    :core:model         ──▶ (nothing)                      (pure Kotlin)
+    :core:ui            ──▶ :core:model, :core:data
+    :core:designsystem  ──▶ :core:model, :core:ui
+    :core:testing       ──▶ :core:model, :core:data, :core:ui  (test-only; nothing depends on it in `main`)
 
 Rules:
 
-- `:core:model` and `:core:domain` are pure-Kotlin library modules: no Android
-  SDK, Compose, Room or Hilt on their classpath.
+- `:core:model` is a pure-Kotlin library module: no Android SDK, Compose, Room
+  or Hilt on its classpath, checked by construction (its convention plugin
+  declares none of them).
 - **A `:feature:*` module MUST NOT depend on another `:feature:*` module.**
   Cross-feature navigation goes through `() -> Unit` callbacks (or a
   `Navigator` interface) wired by `:app`; shared logic goes in `:core:*`.
+- **Each `:feature:*` module exposes exactly two public things: its `NavKey`
+  and one entry `@Composable`.** Everything else — ViewModel, StateHolder,
+  ErrorHandler, `XxxContract`, the Hilt `@Binds` module, the stateless
+  `XxxContent` — is `internal`, enforced by the compiler. A public
+  `@Composable` cannot take an `internal` type as a parameter (this is a
+  compiler error, not a warning), so the public `XxxScreen(modifier, contentPadding)`
+  delegates to a `private` overload that takes the `internal` ViewModel; that
+  private overload is where `hiltViewModel()`'s default lives.
 - `:app` is the **composition root only**: `Application`, `MainActivity`, the
-  `NavDisplay`. No screens, ViewModels, use cases, entities or DI modules.
-- `:core:data` implements the repository interfaces from `:core:domain` and is
-  the only module besides `:core:database` that `:app` needs for Hilt to see
-  every `@Module`.
-- Feature UI (screens + ViewModels) MUST NOT touch repositories or Room
+  `NavDisplay` and its back stack. No screens, ViewModels, use cases, entities
+  or feature-specific DI modules.
+- `:core:data` owns the repository, the API service, Room, and the use cases
+  that wrap the repository — this project does not split those into separate
+  domain/data/database modules; see ADR-0022's **Alternatives rejected** for
+  why a finer split was not worth it at two features.
+- `:core:designsystem` (theme, shared components like the cat image card) and
+  `:core:ui` (ViewModel-facing primitives — `UiText`, `launchCatching`,
+  `RetryableFlow`, `StateOwner`, `SnackbarNotifier`) are deliberately separate:
+  one is Compose-visual, the other is Compose-independent logic a ViewModel
+  can use without pulling in a design system.
+- Feature UI (screens + ViewModels) MUST NOT touch the repository or Room
   directly — only use cases.
-- The Kotlin package of a file MUST mirror its module:
-  `com.example.app.feature.<name>` / `.core.<name>`.
-- Shared build config goes in a `build-logic` composite build of **convention
-  plugins**, applied as `alias(libs.plugins.<name>)`. Never copy an `android { }`
-  block between modules.
+- The Kotlin package of a file does **not** need to mirror its module in this
+  project — `Cat` stayed in `com.example.catslist.domain.model` when it moved
+  from `:app` into `:core:model`, and every other file kept its package too.
+  Only each file's own generated `R` class reference changes when it crosses a
+  module boundary.
+- Shared build config lives in the `build-logic` composite build as
+  **convention plugins**: `catslist.jvm.library` and `catslist.android.library`
+  are the two bases; `catslist.compose`, `catslist.hilt`, and `catslist.quality`
+  (ktlint + detekt) are additive, applied only by the modules that actually
+  need them. Never copy an `android { }` block between modules.
+- **A module that declares a `@Serializable` type (a feature module's
+  `NavKey`) needs `kotlin.plugin.serialization` applied directly — it does not
+  come for free from `catslist.hilt` or any other convention plugin.** Missing
+  it compiles cleanly and crashes only when something actually looks up the
+  serializer at runtime (i.e. on first navigation to that screen). This bit
+  twice during the ADR-0022 migration; check it explicitly when a new feature
+  module's `NavKey` is added.
 
 `api` vs `implementation`:
 
 - Use `api` **only** for a dependency whose types appear in this module's
-  *public* signatures (e.g. `:core:domain` exposes `Flow` and its models, so
-  both are `api`).
+  *public* signatures. `:core:testing`'s fakes implement `:core:data`'s
+  `CatRepository`/`CatApiService`/`CatDao` and `:core:ui`'s `SnackbarNotifier`,
+  so a consumer needs those types too — `:core:testing` exposes `:core:model`,
+  `:core:data`, and `:core:ui` as `api`.
 - Everything else is `implementation`.
-- `:core:data` exposes nothing but a Hilt `@Binds`, so all its deps are
+- `:core:data` exposes nothing but Hilt `@Binds`/`@Provides` methods and use
+  cases wrapping its own repository, so all its dependencies are
   `implementation`.
 
 ---
@@ -344,9 +359,11 @@ Every screen is a subpackage / module with these parts:
 - `@Immutable` / `@Stable` on `State` and every UI model type. Use
   `ImmutableList` / `persistentListOf()` (kotlinx.collections.immutable) in state,
   never a raw `List` you rebuild each emission.
-- **Design system** lives in `core:ui`: theme + tokens + reusable components
-  (buttons, cells, loaders, error block, empty state, dialog host). Screens
-  compose these; they don't hand-roll spacing/colors.
+- **Design system** lives in `core:designsystem`: theme + tokens + reusable
+  components (buttons, cells, loaders, error block, empty state, dialog host).
+  Screens compose these; they don't hand-roll spacing/colors. `core:ui` is a
+  separate module for the ViewModel-facing primitives (§2b) — it has no
+  Compose-visual content of its own.
 
 ---
 
