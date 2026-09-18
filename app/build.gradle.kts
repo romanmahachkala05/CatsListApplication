@@ -38,7 +38,7 @@ val hasReleaseSigning = listOf("storeFile", "storePassword", "keyAlias", "keyPas
     .all { !releaseSigningValue(it).isNullOrBlank() }
 
 val versionMajor = 2
-val versionMinor = 0
+val versionMinor = 1
 val versionPatch = 0
 
 android {
