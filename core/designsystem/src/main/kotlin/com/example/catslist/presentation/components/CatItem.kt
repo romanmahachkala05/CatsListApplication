@@ -3,8 +3,10 @@ package com.example.catslist.presentation.components
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,8 +20,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -45,35 +50,44 @@ fun CatItem(
     onDownloadClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // Keyed on the url so a recycled row starts shimmering again for its new cat instead of
-    // showing the previous one's finished state.
-    var isLoading by remember(cat.url) { mutableStateOf(true) }
+    // Every card fetches its own photo, so one cat can fail while the page around it loaded
+    // fine. Bumping `attempt` gives the failed one a fresh painter, and so a fresh request.
+    var attempt by remember(cat.url) { mutableIntStateOf(0) }
+    var status by remember(cat.url, attempt) { mutableStateOf(ImageStatus.Loading) }
     Box(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = CARD_MARGIN_HORIZONTAL, vertical = CARD_MARGIN_VERTICAL),
     ) {
-        AsyncImage(
-            model = cat.url,
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            onState = { isLoading = it is AsyncImagePainter.State.Loading },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(IMAGE_HEIGHT)
-                .clip(CAT_CARD_SHAPE)
-                // The same shape for the outline as for the clip: a border drawn from a second
-                // shape would need the notch measurements repeated, and could drift from them.
-                .border(BORDER_WIDTH, MaterialTheme.colorScheme.outline, CAT_CARD_SHAPE),
-        )
-        if (isLoading) {
+        key(attempt) {
+            AsyncImage(
+                model = cat.url,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                onState = { status = it.toImageStatus() },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(IMAGE_HEIGHT)
+                    .clip(CAT_CARD_SHAPE)
+                    // The same shape for the outline as for the clip: a border drawn from a
+                    // second shape would need the notch measurements repeated, and could drift.
+                    .border(BORDER_WIDTH, MaterialTheme.colorScheme.outline, CAT_CARD_SHAPE),
+            )
+        }
+        // Drawn over the image — which is blank in both of these states — but under the actions.
+        when (status) {
             // Composed only while loading, so the infinite animation stops costing frames once
-            // the photo is up. Drawn over the (still blank) image but under the actions.
-            Box(
+            // the photo is up.
+            ImageStatus.Loading -> Box(
                 modifier = Modifier
                     .matchParentSize()
                     .clip(CAT_CARD_SHAPE)
                     .background(shimmerBrush()),
+            )
+            ImageStatus.Loaded -> Unit
+            ImageStatus.Failed -> CatImageError(
+                onRetry = { attempt++ },
+                modifier = Modifier.matchParentSize(),
             )
         }
         CatActions(
@@ -108,6 +122,45 @@ fun CatItemPlaceholder(modifier: Modifier = Modifier) {
                 .border(BORDER_WIDTH, MaterialTheme.colorScheme.outline, CAT_CARD_SHAPE),
         )
     }
+}
+
+/**
+ * Shown in place of a cat whose own image request failed, while the page around it loaded fine.
+ * Tapping retries just this one — without that the card stays broken for as long as the list
+ * keeps it alive, and a pull-to-refresh of the whole feed is a heavy way to recover one photo.
+ */
+@Composable
+private fun CatImageError(onRetry: () -> Unit, modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier
+            .clip(CAT_CARD_SHAPE)
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .clickable(onClickLabel = stringResource(R.string.common_cd_retry_cat_image), onClick = onRetry),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.ic_image_failed),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(ERROR_ICON_SIZE),
+        )
+        Text(
+            text = stringResource(R.string.common_cat_image_failed),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 8.dp),
+        )
+    }
+}
+
+private enum class ImageStatus { Loading, Loaded, Failed }
+
+private fun AsyncImagePainter.State.toImageStatus(): ImageStatus = when (this) {
+    is AsyncImagePainter.State.Loading -> ImageStatus.Loading
+    is AsyncImagePainter.State.Error -> ImageStatus.Failed
+    // Empty means no request was made at all — nothing is coming, so nothing should shimmer.
+    is AsyncImagePainter.State.Empty, is AsyncImagePainter.State.Success -> ImageStatus.Loaded
 }
 
 /**
@@ -184,6 +237,7 @@ private val CARD_CORNER = 20.dp
 private val IMAGE_HEIGHT = 300.dp
 private val BORDER_WIDTH = 3.dp
 private val ICON_SIZE = 24.dp
+private val ERROR_ICON_SIZE = 40.dp
 
 /** Two 48dp touch targets side by side, plus the breathing room around them. */
 private val NOTCH_WIDTH = 104.dp
@@ -191,8 +245,8 @@ private val NOTCH_HEIGHT = 52.dp
 private val NOTCH_CORNER = 20.dp
 private val NOTCH_SWEEP = 16.dp
 
-/** Enough to fill a phone screen and then some, so the skeleton never ends mid-viewport. */
-private const val PLACEHOLDER_COUNT = 4
+/** Two is what fits on a phone screen at [IMAGE_HEIGHT] — enough to read as a list, no more. */
+private const val PLACEHOLDER_COUNT = 2
 
 /** Declared last on purpose: top-level initialisers run in file order, and this reads the rest. */
 private val CAT_CARD_SHAPE =
@@ -226,4 +280,14 @@ private fun CatItemFavoritePreview() {
 @Composable
 private fun CatItemPlaceholderPreview() {
     CatsListTheme { CatItemPlaceholder() }
+}
+
+@Preview(name = "Image failed", showBackground = true)
+@Composable
+private fun CatImageErrorPreview() {
+    CatsListTheme {
+        Box(modifier = Modifier.fillMaxWidth().padding(CARD_MARGIN_HORIZONTAL)) {
+            CatImageError(onRetry = {}, modifier = Modifier.fillMaxWidth().height(IMAGE_HEIGHT))
+        }
+    }
 }

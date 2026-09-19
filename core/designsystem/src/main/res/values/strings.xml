@@ -2,4 +2,6 @@
     <string name="common_cd_download_cat">Download this cat image</string>
     <string name="common_cd_favorite_cat">Add or remove this cat from favorites</string>
     <string name="common_action_retry">Retry</string>
+    <string name="common_cat_image_failed">Couldn\'t load this cat</string>
+    <string name="common_cd_retry_cat_image">Retry loading this cat image</string>
 </resources>
