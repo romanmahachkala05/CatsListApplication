@@ -1,14 +1,13 @@
 package com.example.catslist.data.repository
 
-import androidx.paging.ExperimentalPagingApi
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
-import androidx.paging.map
 import com.example.catslist.data.local.CatDao
-import com.example.catslist.data.local.CatFeedDao
 import com.example.catslist.data.local.toDomain
 import com.example.catslist.data.local.toEntity
+import com.example.catslist.data.remote.CatApiService
+import com.example.catslist.data.remote.CatFeedPagingSource
 import com.example.catslist.domain.model.Cat
 import com.example.catslist.domain.repository.CatRepository
 import javax.inject.Inject
@@ -18,20 +17,17 @@ import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-@OptIn(ExperimentalPagingApi::class)
 @Singleton
 class CatRepositoryImpl @Inject constructor(
     private val catDao: CatDao,
-    private val catFeedDao: CatFeedDao,
-    private val catFeedRemoteMediator: CatFeedRemoteMediator,
+    private val catApiService: CatApiService,
 ) : CatRepository {
 
     override val favorites: Flow<ImmutableList<Cat>> =
         catDao.getAllCats().map { entities -> entities.map { it.toDomain() }.toPersistentList() }
 
     /**
-     * No favorite status here, ever — not baked in via a query join (see
-     * `CatFeedDao.pagingSource`'s doc) and not layered on via `combine()` either.
+     * No favorite status here, ever — and not layered on via `combine()` either.
      * `PagingData.map` is not safe to re-run on the same underlying `PagingData` more than
      * once: `combine()`-ing this with a changing favorites flow re-invoked `.map` on the same
      * instance on every favorite toggle, and the second, still-live subscription to the same
@@ -44,27 +40,20 @@ class CatRepositoryImpl @Inject constructor(
     override val feed: Flow<PagingData<Cat>> = Pager(
         config = PagingConfig(
             pageSize = PAGE_SIZE,
-            // Defaults to pageSize * 3. The mediator fetches exactly one page per network call,
-            // so a larger initial load leaves Paging short and it immediately appends to catch
-            // up — and every append writes feedCatsTable, invalidating the very PagingSource
-            // reading it. That produced a visible cascade at startup: cats, then a new
-            // generation reloading, then cats again, three times before the screen settled.
-            // Deliberately smaller than PAGE_SIZE. One network page caches PAGE_SIZE rows, so an
-            // initial load of the same size drains the table, the PagingSource reports there is
-            // nothing left, and Paging immediately asks the mediator to append — a second
-            // request at launch that no one scrolled for. Loading fewer leaves rows in hand.
-            initialLoadSize = INITIAL_LOAD_SIZE,
+            // Must equal pageSize. The API pages by (page, limit), so page N holds items
+            // N * limit onwards — a first load of a different size would put every later page
+            // at the wrong offset and quietly skip or repeat a block of cats.
+            initialLoadSize = PAGE_SIZE,
             // Defaults to pageSize, which at this card size is far more lookahead than the
-            // screen needs: two cards are visible, so a ten-item distance is already satisfied
-            // the moment the first page lands and Paging appends again immediately. Each append
-            // writes feedCatsTable and so invalidates the PagingSource reading it, restarting
-            // the load state — a second load at launch that nothing asked for.
+            // screen needs: about two cards are visible, so a ten-item distance is already
+            // satisfied the moment the first page lands.
             prefetchDistance = PREFETCH_DISTANCE,
             enablePlaceholders = false,
         ),
-        remoteMediator = catFeedRemoteMediator,
-        pagingSourceFactory = catFeedDao::pagingSource,
-    ).flow.map { pagingData -> pagingData.map { it.toDomain() } }
+        // A new source per generation, never a shared instance: a PagingSource is single-use
+        // once invalidated, and each one owns the de-duplication state for its own generation.
+        pagingSourceFactory = { CatFeedPagingSource(catApiService) },
+    ).flow
 
     override suspend fun toggleFavorite(cat: Cat) = catDao.toggleFavorite(cat.toEntity())
 
@@ -74,9 +63,6 @@ class CatRepositoryImpl @Inject constructor(
 
     private companion object {
         const val PAGE_SIZE = 10
-
-        /** Half a cached page, so the first load never empties the table it reads from. */
-        const val INITIAL_LOAD_SIZE = PAGE_SIZE / 2
 
         /** Roughly one screen of cards ahead of the last visible one. */
         const val PREFETCH_DISTANCE = 3

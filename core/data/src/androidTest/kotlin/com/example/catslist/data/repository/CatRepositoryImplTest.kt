@@ -1,6 +1,5 @@
 package com.example.catslist.data.repository
 
-import androidx.paging.ExperimentalPagingApi
 import androidx.paging.testing.asSnapshot
 import androidx.room.Room
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -17,11 +16,11 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Runs the full `Pager` + `RemoteMediator` + Room stack `CatRepositoryImpl.feed` actually
- * builds, not a fake standing in for it — proving the RemoteMediator/`Pager` combination
- * behaves under a real dispatcher isn't something a plain JVM `runTest` reliably does.
+ * Runs the real `Pager` that `CatRepositoryImpl.feed` builds, not a fake standing in for it —
+ * proving a `Pager` behaves under a real dispatcher isn't something a plain JVM `runTest`
+ * reliably does. Room is still real here because `favorites` needs it; the feed no longer
+ * touches it at all.
  */
-@OptIn(ExperimentalPagingApi::class)
 @RunWith(AndroidJUnit4::class)
 class CatRepositoryImplTest {
 
@@ -34,8 +33,7 @@ class CatRepositoryImplTest {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         database = Room.inMemoryDatabaseBuilder(context, CatDatabase::class.java).build()
         api = FakeApi()
-        val mediator = CatFeedRemoteMediator(api, database.catFeedDao())
-        repository = CatRepositoryImpl(database.catDao(), database.catFeedDao(), mediator)
+        repository = CatRepositoryImpl(database.catDao(), api)
     }
 
     @After
