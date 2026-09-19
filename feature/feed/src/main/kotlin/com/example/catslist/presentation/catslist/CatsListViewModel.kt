@@ -11,43 +11,51 @@ import com.example.catslist.domain.usecase.GetFavoriteCatsUseCase
 import com.example.catslist.domain.usecase.ToggleFavoriteUseCase
 import com.example.catslist.presentation.FAVORITE_FAILED
 import com.example.catslist.presentation.SnackbarNotifier
+import com.example.catslist.presentation.StateOwner
 import com.example.catslist.presentation.downloadCat
 import com.example.catslist.presentation.launchCatching
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.collections.immutable.toPersistentSet
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.onEach
 
 @HiltViewModel
 internal class CatsListViewModel @Inject constructor(
+    private val stateHolder: ICatsListStateHolder,
+    private val errorHandler: ICatsListErrorHandler,
     getCatFeed: GetCatFeedUseCase,
     getFavoriteCats: GetFavoriteCatsUseCase,
     private val toggleFavorite: ToggleFavoriteUseCase,
     private val downloadCatImage: DownloadCatImageUseCase,
     private val notifier: SnackbarNotifier,
-) : ViewModel() {
+) : ViewModel(),
+    StateOwner<CatsListState> by stateHolder {
 
     /**
-     * Paging owns loading, error and retry for this stream itself — see
-     * [androidx.paging.compose.LazyPagingItems.loadState] where it's collected. There is no
-     * `CatsListState` any more: a custom Loading/Error/Content status would just be
-     * reimplementing what `collectAsLazyPagingItems()` already tracks.
+     * The one thing on this screen that is not in [CatsListState], because it cannot be:
+     * `LazyPagingItems` is built by the Composable collecting this, and Paging drives its own
+     * loading, error and retry from there. See ADR-0023 for why that state machine stays
+     * Paging's rather than being mirrored into the state holder.
      */
     val pagedCats: Flow<PagingData<Cat>> = getCatFeed().cachedIn(viewModelScope)
 
-    /**
-     * The paged cats never carry favorite status themselves (see `CatRepositoryImpl.feed`'s
-     * doc). The screen overlays it at render time by checking a cat's id against this set —
-     * ordinary Compose recomposition, not another Paging generation.
-     */
-    val favoriteIds: StateFlow<Set<String>> = getFavoriteCats()
-        .map { favorites -> favorites.mapTo(hashSetOf()) { it.id } }
-        // Eagerly, not WhileSubscribed: this is a cheap derived set of already-cached Room
-        // ids, not worth tying to whether a Composable happens to be collecting it right now.
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
+    init {
+        getFavoriteCats()
+            .map { favorites -> favorites.map { it.id }.toPersistentSet() }
+            // Without this a throwing Room query would escape viewModelScope and kill the
+            // process. No RetryableFlow as on the favorites screen: there the stream *is* the
+            // screen, so a retry button has somewhere to live; here the feed renders on regardless
+            // and the only honest recovery is reopening the screen.
+            .catch { errorHandler.onFavoriteIdsFailure(it) }
+            .onEach(stateHolder::showFavorites)
+            .launchIn(viewModelScope)
+    }
+
+    override fun onCleared() = stateHolder.reset()
 
     fun onEvent(event: CatsListEvent) {
         when (event) {

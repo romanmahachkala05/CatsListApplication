@@ -24,9 +24,9 @@ import org.junit.Test
  * Loading/error/retry for the feed itself is Paging's own state machine now (see
  * [CatsListViewModel.pagedCats]'s doc) — proven by [CatFeedRemoteMediatorTest] and
  * [com.example.catslist.data.local.CatFeedDaoTest], not here. What is still this
- * ViewModel's job: forwarding the paged feed and the live favorite-id set (never combined
- * together — see [CatsListViewModel.favoriteIds]'s doc, ADR-0023), and handling
- * favorite/download events.
+ * ViewModel's job: forwarding the paged feed and keeping the live favorite-id set in
+ * [CatsListState] (never combined into the feed itself — see `CatRepositoryImpl.feed`'s doc and
+ * ADR-0023), and handling favorite/download events.
  */
 class CatsListViewModelTest {
 
@@ -36,6 +36,7 @@ class CatsListViewModelTest {
     private val repository = FakeCatRepository()
     private val downloader = FakeImageDownloader()
     private val notifier = FakeSnackbarNotifier()
+    private val stateHolder = CatsListStateHolder()
 
     @Test
     fun `exposes the repository feed`() = runTest {
@@ -54,7 +55,7 @@ class CatsListViewModelTest {
 
         viewModel.onEvent(CatsListEvent.ToggleFavorite(cat("2")))
 
-        assertThat(viewModel.favoriteIds.value).containsExactly("2")
+        assertThat(viewModel.state.value.favoriteIds).containsExactly("2")
     }
 
     @Test
@@ -65,7 +66,20 @@ class CatsListViewModelTest {
 
         viewModel.onEvent(CatsListEvent.ToggleFavorite(cat("1")))
 
-        assertThat(viewModel.favoriteIds.value).isEmpty()
+        assertThat(viewModel.state.value.favoriteIds).isEmpty()
+    }
+
+    @Test
+    fun `a broken favorites stream marks favorites unavailable and leaves the feed alone`() = runTest {
+        // Before this guard existed the throw escaped viewModelScope, which on Android kills
+        // the process — the feed itself loads independently and is unaffected.
+        repository.setFeed(cat("1"))
+        repository.favoritesError = IOException("database is corrupt")
+
+        val viewModel = viewModel()
+
+        assertThat(viewModel.state.value.favoritesStatus).isEqualTo(CatsListFavoritesStatus.Unavailable)
+        assertThat(viewModel.pagedCats.asSnapshot().map { it.id }).containsExactly("1")
     }
 
     @Test
@@ -123,6 +137,8 @@ class CatsListViewModelTest {
     }
 
     private fun viewModel() = CatsListViewModel(
+        stateHolder = stateHolder,
+        errorHandler = CatsListErrorHandler(stateHolder),
         getCatFeed = GetCatFeedUseCase(repository),
         getFavoriteCats = GetFavoriteCatsUseCase(repository),
         toggleFavorite = ToggleFavoriteUseCase(repository),

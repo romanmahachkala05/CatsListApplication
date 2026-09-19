@@ -36,6 +36,7 @@ import com.example.catslist.presentation.components.CatItem
 import com.example.catslist.presentation.components.ErrorMessage
 import com.example.catslist.presentation.components.LoadingIndicator
 import com.example.catslist.presentation.theme.CatsListTheme
+import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.coroutines.flow.flowOf
 
 /** The download/favorite Snackbar for the screen's ViewModel is collected by the app's shared
@@ -54,10 +55,10 @@ private fun CatsListScreen(
     viewModel: CatsListViewModel,
 ) {
     val pagingItems = viewModel.pagedCats.collectAsLazyPagingItems()
-    val favoriteIds by viewModel.favoriteIds.collectAsStateWithLifecycle()
+    val state by viewModel.state.collectAsStateWithLifecycle()
     CatsListContent(
         pagingItems = pagingItems,
-        favoriteIds = favoriteIds,
+        state = state,
         onEvent = viewModel::onEvent,
         contentPadding = contentPadding,
         modifier = modifier,
@@ -69,7 +70,7 @@ internal fun CatsListContent(
     pagingItems: LazyPagingItems<Cat>,
     onEvent: (CatsListEvent) -> Unit,
     modifier: Modifier = Modifier,
-    favoriteIds: Set<String> = emptySet(),
+    state: CatsListState = CatsListState(),
     contentPadding: PaddingValues = PaddingValues(),
 ) {
     Surface(modifier = modifier.fillMaxSize()) {
@@ -77,15 +78,15 @@ internal fun CatsListContent(
         // A refresh error/spinner only takes over the whole screen while there is nothing
         // to show yet — once cats are on screen, a failed reload becomes the append footer's
         // problem (see CatsFeed), not a reason to blank out what's already loaded.
-        when {
-            refresh is LoadState.Loading && pagingItems.itemCount == 0 -> LoadingIndicator()
-            refresh is LoadState.Error && pagingItems.itemCount == 0 -> ErrorMessage(
+        when (refresh) {
+            is LoadState.Loading if pagingItems.itemCount == 0 -> LoadingIndicator()
+            is LoadState.Error if pagingItems.itemCount == 0 -> ErrorMessage(
                 message = UiText.Resource(R.string.catslist_error_loading_cats),
                 onRetry = pagingItems::retry,
             )
             else -> CatsFeed(
                 pagingItems = pagingItems,
-                favoriteIds = favoriteIds,
+                state = state,
                 onEvent = onEvent,
                 contentPadding = contentPadding,
             )
@@ -96,17 +97,33 @@ internal fun CatsListContent(
 @Composable
 private fun CatsFeed(
     pagingItems: LazyPagingItems<Cat>,
-    favoriteIds: Set<String>,
+    state: CatsListState,
     onEvent: (CatsListEvent) -> Unit,
     contentPadding: PaddingValues,
 ) {
     LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = contentPadding) {
+        when (state.favoritesStatus) {
+            CatsListFavoritesStatus.Live -> Unit
+            // A notice above the cats, not in place of them: the feed loaded fine, and only the
+            // star icons are stale. Blanking working content over that would be a worse lie.
+            CatsListFavoritesStatus.Unavailable -> item {
+                ListNotice {
+                    Text(
+                        text = stringResource(R.string.catslist_error_favorites_unavailable),
+                        style = MaterialTheme.typography.bodyMedium,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            }
+        }
+
         items(count = pagingItems.itemCount, key = pagingItems.itemKey { it.id }) { index ->
             val cat = pagingItems[index] ?: return@items
             // The paged cat never carries favorite status itself — see CatRepositoryImpl.feed's
             // doc — so it's applied here, at render time, a plain Compose recomposition rather
             // than another Paging generation.
-            val displayCat = cat.copy(isFavorite = cat.id in favoriteIds)
+            val displayCat = cat.copy(isFavorite = cat.id in state.favoriteIds)
             CatItem(
                 cat = displayCat,
                 onFavoriteClick = { onEvent(CatsListEvent.ToggleFavorite(displayCat)) },
@@ -115,9 +132,9 @@ private fun CatsFeed(
         }
 
         when (pagingItems.loadState.append) {
-            is LoadState.Loading -> item { AppendFooter { CircularProgressIndicator() } }
+            is LoadState.Loading -> item { ListNotice { CircularProgressIndicator() } }
             is LoadState.Error -> item {
-                AppendFooter {
+                ListNotice {
                     Text(
                         text = stringResource(R.string.catslist_error_loading_cats),
                         style = MaterialTheme.typography.bodyMedium,
@@ -134,11 +151,11 @@ private fun CatsFeed(
     }
 }
 
-/** Compact, list-footer replacement for [LoadingIndicator]/[ErrorMessage] — those
- * `fillMaxSize()`, which inside a `LazyColumn` item takes the whole remaining viewport
- * instead of sizing to its content. */
+/** Compact, in-list replacement for [LoadingIndicator]/[ErrorMessage] — those `fillMaxSize()`,
+ * which inside a `LazyColumn` item takes the whole remaining viewport instead of sizing to its
+ * content. Used both above the cats and as the append footer below them. */
 @Composable
-private fun AppendFooter(content: @Composable () -> Unit) {
+private fun ListNotice(content: @Composable () -> Unit) {
     Column(
         modifier = Modifier.fillMaxWidth().padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -157,7 +174,25 @@ private fun CatsListContentPreview() {
             Cat(id = "2", url = "", width = 300, height = 300),
         )
         val pagingItems = flowOf(PagingData.from(cats)).collectAsLazyPagingItems()
-        CatsListContent(pagingItems = pagingItems, favoriteIds = setOf("2"), onEvent = {})
+        CatsListContent(
+            pagingItems = pagingItems,
+            state = CatsListState(favoriteIds = persistentSetOf("2")),
+            onEvent = {},
+        )
+    }
+}
+
+@Preview(name = "Favorites unavailable", showBackground = true)
+@Composable
+private fun CatsListFavoritesUnavailablePreview() {
+    CatsListTheme {
+        val cats = listOf(Cat(id = "1", url = "", width = 300, height = 300))
+        val pagingItems = flowOf(PagingData.from(cats)).collectAsLazyPagingItems()
+        CatsListContent(
+            pagingItems = pagingItems,
+            state = CatsListState(favoritesStatus = CatsListFavoritesStatus.Unavailable),
+            onEvent = {},
+        )
     }
 }
 

@@ -1,4 +1,5 @@
 <resources>
     <string name="catslist_error_loading_cats">Couldn\'t load a cat. Check your connection and try again.</string>
+    <string name="catslist_error_favorites_unavailable">Couldn\'t load favorites, so the stars below may be out of date.</string>
     <string name="catslist_action_retry">Retry</string>
 </resources>
