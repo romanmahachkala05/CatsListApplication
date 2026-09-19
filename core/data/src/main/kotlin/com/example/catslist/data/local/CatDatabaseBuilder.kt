@@ -13,7 +13,7 @@ const val CAT_DATABASE_NAME = "cats_database"
  */
 fun catDatabaseBuilder(context: Context, name: String = CAT_DATABASE_NAME): RoomDatabase.Builder<CatDatabase> =
     Room.databaseBuilder(context, CatDatabase::class.java, name)
-        .addMigrations(MIGRATION_2_3)
+        .addMigrations(MIGRATION_2_3, MIGRATION_3_4)
         // v1 stored a different table (`favoriteCats`, with a `favourite` column) and was
         // only ever wiped rather than migrated — the original app shipped
         // `fallbackToDestructiveMigration()`. Registering only MIGRATION_2_3 turned that

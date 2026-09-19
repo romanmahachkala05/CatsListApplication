@@ -25,10 +25,12 @@ dependencies {
     implementation(libs.androidx.hilt.navigation.compose)
     implementation(libs.androidx.navigation3.runtime)
     implementation(libs.kotlinx.collections.immutable)
+    implementation(libs.androidx.paging.compose)
     ksp(libs.androidx.hilt.compiler)
 
     testImplementation(project(":core:testing"))
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.truth)
+    testImplementation(libs.androidx.paging.testing)
 }

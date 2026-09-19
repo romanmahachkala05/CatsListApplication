@@ -20,6 +20,7 @@ retrofitKotlinxSerialization = "1.0.0"
 navigation3 = "1.1.7"
 lifecycleViewmodelNavigation3 = "2.10.0"
 room = "2.8.5"
+paging = "3.5.1"
 hilt = "2.56.2"
 androidxHilt = "1.2.0"
 composeBom = "2026.03.00"
@@ -76,6 +77,10 @@ androidx-espresso-core = { module = "androidx.test.espresso:espresso-core", vers
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
 truth = { module = "com.google.truth:truth", version.ref = "truth" }
 androidx-room-testing = { module = "androidx.room:room-testing", version.ref = "room" }
+androidx-room-paging = { module = "androidx.room:room-paging", version.ref = "room" }
+androidx-paging-runtime = { module = "androidx.paging:paging-runtime-ktx", version.ref = "paging" }
+androidx-paging-compose = { module = "androidx.paging:paging-compose", version.ref = "paging" }
+androidx-paging-testing = { module = "androidx.paging:paging-testing", version.ref = "paging" }
 # build-logic convention plugins apply these programmatically, so they need the plugin
 # artifacts as regular dependencies, not just the [plugins] aliases a build script uses.
 android-gradlePlugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }

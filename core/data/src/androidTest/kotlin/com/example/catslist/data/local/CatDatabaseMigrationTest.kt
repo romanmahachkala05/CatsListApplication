@@ -90,9 +90,37 @@ class CatDatabaseMigrationTest {
         }
     }
 
+    @Test
+    fun migrate3To4_createsTheEmptyFeedCacheTables() {
+        helper.createDatabase(TEST_DB, 3).use { db ->
+            db.execSQL(insertV3(id = "1"))
+        }
+
+        val migrated = helper.runMigrationsAndValidate(TEST_DB, 4, true, MIGRATION_3_4)
+
+        migrated.query("SELECT COUNT(*) FROM feedCatsTable").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals(0, cursor.getInt(0))
+        }
+        migrated.query("SELECT COUNT(*) FROM feedRemoteKeysTable").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals(0, cursor.getInt(0))
+        }
+        // Nothing about the existing favorites table is touched by an unrelated migration.
+        migrated.query("SELECT id FROM favoriteCatsTable").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals("1", cursor.getString(0))
+        }
+    }
+
     private fun insertV2(id: String, favorite: Int) = """
         INSERT INTO favoriteCatsTable (id, url, width, height, favorite)
         VALUES ('$id', 'https://cdn.example/$id.jpg', 300, 200, $favorite)
+    """.trimIndent()
+
+    private fun insertV3(id: String) = """
+        INSERT INTO favoriteCatsTable (id, url, width, height)
+        VALUES ('$id', 'https://cdn.example/$id.jpg', 300, 200)
     """.trimIndent()
 
     private companion object {

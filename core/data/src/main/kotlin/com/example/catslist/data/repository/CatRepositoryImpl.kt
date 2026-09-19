@@ -1,10 +1,14 @@
 package com.example.catslist.data.repository
 
+import androidx.paging.ExperimentalPagingApi
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
+import androidx.paging.map
 import com.example.catslist.data.local.CatDao
+import com.example.catslist.data.local.CatFeedDao
 import com.example.catslist.data.local.toDomain
 import com.example.catslist.data.local.toEntity
-import com.example.catslist.data.remote.CatApiService
-import com.example.catslist.data.remote.toDomain
 import com.example.catslist.domain.model.Cat
 import com.example.catslist.domain.repository.CatRepository
 import javax.inject.Inject
@@ -12,55 +16,36 @@ import javax.inject.Singleton
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.update
 
+@OptIn(ExperimentalPagingApi::class)
 @Singleton
 class CatRepositoryImpl @Inject constructor(
-    private val catApiService: CatApiService,
     private val catDao: CatDao,
+    private val catFeedDao: CatFeedDao,
+    private val catFeedRemoteMediator: CatFeedRemoteMediator,
 ) : CatRepository {
-
-    /** Cats fetched this session, before favorite status is layered on. Not persisted. */
-    private val fetched = MutableStateFlow<List<Cat>>(emptyList())
 
     override val favorites: Flow<ImmutableList<Cat>> =
         catDao.getAllCats().map { entities -> entities.map { it.toDomain() }.toPersistentList() }
 
-    override val feed: Flow<ImmutableList<Cat>> =
-        combine(fetched, favorites) { fetchedCats, favoriteCats ->
-            val favoriteIds = favoriteCats.mapTo(hashSetOf()) { it.id }
-            // Only cats whose favorite status actually changed get a new instance — favoriting
-            // one cat should not reallocate every other cat fetched this session.
-            fetchedCats.map { cat ->
-                val isFavorite = cat.id in favoriteIds
-                if (cat.isFavorite == isFavorite) cat else cat.copy(isFavorite = isFavorite)
-            }.toPersistentList()
-        }
-
-    override suspend fun fetchNextBatch() {
-        val newCats = catApiService.requestCatInfo(limit = PAGE_SIZE)
-            .map { it.toDomain() }
-            .distinctBy { it.id }
-
-        // Requests may overlap; this update may not. `update` is a compare-and-set loop, so
-        // the ids are read from the same `current` that gets written — two concurrent loads
-        // cannot each filter against a snapshot the other has already added to, and neither
-        // can lose the other's write. `fetched.value = fetched.value + …` would read and
-        // write separately: safe only for as long as every caller happens to resume on the
-        // same thread, which is not something this function can promise.
-        //
-        // A duplicate id would reach `items(cats, key = { it.id })` and crash the LazyColumn,
-        // and a lost write would silently drop a page.
-        //
-        // The lambda re-runs on contention, so it stays free of side effects.
-        fetched.update { current ->
-            val existingIds = current.mapTo(hashSetOf()) { it.id }
-            current + newCats.filterNot { it.id in existingIds }
-        }
-    }
+    /**
+     * No favorite status here, ever — not baked in via a query join (see
+     * `CatFeedDao.pagingSource`'s doc) and not layered on via `combine()` either.
+     * `PagingData.map` is not safe to re-run on the same underlying `PagingData` more than
+     * once: `combine()`-ing this with a changing favorites flow re-invoked `.map` on the same
+     * instance on every favorite toggle, and the second, still-live subscription to the same
+     * generation's internal event stream crashed with "Attempt to collect twice from
+     * pageEventFlow". The live overlay belongs in the UI layer instead — `CatsListScreen`
+     * combines [ImmutableList]<Cat> from [favorites] with the plain `LazyPagingItems` from
+     * this at render time, which is ordinary Compose recomposition, not a second Paging
+     * generation.
+     */
+    override val feed: Flow<PagingData<Cat>> = Pager(
+        config = PagingConfig(pageSize = PAGE_SIZE, enablePlaceholders = false),
+        remoteMediator = catFeedRemoteMediator,
+        pagingSourceFactory = catFeedDao::pagingSource,
+    ).flow.map { pagingData -> pagingData.map { it.toDomain() } }
 
     override suspend fun toggleFavorite(cat: Cat) = catDao.toggleFavorite(cat.toEntity())
 
