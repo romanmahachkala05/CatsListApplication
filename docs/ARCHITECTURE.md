@@ -114,7 +114,7 @@ Rules:
   `implementation` — the one exception is `androidx.paging:paging-runtime`,
   `api` because `CatRepository.feed` returns `Flow<PagingData<Cat>>` and
   `PagingData` is therefore part of this module's public surface too
-  ([ADR-0023](DECISIONS.md#adr-0023)).
+  ([ADR-0025](DECISIONS.md#adr-0025)).
 
 ---
 
@@ -128,7 +128,7 @@ no screen-wide `UiStatus` and no `LoadMore`/`Retry` events. It still has a
 `State`, a `StateHolder` and an `ErrorHandler` for everything Paging does not
 load; `PagingData` is exposed alongside `state` rather than inside it, because
 `LazyPagingItems` can only be built by the Composable that collects it. See
-[ADR-0023](DECISIONS.md#adr-0023) and [ADR-0024](DECISIONS.md#adr-0024).
+[ADR-0024](DECISIONS.md#adr-0024) and [ADR-0025](DECISIONS.md#adr-0025).
 
 | File | Role |
 | --- | --- |
