@@ -120,12 +120,15 @@ Rules:
 
 ## 3. MVI — the screen contract
 
-Every screen is a subpackage / module with these parts — except a *paged*
-screen (currently only `:feature:feed`), where Paging 3 owns loading/error/
-retry via `LazyPagingItems.loadState` instead of a `StateHolder`/`UiStatus`;
-see [ADR-0023](DECISIONS.md#adr-0023) for why that state machine is dropped
-rather than adapted. The shape below is still the one any new non-paged
-screen follows.
+Every screen is a subpackage / module with these parts, including a *paged*
+screen (currently only `:feature:feed`). The one exception there is narrow:
+Paging 3 owns **load** state — loading, error and retry for the list itself —
+read from `LazyPagingItems.loadState` in the Composable, so a paged screen has
+no screen-wide `UiStatus` and no `LoadMore`/`Retry` events. It still has a
+`State`, a `StateHolder` and an `ErrorHandler` for everything Paging does not
+load; `PagingData` is exposed alongside `state` rather than inside it, because
+`LazyPagingItems` can only be built by the Composable that collects it. See
+[ADR-0023](DECISIONS.md#adr-0023) and [ADR-0024](DECISIONS.md#adr-0024).
 
 | File | Role |
 | --- | --- |

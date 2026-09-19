@@ -7,7 +7,9 @@ Each entry follows the ADR shape — **Context**, **Decision**, **Consequences**
 and the alternatives that were rejected where the rejection is the interesting
 part. Entries are append-only: a decision that turns out to be wrong is not
 edited, it is **superseded** by a later one, so the reasoning stays legible in
-both directions.
+both directions. A decision whose core still holds but which was written more
+broadly than it needed to be is **amended** instead — same append-only rule,
+narrower correction.
 
 **What belongs here.** If another engineer could reasonably make a different
 choice without knowing why this one was made, it is an ADR. If the answer is
@@ -47,6 +49,8 @@ that fail without the fix. They are here because finding them was the work.
 | [0020](#adr-0020) | One serialization library | Accepted |
 | [0021](#adr-0021) | Derive versionCode from the version name | Accepted |
 | [0022](#adr-0022) | Split the app into Gradle modules | Accepted |
+| [0023](#adr-0023) | Paging 3 for the feed, with a `RemoteMediator` | **Amended** by 0024 |
+| [0024](#adr-0024) | Paging owns the feed's *load* state, not its whole state | Accepted |
 
 ---
 
@@ -864,7 +868,7 @@ split by what it does then, not ahead of time.
 
 ### Move the feed to Paging 3, with a RemoteMediator caching pages into Room
 
-**Accepted** · 2026-09-19
+**Accepted** · 2026-09-19 · **amended** by [ADR-0024](#adr-0024)
 
 **Context.** The feed was a hand-rolled `MutableStateFlow<List<Cat>>` the
 ViewModel appended to on `fetchNextBatch()`, combined against Room's favorites
@@ -941,4 +945,76 @@ module gets it, not just `:core:data`.
 **Review when:** the feed needs to support prepending (e.g. a "jump to
 newest" action) — the single global remote key stops being enough and this
 needs the standard per-item remote-keys table instead.
+
+**Why it was amended.** The Paging decision above stands unchanged. What was
+drawn too wide is the sentence deleting "the screen's own state machine": only
+*load* state was ever Paging's to own, and the clause was written as though it
+covered all of the screen's state. It did not. The favorite overlay was left
+outside any state object as a bare `StateFlow<Set<String>>` on the ViewModel,
+and its failure path went missing with the error handler it was bundled into.
+[ADR-0024](#adr-0024) redraws the line.
+
+
+## ADR-0024
+
+### Paging owns the feed's *load* state, not its whole state
+
+**Accepted** · 2026-09-19 · amends [ADR-0023](#adr-0023)
+
+**Context.** [ADR-0023](#adr-0023) removed `CatsListState`,
+`CatsListStateHolder` and `CatsListErrorHandler` together, on the reasoning
+that `LazyPagingItems.loadState` already tracks loading, error and retry. That
+reasoning is correct and still holds — for loading, error and retry. It does
+not extend to the rest of the screen, and bundling the removals together took
+two things with it that Paging never replaced:
+
+- **The favorite overlay had no state object.** It lived as a public
+  `StateFlow<Set<String>>` beside `pagedCats`, which is the "state scattered
+  outside one State object" shape [`ARCHITECTURE.md`](ARCHITECTURE.md) §3a
+  exists to forbid — the feed was the only screen not following it.
+- **The favorites stream had no failure path.** A plain `.map {}.stateIn(…)`
+  with no `catch`: a throwing Room query would escape `viewModelScope` and
+  reach the default handler, which on Android kills the process. This is the
+  exact failure [ADR-0013](#adr-0013) introduced `launchCatching` for, and the
+  favorites screen already guards with `RetryableFlow`. The feed lost that
+  guard along with the error handler it had been attached to.
+
+**Decision.** The carve-out is narrowed to what the library actually forces.
+`PagingData` stays outside the state object, because `LazyPagingItems` is built
+by the Composable collecting it and cannot be constructed in a ViewModel —
+that constraint is real and is the whole of it. Everything else on the screen
+follows §3 like any other: `CatsListState` holds the favorite ids and a
+`CatsListFavoritesStatus`, `CatsListStateHolder` owns the mutation, and
+`CatsListErrorHandler` maps a dead favorites stream into
+`CatsListFavoritesStatus.Unavailable`.
+
+`CatsListUiStatus` stays deleted, and so do the `LoadMore` and `Retry` events.
+Those *were* duplicating Paging, which is the part of ADR-0023 that was right.
+
+**Alternatives rejected.** Mapping `loadState` into a screen-wide `UiStatus`
+so the feed looks like every other screen — rejected for ADR-0023's original
+reason, unchanged: it is a second copy of a state machine Paging already runs,
+kept in sync by hand, and the uniformity it buys is cosmetic.
+
+Reporting the stream failure with a Snackbar instead of putting it in state was
+the cheaper fix and was rejected as dishonest about duration.
+[`LaunchCatching`](../core/ui/src/main/kotlin/com/example/catslist/presentation/LaunchCatching.kt)'s
+own contract draws the line: a one-off action that failed while the screen is
+fine gets a Snackbar, a condition the screen has to *stay* in belongs in state.
+`catch` terminates the flow, so the overlay is dead for that ViewModel's whole
+life — a transient Snackbar for a permanent condition, on a screen the user
+keeps scrolling, would be gone long before it stopped being true.
+
+**Consequences.** The feed keeps rendering when favorites break, with an inline
+notice above the cats and the last known stars left as they were, rather than
+blanking working content or silently freezing. The status is a two-case sealed
+type scoped to the overlay, deliberately not named `UiStatus` — a reader who
+greps for that name on this screen should find nothing, because the screen-wide
+one genuinely does not exist here. The cost is that this one screen now reads
+its state from two sources, `state` and `pagingItems`, which no other screen
+does; the ViewModel is also at §3b's ≈7 constructor-dependency cap.
+
+**Review when:** a second paged screen appears. One screen shaped like this is
+a documented exception; two means the contract in §3 should describe paged
+screens directly instead of carving them out.
 

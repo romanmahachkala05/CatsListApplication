@@ -136,6 +136,10 @@ This is the outcome ADR-0001 anticipated and deferred — see
   applied directly in its own `build.gradle.kts`** — it is not pulled in by
   `catslist.hilt` or any other convention plugin. Missing it compiles fine and
   crashes only at runtime, on first use of the type.
+- **A branch on one value with a per-branch extra condition uses a subject
+  `when` with a guard (`is X if cond -> …`, Kotlin 2.1+), not `when { x is X
+  && cond -> … }`.** The subject form smart-casts and reads as one decision
+  tree instead of a flat boolean list.
 
 ---
 
