@@ -82,15 +82,25 @@ internal fun CatsListContent(
         // Whether there are cats decides this, not the load state. A refresh error or spinner
         // only takes over the screen while there is nothing to show — once cats are up, a failed
         // reload is the append footer's problem (see CatsFeed), not a reason to blank them out.
-        val isEmpty = heldAtLeast(pagingItems.itemCount == 0, SKELETON_MINIMUM_MILLIS)
-        if (isEmpty) {
-            EmptyFeed(
-                refresh = pagingItems.loadState.refresh,
-                onRetry = pagingItems::retry,
-                contentPadding = contentPadding,
-            )
-        } else {
-            CatsFeed(
+        val refresh = pagingItems.loadState.refresh
+        val hasNoCats = pagingItems.itemCount == 0
+        // On a cold start Room's PagingSource settles to "not loading, nothing here" while the
+        // RemoteMediator is still on the network, so anything short of a finished-and-empty or
+        // failed load still counts as working.
+        val isStillWorking = when (refresh) {
+            is LoadState.Loading -> true
+            is LoadState.NotLoading -> !refresh.endOfPaginationReached
+            is LoadState.Error -> false
+        }
+        // Only the skeleton is held, not the whole empty branch. Holding that would let it keep
+        // asserting "no cats" from a load state that has already moved on, over a feed that has
+        // in fact arrived — the held flag and the live state would be describing different
+        // moments.
+        val showSkeleton = heldAtLeast(hasNoCats && isStillWorking, SKELETON_MINIMUM_MILLIS)
+        when {
+            showSkeleton -> CatListPlaceholder(contentPadding = contentPadding)
+            hasNoCats -> EmptyFeed(refresh = refresh, onRetry = pagingItems::retry)
+            else -> CatsFeed(
                 pagingItems = pagingItems,
                 state = state,
                 onEvent = onEvent,
@@ -101,23 +111,17 @@ internal fun CatsListContent(
 }
 
 /**
- * What the screen shows before it has a single cat.
+ * Why there are no cats, for a load that has actually finished without producing any.
  *
- * The default is the skeleton, not an empty list: on a cold start Room's `PagingSource` settles
- * to "not loading, nothing here" while the `RemoteMediator` is still waiting on the network, and
- * rendering the feed in that window flashes a blank screen. Only a load that has genuinely
- * finished and still found nothing is allowed to say so.
+ * Reached only once the caller has ruled out "still working" — a load in progress belongs to the
+ * skeleton, and rendering the feed itself in that window flashes a blank screen.
  */
 @Composable
-private fun EmptyFeed(refresh: LoadState, onRetry: () -> Unit, contentPadding: PaddingValues) {
-    when (refresh) {
-        is LoadState.Error -> ErrorMessage(
-            message = UiText.Resource(R.string.catslist_error_loading_cats),
-            onRetry = onRetry,
-        )
-        is LoadState.NotLoading if refresh.endOfPaginationReached ->
-            EmptyMessage(UiText.Resource(R.string.catslist_empty_message))
-        else -> CatListPlaceholder(contentPadding = contentPadding)
+private fun EmptyFeed(refresh: LoadState, onRetry: () -> Unit) {
+    if (refresh is LoadState.Error) {
+        ErrorMessage(message = UiText.Resource(R.string.catslist_error_loading_cats), onRetry = onRetry)
+    } else {
+        EmptyMessage(UiText.Resource(R.string.catslist_empty_message))
     }
 }
 

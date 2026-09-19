@@ -1,12 +1,8 @@
 package com.example.catslist.presentation.components
 
+import android.os.SystemClock
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.VectorConverter
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
@@ -21,6 +17,7 @@ import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -144,11 +141,17 @@ fun CatPullToRefresh(
 @Composable
 private fun rememberRefreshPhase(signal: RefreshSignal): RefreshPhase {
     var phase by remember { mutableStateOf(RefreshPhase.Idle) }
+    var spinnerShownAt by remember { mutableLongStateOf(0L) }
     LaunchedEffect(signal) {
         if (signal == RefreshSignal.Running) {
             phase = RefreshPhase.Refreshing
-            delay(PHASE_MINIMUM_MILLIS)
+            spinnerShownAt = SystemClock.elapsedRealtime()
         } else if (phase == RefreshPhase.Refreshing) {
+            // The spinner's minimum is served here rather than by a delay in the branch above.
+            // That one would be cancelled the instant `signal` changes — which is precisely
+            // when a fast request finishes, so it could never hold anything back.
+            val shownFor = SystemClock.elapsedRealtime() - spinnerShownAt
+            if (shownFor < PHASE_MINIMUM_MILLIS) delay(PHASE_MINIMUM_MILLIS - shownFor)
             phase = if (signal == RefreshSignal.Failed) RefreshPhase.Failed else RefreshPhase.Succeeded
             delay(PHASE_MINIMUM_MILLIS)
             phase = RefreshPhase.Idle
@@ -176,7 +179,11 @@ private fun RefreshIndicator(phase: RefreshPhase, pullFraction: Float, modifier:
                         .size(ICON_SIZE)
                         .rotate(pullFraction.coerceIn(0f, 1f) * HALF_TURN),
                 )
-                RefreshPhase.Refreshing -> Spinner()
+                RefreshPhase.Refreshing -> CircularProgressIndicator(
+                    modifier = Modifier.size(ICON_SIZE),
+                    strokeWidth = SPINNER_STROKE,
+                    color = MaterialTheme.colorScheme.primary,
+                )
                 RefreshPhase.Succeeded -> Icon(
                     painter = painterResource(R.drawable.ic_check),
                     contentDescription = stringResource(R.string.common_cd_refresh_succeeded),
@@ -194,28 +201,6 @@ private fun RefreshIndicator(phase: RefreshPhase, pullFraction: Float, modifier:
     }
 }
 
-/**
- * Spun by hand rather than left to [CircularProgressIndicator]'s own animation, so the arrow
- * that preceded it and this share one sense of rotation instead of one easing into the other.
- */
-@Composable
-private fun Spinner() {
-    val transition = rememberInfiniteTransition(label = "spinner")
-    val angle by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = FULL_TURN,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = SPINNER_MILLIS, easing = LinearEasing),
-        ),
-        label = "spinnerAngle",
-    )
-    CircularProgressIndicator(
-        modifier = Modifier.size(ICON_SIZE).rotate(angle),
-        strokeWidth = SPINNER_STROKE,
-        color = MaterialTheme.colorScheme.primary,
-    )
-}
-
 private val INDICATOR_SIZE = 40.dp
 private val INDICATOR_MARGIN = 8.dp
 
@@ -226,6 +211,4 @@ private val INDICATOR_ELEVATION = 4.dp
 private val CONTENT_OFFSET = 72.dp
 private val SPINNER_STROKE = 2.5.dp
 private const val PHASE_MINIMUM_MILLIS = 300L
-private const val SPINNER_MILLIS = 900
 private const val HALF_TURN = 180f
-private const val FULL_TURN = 360f

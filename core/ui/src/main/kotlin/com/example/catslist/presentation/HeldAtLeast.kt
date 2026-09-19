@@ -1,5 +1,6 @@
 package com.example.catslist.presentation
 
+import android.os.SystemClock
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -25,10 +26,12 @@ fun heldAtLeast(value: Boolean, minimumMillis: Long): Boolean {
     var shownAtMillis by remember { mutableLongStateOf(0L) }
     LaunchedEffect(value) {
         if (value) {
-            shownAtMillis = System.currentTimeMillis()
+            // Monotonic on purpose: the wall clock can step backwards on an NTP sync, which
+            // would make the elapsed time negative and hold this for as long as the clock moved.
+            shownAtMillis = SystemClock.elapsedRealtime()
             held = true
         } else {
-            val remaining = minimumMillis - (System.currentTimeMillis() - shownAtMillis)
+            val remaining = minimumMillis - (SystemClock.elapsedRealtime() - shownAtMillis)
             if (remaining > 0) delay(remaining)
             held = false
         }
