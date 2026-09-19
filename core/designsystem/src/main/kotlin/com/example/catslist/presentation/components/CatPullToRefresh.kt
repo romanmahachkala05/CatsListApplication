@@ -62,7 +62,11 @@ fun CatPullToRefresh(
     topInset: Dp = 0.dp,
     content: @Composable () -> Unit,
 ) {
-    val phase = rememberRefreshPhase(signal)
+    // The app refreshes on its own too — Paging runs one at every launch — and that must not
+    // look like something the user asked for. Only a pull that actually happened arms the
+    // indicator; otherwise the same signal is ignored and it stays out of sight.
+    var pullRequested by remember { mutableStateOf(false) }
+    val phase = rememberRefreshPhase(if (pullRequested) signal else RefreshSignal.Idle)
     val state = rememberPullToRefreshState()
     val isBusy = phase != RefreshPhase.Idle
 
@@ -98,6 +102,9 @@ fun CatPullToRefresh(
             lastOutcome = phase
         } else if (hasSettled) {
             lastOutcome = RefreshPhase.Idle
+            // Disarmed only once the whole sequence is over and the indicator is gone. The keys
+            // do not change when the pull arms it, so this cannot clear the flag it just set.
+            pullRequested = false
         }
     }
     val shownPhase = if (phase == RefreshPhase.Idle) lastOutcome else phase
@@ -114,7 +121,10 @@ fun CatPullToRefresh(
         modifier = modifier.pullToRefresh(
             isRefreshing = isBusy,
             state = state,
-            onRefresh = onRefresh,
+            onRefresh = {
+                pullRequested = true
+                onRefresh()
+            },
         ),
     ) {
         Box(modifier = Modifier.fillMaxSize().graphicsLayer { translationY = offset.toPx() }) {
