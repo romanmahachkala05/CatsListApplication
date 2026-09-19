@@ -34,6 +34,7 @@ import com.example.catslist.presentation.UiText
 import com.example.catslist.presentation.components.CatItem
 import com.example.catslist.presentation.components.CatItemPlaceholder
 import com.example.catslist.presentation.components.CatListPlaceholder
+import com.example.catslist.presentation.components.EmptyMessage
 import com.example.catslist.presentation.components.ErrorMessage
 import com.example.catslist.presentation.theme.CatsListTheme
 import kotlinx.collections.immutable.persistentSetOf
@@ -74,24 +75,44 @@ internal fun CatsListContent(
     contentPadding: PaddingValues = PaddingValues(),
 ) {
     Surface(modifier = modifier.fillMaxSize()) {
-        val refresh = pagingItems.loadState.refresh
-        // A refresh error/spinner only takes over the whole screen while there is nothing
-        // to show yet — once cats are on screen, a failed reload becomes the append footer's
-        // problem (see CatsFeed), not a reason to blank out what's already loaded.
-        when (refresh) {
-            is LoadState.Loading if pagingItems.itemCount == 0 ->
-                CatListPlaceholder(contentPadding = contentPadding)
-            is LoadState.Error if pagingItems.itemCount == 0 -> ErrorMessage(
-                message = UiText.Resource(R.string.catslist_error_loading_cats),
-                onRetry = pagingItems::retry,
-            )
-            else -> CatsFeed(
+        // Whether there are cats decides this, not the load state. A refresh error or spinner
+        // only takes over the screen while there is nothing to show — once cats are up, a failed
+        // reload is the append footer's problem (see CatsFeed), not a reason to blank them out.
+        if (pagingItems.itemCount > 0) {
+            CatsFeed(
                 pagingItems = pagingItems,
                 state = state,
                 onEvent = onEvent,
                 contentPadding = contentPadding,
             )
+        } else {
+            EmptyFeed(
+                refresh = pagingItems.loadState.refresh,
+                onRetry = pagingItems::retry,
+                contentPadding = contentPadding,
+            )
         }
+    }
+}
+
+/**
+ * What the screen shows before it has a single cat.
+ *
+ * The default is the skeleton, not an empty list: on a cold start Room's `PagingSource` settles
+ * to "not loading, nothing here" while the `RemoteMediator` is still waiting on the network, and
+ * rendering the feed in that window flashes a blank screen. Only a load that has genuinely
+ * finished and still found nothing is allowed to say so.
+ */
+@Composable
+private fun EmptyFeed(refresh: LoadState, onRetry: () -> Unit, contentPadding: PaddingValues) {
+    when (refresh) {
+        is LoadState.Error -> ErrorMessage(
+            message = UiText.Resource(R.string.catslist_error_loading_cats),
+            onRetry = onRetry,
+        )
+        is LoadState.NotLoading if refresh.endOfPaginationReached ->
+            EmptyMessage(UiText.Resource(R.string.catslist_empty_message))
+        else -> CatListPlaceholder(contentPadding = contentPadding)
     }
 }
 
