@@ -42,7 +42,16 @@ class CatRepositoryImpl @Inject constructor(
      * generation.
      */
     override val feed: Flow<PagingData<Cat>> = Pager(
-        config = PagingConfig(pageSize = PAGE_SIZE, enablePlaceholders = false),
+        config = PagingConfig(
+            pageSize = PAGE_SIZE,
+            // Defaults to pageSize * 3. The mediator fetches exactly one page per network call,
+            // so a larger initial load leaves Paging short and it immediately appends to catch
+            // up — and every append writes feedCatsTable, invalidating the very PagingSource
+            // reading it. That produced a visible cascade at startup: cats, then a new
+            // generation reloading, then cats again, three times before the screen settled.
+            initialLoadSize = PAGE_SIZE,
+            enablePlaceholders = false,
+        ),
         remoteMediator = catFeedRemoteMediator,
         pagingSourceFactory = catFeedDao::pagingSource,
     ).flow.map { pagingData -> pagingData.map { it.toDomain() } }

@@ -100,10 +100,12 @@ fun CatItem(
 }
 
 /**
- * The skeleton shown while cats are still loading: the same frame, the same notch, the same
- * footprint as [CatItem], with a shimmer where the photo will be. Sharing the constants is the
- * point — a placeholder that merely looked similar would shift the list the moment real cats
- * replaced it.
+ * The skeleton shown before there is any cat to frame: the whole card is the shimmer, with no
+ * outline. That is deliberately *not* how [CatItem] looks while its photo loads — there, the
+ * frame is already drawn and only its inside shimmers. A framed card means "this cat exists,
+ * its picture is coming"; an unframed shimmer means "we don't have a cat yet".
+ *
+ * It keeps [CatItem]'s footprint and shape, so nothing shifts when real cats replace it.
  */
 @Composable
 fun CatItemPlaceholder(modifier: Modifier = Modifier) {
@@ -118,8 +120,7 @@ fun CatItemPlaceholder(modifier: Modifier = Modifier) {
                 .fillMaxWidth()
                 .height(IMAGE_HEIGHT)
                 .clip(CAT_CARD_SHAPE)
-                .background(shimmer)
-                .border(BORDER_WIDTH, MaterialTheme.colorScheme.outline, CAT_CARD_SHAPE),
+                .background(shimmer),
         )
     }
 }
