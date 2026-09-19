@@ -23,22 +23,6 @@ class CatFeedRemoteMediatorTest {
     private val mediator = CatFeedRemoteMediator(api, dao)
 
     @Test
-    fun `an empty cache is refreshed on launch`() = runTest {
-        assertThat(mediator.initialize()).isEqualTo(RemoteMediator.InitializeAction.LAUNCH_INITIAL_REFRESH)
-    }
-
-    @Test
-    fun `a cached feed is opened as it is, without a network refresh`() = runTest {
-        // Paging's default would wipe this and refetch page 0 on every cold start: a second
-        // load right after the first, and an empty screen when there is no network. Cached
-        // cats are only previously seen, not wrong — pulling to refresh asks for new ones.
-        api.enqueueResponse(catDto("1"))
-        mediator.load(LoadType.REFRESH, state())
-
-        assertThat(mediator.initialize()).isEqualTo(RemoteMediator.InitializeAction.SKIP_INITIAL_REFRESH)
-    }
-
-    @Test
     fun `refresh replaces the cache and requests page 0`() = runTest {
         api.enqueueResponse(catDto("1"), catDto("2"))
 

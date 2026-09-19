@@ -23,21 +23,6 @@ class CatFeedRemoteMediator @Inject constructor(
     private val catFeedDao: CatFeedDao,
 ) : RemoteMediator<Int, FeedCatEntity>() {
 
-    /**
-     * Opens from the cache when there is one, instead of Paging's default of always refreshing.
-     *
-     * The default wipes `feedCatsTable` and refetches page 0 on every cold start, so the first
-     * thing a launch does is throw away a feed that was fine and make the user wait for it
-     * again — a second load right after the first, and nothing on screen at all when there is
-     * no network. Cached cats are never *wrong* here, only previously seen, and pulling to
-     * refresh is how the user asks for different ones.
-     */
-    override suspend fun initialize(): InitializeAction = if (catFeedDao.count() > 0) {
-        InitializeAction.SKIP_INITIAL_REFRESH
-    } else {
-        InitializeAction.LAUNCH_INITIAL_REFRESH
-    }
-
     override suspend fun load(loadType: LoadType, state: PagingState<Int, FeedCatEntity>): MediatorResult {
         val page = resolvePage(loadType) ?: return MediatorResult.Success(endOfPaginationReached = true)
 
