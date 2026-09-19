@@ -31,21 +31,24 @@ internal data class CatCardShape(
     private val notchSweep: Dp,
 ) : Shape {
 
-    override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline =
-        with(density) {
-            val path = notchedPath(
-                size = size,
-                corner = corner.toPx(),
-                notchWidth = notchWidth.toPx(),
-                notchHeight = notchHeight.toPx(),
-                notchCorner = notchCorner.toPx(),
-                notchSweep = notchSweep.toPx(),
-            )
-            // The notch belongs on the trailing side, so in RTL the whole outline flips rather
-            // than the path being written out a second time with every x mirrored by hand.
-            if (layoutDirection == LayoutDirection.Rtl) path.mirrorHorizontally(size.width)
-            Outline.Generic(path)
-        }
+    override fun createOutline(
+        size: Size,
+        layoutDirection: LayoutDirection,
+        density: Density,
+    ): Outline = with(density) {
+        val path = notchedPath(
+            size = size,
+            corner = corner.toPx(),
+            notchWidth = notchWidth.toPx(),
+            notchHeight = notchHeight.toPx(),
+            notchCorner = notchCorner.toPx(),
+            notchSweep = notchSweep.toPx(),
+        )
+        // The notch belongs on the trailing side, so in RTL the whole outline flips rather
+        // than the path being written out a second time with every x mirrored by hand.
+        if (layoutDirection == LayoutDirection.Rtl) path.mirrorHorizontally(size.width)
+        Outline.Generic(path)
+    }
 }
 
 /**

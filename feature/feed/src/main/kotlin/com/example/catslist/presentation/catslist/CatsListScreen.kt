@@ -41,7 +41,6 @@ import com.example.catslist.presentation.components.RefreshSignal
 import com.example.catslist.presentation.heldAtLeast
 import com.example.catslist.presentation.theme.CatsListTheme
 import kotlinx.collections.immutable.persistentSetOf
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.flowOf
 
 /** The download/favorite Snackbar for the screen's ViewModel is collected by the app's shared

@@ -11,7 +11,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.pulltorefresh.PullToRefreshState
 import androidx.compose.material3.pulltorefresh.pullToRefresh
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
@@ -171,7 +170,11 @@ private fun rememberRefreshPhase(signal: RefreshSignal): RefreshPhase {
 }
 
 @Composable
-private fun RefreshIndicator(phase: RefreshPhase, pullFraction: Float, modifier: Modifier = Modifier) {
+private fun RefreshIndicator(
+    phase: RefreshPhase,
+    pullFraction: Float,
+    modifier: Modifier = Modifier,
+) {
     Surface(
         modifier = modifier.size(INDICATOR_SIZE),
         shape = MaterialTheme.shapes.extraLarge,
