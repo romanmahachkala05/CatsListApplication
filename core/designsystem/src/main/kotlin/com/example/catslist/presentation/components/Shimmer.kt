@@ -39,10 +39,15 @@ internal fun shimmerBrush(): Brush {
     )
 }
 
+/**
+ * The middle stop is the moving highlight, and it is the *most* transparent of the three: what
+ * sweeps across is the background showing through a grey field, not a light laid over it. So
+ * widening the contrast means pulling the ends up and the middle down, not shifting all three.
+ */
 private val SHIMMER_COLORS = listOf(
-    Color.LightGray.copy(alpha = 0.4f),
-    Color.LightGray.copy(alpha = 0.2f),
-    Color.LightGray.copy(alpha = 0.4f),
+    Color.LightGray.copy(alpha = 0.7f),
+    Color.LightGray.copy(alpha = 0.1f),
+    Color.LightGray.copy(alpha = 0.7f),
 )
 private const val TRANSLATE_TO = 1000f
 private const val DURATION_MILLIS = 800
