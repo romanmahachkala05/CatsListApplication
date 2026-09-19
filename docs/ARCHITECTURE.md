@@ -109,15 +109,23 @@ Rules:
   so a consumer needs those types too — `:core:testing` exposes `:core:model`,
   `:core:data`, and `:core:ui` as `api`.
 - Everything else is `implementation`.
-- `:core:data` exposes nothing but Hilt `@Binds`/`@Provides` methods and use
-  cases wrapping its own repository, so all its dependencies are
-  `implementation`.
+- `:core:data` exposes Hilt `@Binds`/`@Provides` methods and use cases
+  wrapping its own repository, so almost all its dependencies are
+  `implementation` — the one exception is `androidx.paging:paging-runtime`,
+  `api` because `CatRepository.feed` returns `Flow<PagingData<Cat>>` and
+  `PagingData` is therefore part of this module's public surface too
+  ([ADR-0023](DECISIONS.md#adr-0023)).
 
 ---
 
 ## 3. MVI — the screen contract
 
-Every screen is a subpackage / module with these parts:
+Every screen is a subpackage / module with these parts — except a *paged*
+screen (currently only `:feature:feed`), where Paging 3 owns loading/error/
+retry via `LazyPagingItems.loadState` instead of a `StateHolder`/`UiStatus`;
+see [ADR-0023](DECISIONS.md#adr-0023) for why that state machine is dropped
+rather than adapted. The shape below is still the one any new non-paged
+screen follows.
 
 | File | Role |
 | --- | --- |

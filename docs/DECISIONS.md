@@ -858,3 +858,87 @@ grows enough (e.g. a download manager needing its own persistence) that
 "everything data-related in one module" stops being one responsibility —
 split by what it does then, not ahead of time.
 
+---
+
+## ADR-0023
+
+### Move the feed to Paging 3, with a RemoteMediator caching pages into Room
+
+**Accepted** · 2026-09-19
+
+**Context.** The feed was a hand-rolled `MutableStateFlow<List<Cat>>` the
+ViewModel appended to on `fetchNextBatch()`, combined against Room's favorites
+so toggling one updated the feed live (see [ADR-0015](#adr-0015) for the
+duplicate-key crash that shape of code already caused once). Nothing about
+that feed was persisted — a process death or a rotation past what
+`rememberSaveable` covers re-fetched from page 1. Switching to Paging 3 was
+requested directly, to have the same infrastructure a production app would use
+for a list that can grow into the thousands, and to pick up scroll-driven
+loading and load-state handling instead of the screen's own
+`derivedStateOf`-on-scroll-position trigger.
+
+**Decision.** A `RemoteMediator<Int, FeedCatEntity>` (`CatFeedRemoteMediator`)
+fetches pages from `CatApiService` and caches them into a new Room table,
+`feedCatsTable`, keyed by fetch order rather than by `id` — the API hands back
+cats in no order a `SELECT` could otherwise recover. `CatFeedDao.pagingSource()`
+reads only `feedCatsTable`; favorite status is *not* part of that query. It is
+attached afterward, in `CatRepositoryImpl.feed`, by `combine()`-ing the paged
+flow with a separate `Flow<Set<String>>` of favorite ids and re-mapping each
+already-loaded item — the same live-update outcome the old hand-rolled
+`combine()` version had, kept as a `combine()`, not moved into SQL.
+
+An `EXISTS`-against-`favoriteCatsTable` join on `pagingSource()` was the first
+version of this and reached this branch before being caught: Room's
+invalidation tracker watches every table a `@Query` reads, so a favorite
+toggle invalidated the query, which handed Paging a new `PagingSource`
+generation, which made Paging re-run the `RemoteMediator`'s REFRESH — wiping
+the entire cached feed back to page 0 on every favorite toggle, discovered by
+scrolling down, favoriting a cat, and watching the list jump to the top. Fixed
+by moving the favorite overlay out of the query entirely; see
+[`CatFeedDaoTest.pagingSource_isNotInvalidatedByAFavoriteToggle`](../core/data/src/androidTest/kotlin/com/example/catslist/data/local/CatFeedDaoTest.kt)
+for the regression test.
+
+The feed only ever appends. TheCatAPI's search endpoint has no signal for
+"cats newer than what I already have," so `LoadType.PREPEND` is always a
+no-op and `LoadType.REFRESH` always restarts from page 0. A second table,
+`feedRemoteKeysTable`, holds a single row recording the next page to fetch —
+not the per-item remote-keys table the Paging 3 samples use, which exists to
+support prepending, something this feed never does.
+
+**Alternatives rejected.** A `PagingSource` reading straight from the network,
+with no Room cache, was the simpler option and was raised explicitly as the
+alternative to a `RemoteMediator`. It was rejected because Paging caches
+loaded pages internally and does not re-run a plain network `PagingSource` on
+an unrelated write, so the favorite icon in an already-loaded page would not
+update until the next full reload — a real behavior regression from what the
+app already did, not a neutral simplification. (The join-based favorite
+lookup above was a second, different way of chasing that same live-update
+requirement, and turned out to have its own regression instead.)
+
+**Consequences.** Two new Room entities, a fourth schema version
+(`MIGRATION_3_4`), and a new `RemoteMediator`. The screen's own state machine
+(`CatsListState`, `CatsListUiStatus`, the `LoadMore`/`Retry` events,
+`CatsListStateHolder`, `CatsListErrorHandler`) is gone outright rather than
+adapted — `LazyPagingItems.loadState`, collected in the Composable via
+`collectAsLazyPagingItems()`, already tracks initial-load, append and error
+state, and reimplementing that inside `CatsListViewModel` would just be
+duplicating what Paging already owns. This is a real, deliberate narrowing of
+this codebase's own "one sealed `UiStatus`, ViewModel merely orchestrates"
+rule for this one screen: loading/error/retry for the paged list now lives in
+the Composable, not the ViewModel, because `LazyPagingItems` is fundamentally
+a Compose-collected type that cannot be constructed inside a ViewModel.
+`CatsListViewModel` still owns everything that *is* still its job — favoriting
+and downloading.
+
+Running the new instrumented tests surfaced an unrelated, pre-existing bug:
+`:core:data` never had `testInstrumentationRunner` configured after its
+`androidTest` sources moved out of `:app` during [ADR-0022](#adr-0022)'s
+module split, so `connectedDebugAndroidTest` silently discovered zero tests
+and reported success. `verifyOnDevice` had not actually run an instrumented
+test since the module split landed. Fixed in the convention plugin so every
+module gets it, not just `:core:data`.
+
+**Review when:** the feed needs to support prepending (e.g. a "jump to
+newest" action) — the single global remote key stops being enough and this
+needs the standard per-item remote-keys table instead.
+

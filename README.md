@@ -31,10 +31,15 @@ module exposes exactly two public things, its `NavKey` and one entry
 `@Composable`; everything else — ViewModel, StateHolder, ErrorHandler — is
 `internal`, enforced by the compiler rather than by convention.
 
-Every screen is the same six pieces: an immutable `State` with one sealed
-`UiStatus` (never boolean flags), an `Event` type, a `StateHolder` that is the
-only thing allowed to mutate state, an `ErrorHandler`, a ViewModel that merely
-orchestrates, and a stateless `Content` composable the previews render.
+`:feature:favorites` is the same six pieces: an immutable `State` with one
+sealed `UiStatus` (never boolean flags), an `Event` type, a `StateHolder` that
+is the only thing allowed to mutate state, an `ErrorHandler`, a ViewModel that
+merely orchestrates, and a stateless `Content` composable the previews render.
+`:feature:feed` is paged (Paging 3 + a `RemoteMediator` caching into Room —
+[ADR-0023](docs/DECISIONS.md#adr-0023)), so loading/error/retry for its list
+is `LazyPagingItems.loadState`, collected in the Composable, not this state
+machine — Paging already owns that, and reimplementing it would just be
+duplicating the library.
 
 This started single-module and split once a second feature and a shared
 component were actually about to need it, not ahead of time — see
@@ -52,12 +57,13 @@ different reason than ADR-0001 predicted).
 | Async | Coroutines, Flow |
 | Network | Retrofit |
 | Storage | Room, with real migrations and committed schemas |
+| Pagination | Paging 3, `RemoteMediator` caching network pages into Room |
 | Build | Gradle KTS, version catalog, KSP, JDK 17 |
 | Tests | JUnit4, Truth, `kotlinx-coroutines-test`, hand-written fakes |
 
 ## Tests
 
-**80 unit tests, 11 instrumented.** No mocking library — every test double is a
+**51 unit tests, 15 instrumented.** No mocking library — every test double is a
 real in-memory implementation ([ADR-0012](docs/DECISIONS.md#adr-0012)). Tests
 live beside the code they test — in the same Gradle module, same package —
 rather than in one shared test source set.
@@ -75,7 +81,7 @@ fail proves nothing.
 ## Engineering notes
 
 The interesting part of this repo is not the cat list. It is
-[`docs/DECISIONS.md`](docs/DECISIONS.md): 22 decision records with the rejected
+[`docs/DECISIONS.md`](docs/DECISIONS.md): 23 decision records with the rejected
 alternative and the consequences, including two decisions superseded by a
 later one. A sample:
 
