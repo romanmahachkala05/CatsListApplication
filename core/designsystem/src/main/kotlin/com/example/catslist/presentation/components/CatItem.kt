@@ -55,7 +55,7 @@ fun CatItem(
                 .clip(shape)
                 // The same shape for the outline as for the clip: a border drawn from a second
                 // shape would need the notch measurements repeated, and could drift from them.
-                .border(BORDER_WIDTH, MaterialTheme.colorScheme.outlineVariant, shape),
+                .border(BORDER_WIDTH, MaterialTheme.colorScheme.outline, shape),
         )
         CatActions(
             isFavorite = cat.isFavorite,
@@ -117,7 +117,7 @@ private val CARD_MARGIN_HORIZONTAL = 16.dp
 private val CARD_MARGIN_VERTICAL = 8.dp
 private val CARD_CORNER = 20.dp
 private val IMAGE_HEIGHT = 300.dp
-private val BORDER_WIDTH = 1.dp
+private val BORDER_WIDTH = 3.dp
 private val ICON_SIZE = 24.dp
 
 /** Two 48dp touch targets side by side, plus the breathing room around them. */
