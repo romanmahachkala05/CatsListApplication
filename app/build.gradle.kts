@@ -51,8 +51,6 @@ android {
         targetSdk = 36
         versionCode = versionMajor * 10_000 + versionMinor * 100 + versionPatch
         versionName = "$versionMajor.$versionMinor.$versionPatch"
-
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     signingConfigs {

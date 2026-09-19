@@ -27,6 +27,12 @@ class AndroidLibraryConventionPlugin : Plugin<Project> {
 
                 defaultConfig {
                     minSdk = 27
+                    // Without this, AGP falls back to the legacy `android.test.InstrumentationTestRunner`,
+                    // which does not discover JUnit4 `@RunWith(AndroidJUnit4::class)` tests — instrumented
+                    // tests then silently run zero tests and report success. Bit twice: once here, once
+                    // when this module's androidTest sources were still part of `:app` and it had this
+                    // set directly.
+                    testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
                 }
 
                 compileOptions {
