@@ -37,7 +37,9 @@ fun CatItem(
     onDownloadClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val shape = remember { CatCardShape(CARD_CORNER, NOTCH_WIDTH, NOTCH_HEIGHT, NOTCH_CORNER) }
+    val shape = remember {
+        CatCardShape(CARD_CORNER, NOTCH_WIDTH, NOTCH_HEIGHT, NOTCH_CORNER, NOTCH_SWEEP)
+    }
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -122,6 +124,7 @@ private val ICON_SIZE = 24.dp
 private val NOTCH_WIDTH = 104.dp
 private val NOTCH_HEIGHT = 52.dp
 private val NOTCH_CORNER = 20.dp
+private val NOTCH_SWEEP = 16.dp
 
 @Preview(name = "Not favorite", showBackground = true)
 @Composable

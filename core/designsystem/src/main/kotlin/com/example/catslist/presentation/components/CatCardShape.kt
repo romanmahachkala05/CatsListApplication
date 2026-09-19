@@ -1,70 +1,107 @@
 package com.example.catslist.presentation.components
 
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Matrix
 import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.PathOperation
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 
 /**
- * A rounded card with a bite taken out of its bottom trailing corner, so the action icons sit in
- * the gap rather than on top of the cat.
+ * A rounded card whose bottom trailing corner steps inward, leaving a notch for the action icons
+ * so they never sit on top of the cat.
  *
- * The outline is the card *minus* the notch rather than one hand-traced path: the subtraction
- * cannot disagree with itself the way two sets of arc coordinates can, and it keeps the notch
- * expressed in the same terms as the row that has to fit inside it.
+ * All three transitions into the notch are rounded, and they alternate curvature — convex off the
+ * card's edge, concave around the notch's inner corner, convex again into the bottom edge. That
+ * alternation is the whole look: it reads as one continuous S rather than a rectangle subtracted
+ * from another, which is also why this traces arcs explicitly instead of taking the difference of
+ * two rounded rects. A difference can only round the inner corner; the two edge transitions come
+ * out as square steps.
  */
 internal data class CatCardShape(
     private val corner: Dp,
     private val notchWidth: Dp,
     private val notchHeight: Dp,
+    /** The concave turn where the notch's top meets its wall — the corner facing into the card. */
     private val notchCorner: Dp,
+    /** The convex fillets where the notch runs out into the card's right and bottom edges. */
+    private val notchSweep: Dp,
 ) : Shape {
 
     override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline =
         with(density) {
-            val card = Path().apply {
-                addRoundRect(RoundRect(Rect(Offset.Zero, size), CornerRadius(corner.toPx())))
-            }
-            val notch = Path().apply { addRoundRect(notch(size, layoutDirection, this@with)) }
-            Outline.Generic(Path().apply { op(card, notch, PathOperation.Difference) })
-        }
-
-    /**
-     * Only the corner facing *into* the card is rounded. The notch's other three corners land on
-     * the card's own edges, where the card's rounding already decides the silhouette.
-     */
-    private fun notch(size: Size, layoutDirection: LayoutDirection, density: Density): RoundRect =
-        with(density) {
-            val width = notchWidth.toPx()
-            val height = notchHeight.toPx()
-            val inner = CornerRadius(notchCorner.toPx())
-            val bounds = when (layoutDirection) {
-                LayoutDirection.Ltr -> Rect(size.width - width, size.height - height, size.width, size.height)
-                LayoutDirection.Rtl -> Rect(0f, size.height - height, width, size.height)
-            }
-            when (layoutDirection) {
-                LayoutDirection.Ltr -> RoundRect(
-                    rect = bounds,
-                    topLeft = inner,
-                    topRight = CornerRadius.Zero,
-                    bottomRight = CornerRadius.Zero,
-                    bottomLeft = CornerRadius.Zero,
-                )
-                LayoutDirection.Rtl -> RoundRect(
-                    rect = bounds,
-                    topLeft = CornerRadius.Zero,
-                    topRight = inner,
-                    bottomRight = CornerRadius.Zero,
-                    bottomLeft = CornerRadius.Zero,
-                )
-            }
+            val path = notchedPath(
+                size = size,
+                corner = corner.toPx(),
+                notchWidth = notchWidth.toPx(),
+                notchHeight = notchHeight.toPx(),
+                notchCorner = notchCorner.toPx(),
+                notchSweep = notchSweep.toPx(),
+            )
+            // The notch belongs on the trailing side, so in RTL the whole outline flips rather
+            // than the path being written out a second time with every x mirrored by hand.
+            if (layoutDirection == LayoutDirection.Rtl) path.mirrorHorizontally(size.width)
+            Outline.Generic(path)
         }
 }
+
+/**
+ * Traced clockwise from the top-left corner. Angles are Skia's: 0° points right and grows
+ * clockwise, so a positive sweep rounds a convex corner and a negative one cuts a concave.
+ */
+@Suppress("LongParameterList") // Each is one independent dimension of the same outline.
+private fun notchedPath(
+    size: Size,
+    corner: Float,
+    notchWidth: Float,
+    notchHeight: Float,
+    notchCorner: Float,
+    notchSweep: Float,
+): Path {
+    val width = size.width
+    val height = size.height
+    val notchLeft = width - notchWidth
+    val notchTop = height - notchHeight
+    return Path().apply {
+        moveTo(corner, 0f)
+        lineTo(width - corner, 0f)
+        arcTo(Rect(width - 2 * corner, 0f, width, 2 * corner), TOP, QUARTER, false)
+
+        lineTo(width, notchTop - notchSweep)
+        arcTo(Rect(width - 2 * notchSweep, notchTop - 2 * notchSweep, width, notchTop), RIGHT, QUARTER, false)
+
+        lineTo(notchLeft + notchCorner, notchTop)
+        arcTo(
+            Rect(notchLeft, notchTop, notchLeft + 2 * notchCorner, notchTop + 2 * notchCorner),
+            TOP,
+            -QUARTER,
+            false,
+        )
+
+        lineTo(notchLeft, height - notchSweep)
+        arcTo(Rect(notchLeft - 2 * notchSweep, height - 2 * notchSweep, notchLeft, height), RIGHT, QUARTER, false)
+
+        lineTo(corner, height)
+        arcTo(Rect(0f, height - 2 * corner, 2 * corner, height), BOTTOM, QUARTER, false)
+
+        lineTo(0f, corner)
+        arcTo(Rect(0f, 0f, 2 * corner, 2 * corner), LEFT, QUARTER, false)
+        close()
+    }
+}
+
+private fun Path.mirrorHorizontally(width: Float) = transform(
+    Matrix().apply {
+        translate(x = width)
+        scale(x = -1f)
+    },
+)
+
+private const val RIGHT = 0f
+private const val BOTTOM = 90f
+private const val LEFT = 180f
+private const val TOP = 270f
+private const val QUARTER = 90f
