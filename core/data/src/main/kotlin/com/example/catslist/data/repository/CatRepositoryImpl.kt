@@ -50,6 +50,12 @@ class CatRepositoryImpl @Inject constructor(
             // reading it. That produced a visible cascade at startup: cats, then a new
             // generation reloading, then cats again, three times before the screen settled.
             initialLoadSize = PAGE_SIZE,
+            // Defaults to pageSize, which at this card size is far more lookahead than the
+            // screen needs: two cards are visible, so a ten-item distance is already satisfied
+            // the moment the first page lands and Paging appends again immediately. Each append
+            // writes feedCatsTable and so invalidates the PagingSource reading it, restarting
+            // the load state — a second load at launch that nothing asked for.
+            prefetchDistance = PREFETCH_DISTANCE,
             enablePlaceholders = false,
         ),
         remoteMediator = catFeedRemoteMediator,
@@ -64,5 +70,8 @@ class CatRepositoryImpl @Inject constructor(
 
     private companion object {
         const val PAGE_SIZE = 10
+
+        /** Roughly one screen of cards ahead of the last visible one. */
+        const val PREFETCH_DISTANCE = 3
     }
 }

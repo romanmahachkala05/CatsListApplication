@@ -32,6 +32,10 @@ abstract class CatFeedDao {
     @Query("SELECT COALESCE(MAX(sortOrder), -1) + 1 FROM feedCatsTable")
     abstract suspend fun nextSortOrder(): Int
 
+    /** Whether there is a cached feed to open from at all. */
+    @Query("SELECT COUNT(*) FROM feedCatsTable")
+    abstract suspend fun count(): Int
+
     @Query("SELECT * FROM feedRemoteKeysTable WHERE id = ${FeedRemoteKeysEntity.SINGLETON_ID}")
     abstract suspend fun getRemoteKeys(): FeedRemoteKeysEntity?
 

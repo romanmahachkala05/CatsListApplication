@@ -46,6 +46,8 @@ class FakeCatFeedDao : CatFeedDao() {
 
     override suspend fun nextSortOrder(): Int = (cats.maxOfOrNull { it.sortOrder } ?: -1) + 1
 
+    override suspend fun count(): Int = cats.size
+
     override suspend fun getRemoteKeys(): FeedRemoteKeysEntity? = remoteKeys
 
     override suspend fun setRemoteKeys(keys: FeedRemoteKeysEntity) {
