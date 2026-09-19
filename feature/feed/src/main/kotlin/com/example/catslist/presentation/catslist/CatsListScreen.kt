@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -33,8 +32,8 @@ import com.example.catslist.domain.model.Cat
 import com.example.catslist.feature.feed.R
 import com.example.catslist.presentation.UiText
 import com.example.catslist.presentation.components.CatItem
+import com.example.catslist.presentation.components.CatItemPlaceholder
 import com.example.catslist.presentation.components.ErrorMessage
-import com.example.catslist.presentation.components.LoadingIndicator
 import com.example.catslist.presentation.theme.CatsListTheme
 import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.coroutines.flow.flowOf
@@ -79,7 +78,7 @@ internal fun CatsListContent(
         // to show yet — once cats are on screen, a failed reload becomes the append footer's
         // problem (see CatsFeed), not a reason to blank out what's already loaded.
         when (refresh) {
-            is LoadState.Loading if pagingItems.itemCount == 0 -> LoadingIndicator()
+            is LoadState.Loading if pagingItems.itemCount == 0 -> CatsFeedPlaceholder(contentPadding)
             is LoadState.Error if pagingItems.itemCount == 0 -> ErrorMessage(
                 message = UiText.Resource(R.string.catslist_error_loading_cats),
                 onRetry = pagingItems::retry,
@@ -132,7 +131,9 @@ private fun CatsFeed(
         }
 
         when (pagingItems.loadState.append) {
-            is LoadState.Loading -> item { ListNotice { CircularProgressIndicator() } }
+            // The next card's own skeleton rather than a spinner below the list, so the page
+            // arriving swaps shimmer for photo in place instead of shifting everything up.
+            is LoadState.Loading -> item { CatItemPlaceholder() }
             is LoadState.Error -> item {
                 ListNotice {
                     Text(
@@ -151,9 +152,24 @@ private fun CatsFeed(
     }
 }
 
-/** Compact, in-list replacement for [LoadingIndicator]/[ErrorMessage] — those `fillMaxSize()`,
- * which inside a `LazyColumn` item takes the whole remaining viewport instead of sizing to its
- * content. Used both above the cats and as the append footer below them. */
+/**
+ * The skeleton list shown before the first page arrives. Not scrollable: there is nothing below
+ * it to reach, and a skeleton that moves invites the user to chase content that does not exist.
+ */
+@Composable
+private fun CatsFeedPlaceholder(contentPadding: PaddingValues) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = contentPadding,
+        userScrollEnabled = false,
+    ) {
+        items(PLACEHOLDER_COUNT) { CatItemPlaceholder() }
+    }
+}
+
+/** Compact, in-list replacement for [ErrorMessage] — it `fillMaxSize()`s, which inside a
+ * `LazyColumn` item takes the whole remaining viewport instead of sizing to its content. Used
+ * both above the cats and as the append-failure footer below them. */
 @Composable
 private fun ListNotice(content: @Composable () -> Unit) {
     Column(
@@ -164,6 +180,9 @@ private fun ListNotice(content: @Composable () -> Unit) {
         content()
     }
 }
+
+/** Enough to fill a phone screen and then some, so the skeleton never ends mid-viewport. */
+private const val PLACEHOLDER_COUNT = 4
 
 @Preview(name = "Content", showBackground = true)
 @Composable
@@ -193,6 +212,20 @@ private fun CatsListFavoritesUnavailablePreview() {
             state = CatsListState(favoritesStatus = CatsListFavoritesStatus.Unavailable),
             onEvent = {},
         )
+    }
+}
+
+@Preview(name = "Loading", showBackground = true)
+@Composable
+private fun CatsListLoadingPreview() {
+    CatsListTheme {
+        val loadingStates = LoadStates(
+            refresh = LoadState.Loading,
+            prepend = LoadState.NotLoading(endOfPaginationReached = false),
+            append = LoadState.NotLoading(endOfPaginationReached = false),
+        )
+        val emptyFeed = flowOf(PagingData.from(emptyList<Cat>(), sourceLoadStates = loadingStates))
+        CatsListContent(pagingItems = emptyFeed.collectAsLazyPagingItems(), onEvent = {})
     }
 }
 

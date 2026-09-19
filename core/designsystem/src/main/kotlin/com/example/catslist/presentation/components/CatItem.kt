@@ -1,6 +1,7 @@
 package com.example.catslist.presentation.components
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -37,9 +38,6 @@ fun CatItem(
     onDownloadClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val shape = remember {
-        CatCardShape(CARD_CORNER, NOTCH_WIDTH, NOTCH_HEIGHT, NOTCH_CORNER, NOTCH_SWEEP)
-    }
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -52,16 +50,41 @@ fun CatItem(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(IMAGE_HEIGHT)
-                .clip(shape)
+                .clip(CAT_CARD_SHAPE)
                 // The same shape for the outline as for the clip: a border drawn from a second
                 // shape would need the notch measurements repeated, and could drift from them.
-                .border(BORDER_WIDTH, MaterialTheme.colorScheme.outline, shape),
+                .border(BORDER_WIDTH, MaterialTheme.colorScheme.outline, CAT_CARD_SHAPE),
         )
         CatActions(
             isFavorite = cat.isFavorite,
             onFavoriteClick = onFavoriteClick,
             onDownloadClick = onDownloadClick,
             modifier = Modifier.align(Alignment.BottomEnd),
+        )
+    }
+}
+
+/**
+ * The skeleton shown while cats are still loading: the same frame, the same notch, the same
+ * footprint as [CatItem], with a shimmer where the photo will be. Sharing the constants is the
+ * point — a placeholder that merely looked similar would shift the list the moment real cats
+ * replaced it.
+ */
+@Composable
+fun CatItemPlaceholder(modifier: Modifier = Modifier) {
+    val shimmer = shimmerBrush()
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = CARD_MARGIN_HORIZONTAL, vertical = CARD_MARGIN_VERTICAL),
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(IMAGE_HEIGHT)
+                .clip(CAT_CARD_SHAPE)
+                .background(shimmer)
+                .border(BORDER_WIDTH, MaterialTheme.colorScheme.outline, CAT_CARD_SHAPE),
         )
     }
 }
@@ -126,6 +149,10 @@ private val NOTCH_HEIGHT = 52.dp
 private val NOTCH_CORNER = 20.dp
 private val NOTCH_SWEEP = 16.dp
 
+/** Declared last on purpose: top-level initialisers run in file order, and this reads the rest. */
+private val CAT_CARD_SHAPE =
+    CatCardShape(CARD_CORNER, NOTCH_WIDTH, NOTCH_HEIGHT, NOTCH_CORNER, NOTCH_SWEEP)
+
 @Preview(name = "Not favorite", showBackground = true)
 @Composable
 private fun CatItemPreview() {
@@ -148,4 +175,10 @@ private fun CatItemFavoritePreview() {
             onDownloadClick = {},
         )
     }
+}
+
+@Preview(name = "Placeholder", showBackground = true)
+@Composable
+private fun CatItemPlaceholderPreview() {
+    CatsListTheme { CatItemPlaceholder() }
 }
