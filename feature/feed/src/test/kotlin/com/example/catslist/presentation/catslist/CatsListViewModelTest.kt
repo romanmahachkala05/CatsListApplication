@@ -1,14 +1,13 @@
 package com.example.catslist.presentation.catslist
 
+import androidx.paging.testing.asSnapshot
 import com.example.catslist.domain.usecase.DownloadCatImageUseCase
-import com.example.catslist.domain.usecase.FetchNextCatsUseCase
 import com.example.catslist.domain.usecase.GetCatFeedUseCase
+import com.example.catslist.domain.usecase.GetFavoriteCatsUseCase
 import com.example.catslist.domain.usecase.ToggleFavoriteUseCase
-import com.example.catslist.feature.feed.R
 import com.example.catslist.presentation.DOWNLOAD_FAILED
 import com.example.catslist.presentation.DOWNLOAD_STARTED
 import com.example.catslist.presentation.FAVORITE_FAILED
-import com.example.catslist.presentation.UiText
 import com.example.catslist.testing.FakeCatRepository
 import com.example.catslist.testing.FakeImageDownloader
 import com.example.catslist.testing.FakeSnackbarNotifier
@@ -21,6 +20,14 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
 
+/**
+ * Loading/error/retry for the feed itself is Paging's own state machine now (see
+ * [CatsListViewModel.pagedCats]'s doc) — proven by [CatFeedRemoteMediatorTest] and
+ * [com.example.catslist.data.local.CatFeedDaoTest], not here. What is still this
+ * ViewModel's job: forwarding the paged feed and keeping the live favorite-id set in
+ * [CatsListState] (never combined into the feed itself — see `CatRepositoryImpl.feed`'s doc and
+ * ADR-0023), and handling favorite/download events.
+ */
 class CatsListViewModelTest {
 
     @get:Rule
@@ -29,142 +36,61 @@ class CatsListViewModelTest {
     private val repository = FakeCatRepository()
     private val downloader = FakeImageDownloader()
     private val notifier = FakeSnackbarNotifier()
+    private val stateHolder = CatsListStateHolder()
 
     @Test
-    fun `loads a first page as soon as it is created`() = runTest {
-        repository.enqueueBatch(cat("1"), cat("2"))
-
+    fun `exposes the repository feed`() = runTest {
+        repository.setFeed(cat("1"), cat("2"))
         val viewModel = viewModel()
 
-        assertThat(repository.fetchCount).isEqualTo(1)
-        assertThat(viewModel.state.value.status).isEqualTo(CatsListUiStatus.Content)
-        assertThat(viewModel.state.value.cats.map { it.id }).containsExactly("1", "2").inOrder()
+        val snapshot = viewModel.pagedCats.asSnapshot()
+
+        assertThat(snapshot.map { it.id }).containsExactly("1", "2").inOrder()
     }
 
     @Test
-    fun `stays loading while the first page is still empty`() = runTest {
-        val viewModel = viewModel()
-
-        assertThat(viewModel.state.value.status).isEqualTo(CatsListUiStatus.Loading)
-    }
-
-    @Test
-    fun `a failed first load becomes an error`() = runTest {
-        repository.fetchError = IOException("offline")
-
-        val viewModel = viewModel()
-
-        assertThat(viewModel.state.value.status).isEqualTo(
-            CatsListUiStatus.Error(UiText.Resource(R.string.catslist_error_loading_cats)),
-        )
-    }
-
-    @Test
-    fun `a feed that ends in an error is shown, not thrown`() = runTest {
-        // An exception escaping viewModelScope reaches the default handler and kills the process.
-        repository.feedError = IOException("database is corrupt")
-
-        val viewModel = viewModel()
-
-        assertThat(viewModel.state.value.status).isEqualTo(
-            CatsListUiStatus.Error(UiText.Resource(R.string.catslist_error_feed_stopped)),
-        )
-    }
-
-    @Test
-    fun `Retry resubscribes to a feed that had ended in an error`() = runTest {
-        repository.feedError = IOException("database is corrupt")
-        val viewModel = viewModel()
-        repository.feedError = null
-        repository.enqueueBatch(cat("1"))
-
-        viewModel.onEvent(CatsListEvent.Retry)
-
-        assertThat(viewModel.state.value.status).isEqualTo(CatsListUiStatus.Content)
-        assertThat(viewModel.state.value.cats.map { it.id }).containsExactly("1")
-    }
-
-    @Test
-    fun `Retry recovers from a failed page load too`() = runTest {
-        repository.fetchError = IOException("offline")
-        val viewModel = viewModel()
-        repository.fetchError = null
-        repository.enqueueBatch(cat("1"))
-
-        viewModel.onEvent(CatsListEvent.Retry)
-
-        assertThat(viewModel.state.value.status).isEqualTo(CatsListUiStatus.Content)
-        assertThat(viewModel.state.value.cats.map { it.id }).containsExactly("1")
-    }
-
-    @Test
-    fun `Retry on a healthy feed keeps the cats already fetched`() = runTest {
-        repository.enqueueBatch(cat("1"))
-        repository.enqueueBatch(cat("2"))
-        val viewModel = viewModel()
-
-        viewModel.onEvent(CatsListEvent.Retry)
-
-        assertThat(viewModel.state.value.cats.map { it.id }).containsExactly("1", "2").inOrder()
-    }
-
-    @Test
-    fun `LoadMore appends the next page`() = runTest {
-        repository.enqueueBatch(cat("1"))
-        repository.enqueueBatch(cat("2"))
-        val viewModel = viewModel()
-
-        viewModel.onEvent(CatsListEvent.LoadMore)
-
-        assertThat(viewModel.state.value.cats.map { it.id }).containsExactly("1", "2").inOrder()
-    }
-
-    @Test
-    fun `LoadMore recovers the screen after a failed load`() = runTest {
-        repository.fetchError = IOException("offline")
-        val viewModel = viewModel()
-        repository.fetchError = null
-        repository.enqueueBatch(cat("1"))
-
-        viewModel.onEvent(CatsListEvent.LoadMore)
-
-        assertThat(viewModel.state.value.status).isEqualTo(CatsListUiStatus.Content)
-        assertThat(viewModel.state.value.cats.map { it.id }).containsExactly("1")
-    }
-
-    @Test
-    fun `ToggleFavorite marks the cat in the feed`() = runTest {
-        repository.enqueueBatch(cat("1"), cat("2"))
+    fun `favoriteIds reflects favorites, and ToggleFavorite adds to it`() = runTest {
+        repository.setFeed(cat("1"), cat("2"))
         val viewModel = viewModel()
 
         viewModel.onEvent(CatsListEvent.ToggleFavorite(cat("2")))
 
-        val cats = viewModel.state.value.cats
-        assertThat(cats.single { it.id == "2" }.isFavorite).isTrue()
-        assertThat(cats.single { it.id == "1" }.isFavorite).isFalse()
+        assertThat(viewModel.state.value.favoriteIds).containsExactly("2")
     }
 
     @Test
-    fun `ToggleFavorite unmarks a cat that was already favorited`() = runTest {
-        repository.enqueueBatch(cat("1"))
+    fun `ToggleFavorite removes an id already favorited`() = runTest {
+        repository.setFeed(cat("1"))
         repository.setFavorites(cat("1"))
         val viewModel = viewModel()
 
         viewModel.onEvent(CatsListEvent.ToggleFavorite(cat("1")))
 
-        assertThat(viewModel.state.value.cats.single().isFavorite).isFalse()
+        assertThat(viewModel.state.value.favoriteIds).isEmpty()
+    }
+
+    @Test
+    fun `a broken favorites stream marks favorites unavailable and leaves the feed alone`() = runTest {
+        // Before this guard existed the throw escaped viewModelScope, which on Android kills
+        // the process — the feed itself loads independently and is unaffected.
+        repository.setFeed(cat("1"))
+        repository.favoritesError = IOException("database is corrupt")
+
+        val viewModel = viewModel()
+
+        assertThat(viewModel.state.value.favoritesStatus).isEqualTo(CatsListFavoritesStatus.Unavailable)
+        assertThat(viewModel.pagedCats.asSnapshot().map { it.id }).containsExactly("1")
     }
 
     @Test
     fun `a failed favorite toggle is reported instead of crashing the screen`() = runTest {
-        repository.enqueueBatch(cat("1"))
+        repository.setFeed(cat("1"))
         val viewModel = viewModel()
         repository.favoriteError = IOException("database is locked")
 
         viewModel.onEvent(CatsListEvent.ToggleFavorite(cat("1")))
 
         assertThat(notifier.shown).containsExactly(FAVORITE_FAILED)
-        assertThat(viewModel.state.value.status).isEqualTo(CatsListUiStatus.Content)
     }
 
     @Test
@@ -178,20 +104,8 @@ class CatsListViewModelTest {
     }
 
     @Test
-    fun `a cancelled load is not shown as an error`() = runTest {
-        // Leaving the screen mid-fetch cancels the load; that is not something to
-        // put a "couldn't load" message on screen for.
-        repository.fetchError = CancellationException("screen left")
-
-        val viewModel = viewModel()
-
-        assertThat(viewModel.state.value.status).isEqualTo(CatsListUiStatus.Loading)
-    }
-
-    @Test
     fun `Download hands the cat to the downloader and says so`() = runTest {
         val cat = cat("1")
-        repository.enqueueBatch(cat)
         val viewModel = viewModel()
 
         viewModel.onEvent(CatsListEvent.Download(cat))
@@ -208,7 +122,6 @@ class CatsListViewModelTest {
         viewModel.onEvent(CatsListEvent.Download(cat("1")))
 
         assertThat(notifier.shown).containsExactly(DOWNLOAD_FAILED)
-        assertThat(viewModel.state.value.status).isNotInstanceOf(CatsListUiStatus.Error::class.java)
     }
 
     @Test
@@ -223,16 +136,13 @@ class CatsListViewModelTest {
         assertThat(notifier.shown).isEmpty()
     }
 
-    private fun viewModel(): CatsListViewModel {
-        val stateHolder = CatsListStateHolder()
-        return CatsListViewModel(
-            stateHolder = stateHolder,
-            errorHandler = CatsListErrorHandler(stateHolder),
-            getCatFeed = GetCatFeedUseCase(repository),
-            fetchNextCats = FetchNextCatsUseCase(repository),
-            toggleFavorite = ToggleFavoriteUseCase(repository),
-            downloadCatImage = DownloadCatImageUseCase(downloader),
-            notifier = notifier,
-        )
-    }
+    private fun viewModel() = CatsListViewModel(
+        stateHolder = stateHolder,
+        errorHandler = CatsListErrorHandler(stateHolder),
+        getCatFeed = GetCatFeedUseCase(repository),
+        getFavoriteCats = GetFavoriteCatsUseCase(repository),
+        toggleFavorite = ToggleFavoriteUseCase(repository),
+        downloadCatImage = DownloadCatImageUseCase(downloader),
+        notifier = notifier,
+    )
 }

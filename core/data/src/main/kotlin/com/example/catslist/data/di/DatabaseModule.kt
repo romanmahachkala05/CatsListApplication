@@ -3,6 +3,7 @@ package com.example.catslist.data.di
 import android.content.Context
 import com.example.catslist.data.local.CatDao
 import com.example.catslist.data.local.CatDatabase
+import com.example.catslist.data.local.CatFeedDao
 import com.example.catslist.data.local.catDatabaseBuilder
 import dagger.Module
 import dagger.Provides
@@ -21,4 +22,7 @@ object DatabaseModule {
 
     @Provides
     fun provideCatDao(database: CatDatabase): CatDao = database.catDao()
+
+    @Provides
+    fun provideCatFeedDao(database: CatDatabase): CatFeedDao = database.catFeedDao()
 }

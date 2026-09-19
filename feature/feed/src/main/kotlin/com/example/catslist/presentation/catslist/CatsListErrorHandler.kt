@@ -1,28 +1,24 @@
 package com.example.catslist.presentation.catslist
 
-import com.example.catslist.feature.feed.R
-import com.example.catslist.presentation.UiText
 import dagger.hilt.android.scopes.ViewModelScoped
 import javax.inject.Inject
 
 internal interface ICatsListErrorHandler {
-    /** A page failed to load. */
-    fun onLoadFailure(error: Throwable)
-
-    /** The feed stream ended in an error, so it needs resubscribing, not just another page. */
-    fun onFeedFailure(error: Throwable)
+    /** The favorites stream ended in an error and won't emit again — retrying can't help. */
+    fun onFavoriteIdsFailure(error: Throwable)
 }
 
+/**
+ * Note what this handler does *not* cover: a failed load of the paged feed. That one belongs to
+ * Paging, which reports and retries it through `LazyPagingItems.loadState` (ADR-0023). Only the
+ * favorite overlay's failure reaches state through here.
+ */
 @ViewModelScoped
 internal class CatsListErrorHandler @Inject constructor(
     private val stateHolder: ICatsListStateHolder,
 ) : ICatsListErrorHandler {
 
-    override fun onLoadFailure(error: Throwable) {
-        stateHolder.showError(UiText.Resource(R.string.catslist_error_loading_cats))
-    }
-
-    override fun onFeedFailure(error: Throwable) {
-        stateHolder.showError(UiText.Resource(R.string.catslist_error_feed_stopped))
+    override fun onFavoriteIdsFailure(error: Throwable) {
+        stateHolder.showFavoritesUnavailable()
     }
 }
