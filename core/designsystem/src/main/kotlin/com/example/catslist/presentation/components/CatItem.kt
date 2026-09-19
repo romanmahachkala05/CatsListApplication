@@ -30,7 +30,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -59,37 +58,42 @@ fun CatItem(
             .fillMaxWidth()
             .padding(horizontal = CARD_MARGIN_HORIZONTAL, vertical = CARD_MARGIN_VERTICAL),
     ) {
-        key(attempt) {
-            AsyncImage(
-                model = cat.url,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                onState = { status = it.toImageStatus() },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(IMAGE_HEIGHT)
-                    .clip(CAT_CARD_SHAPE)
-                    // The same shape for the outline as for the clip: a border drawn from a
-                    // second shape would need the notch measurements repeated, and could drift.
-                    .border(BORDER_WIDTH, MaterialTheme.colorScheme.outline, CAT_CARD_SHAPE),
-            )
+        // One mask around the image and whatever stands in for it, rather than one per layer:
+        // each smoothClip costs an offscreen layer, and they would all clip to the same shape.
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(IMAGE_HEIGHT)
+                .smoothClip(CAT_CARD_SHAPE),
+        ) {
+            key(attempt) {
+                AsyncImage(
+                    model = cat.url,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    onState = { status = it.toImageStatus() },
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+            // Drawn over the image, which is blank in both of these states.
+            when (status) {
+                // Composed only while loading, so the infinite animation stops costing frames
+                // once the photo is up.
+                ImageStatus.Loading -> Box(Modifier.fillMaxSize().background(shimmerBrush()))
+                ImageStatus.Loaded -> Unit
+                ImageStatus.Failed -> CatImageError(
+                    onRetry = { attempt++ },
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
         }
-        // Drawn over the image — which is blank in both of these states — but under the actions.
-        when (status) {
-            // Composed only while loading, so the infinite animation stops costing frames once
-            // the photo is up.
-            ImageStatus.Loading -> Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .clip(CAT_CARD_SHAPE)
-                    .background(shimmerBrush()),
-            )
-            ImageStatus.Loaded -> Unit
-            ImageStatus.Failed -> CatImageError(
-                onRetry = { attempt++ },
-                modifier = Modifier.matchParentSize(),
-            )
-        }
+        // Outside the mask on purpose: a stroke is centred on the path, so masking it would
+        // erase its outer half and render the frame at half the width asked for.
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .border(BORDER_WIDTH, MaterialTheme.colorScheme.onSurface, CAT_CARD_SHAPE),
+        )
         CatActions(
             isFavorite = cat.isFavorite,
             onFavoriteClick = onFavoriteClick,
@@ -119,7 +123,7 @@ fun CatItemPlaceholder(modifier: Modifier = Modifier) {
             modifier = Modifier
                 .fillMaxWidth()
                 .height(IMAGE_HEIGHT)
-                .clip(CAT_CARD_SHAPE)
+                .smoothClip(CAT_CARD_SHAPE)
                 .background(shimmer),
         )
     }
@@ -134,7 +138,6 @@ fun CatItemPlaceholder(modifier: Modifier = Modifier) {
 private fun CatImageError(onRetry: () -> Unit, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
-            .clip(CAT_CARD_SHAPE)
             .background(MaterialTheme.colorScheme.surfaceVariant)
             .clickable(onClickLabel = stringResource(R.string.common_cd_retry_cat_image), onClick = onRetry),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -236,7 +239,7 @@ private val CARD_MARGIN_HORIZONTAL = 16.dp
 private val CARD_MARGIN_VERTICAL = 8.dp
 private val CARD_CORNER = 20.dp
 private val IMAGE_HEIGHT = 300.dp
-private val BORDER_WIDTH = 3.dp
+private val BORDER_WIDTH = 4.dp
 private val ICON_SIZE = 24.dp
 private val ERROR_ICON_SIZE = 40.dp
 
