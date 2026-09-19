@@ -173,4 +173,4 @@ private fun navigationBarItemColors() = NavigationBarItemDefaults.colors(
  * 24.dp is [Icon]'s default; the M3 active-indicator behind it is a fixed 64x32.dp,
  * so much past this looks cramped.
  */
-private val ICON_SIZE = 48.dp
+private val ICON_SIZE = 38.dp

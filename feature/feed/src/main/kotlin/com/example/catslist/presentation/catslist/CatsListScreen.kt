@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -33,8 +32,13 @@ import com.example.catslist.domain.model.Cat
 import com.example.catslist.feature.feed.R
 import com.example.catslist.presentation.UiText
 import com.example.catslist.presentation.components.CatItem
+import com.example.catslist.presentation.components.CatItemPlaceholder
+import com.example.catslist.presentation.components.CatListPlaceholder
+import com.example.catslist.presentation.components.CatPullToRefresh
+import com.example.catslist.presentation.components.EmptyMessage
 import com.example.catslist.presentation.components.ErrorMessage
-import com.example.catslist.presentation.components.LoadingIndicator
+import com.example.catslist.presentation.components.RefreshSignal
+import com.example.catslist.presentation.heldAtLeast
 import com.example.catslist.presentation.theme.CatsListTheme
 import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.coroutines.flow.flowOf
@@ -74,16 +78,27 @@ internal fun CatsListContent(
     contentPadding: PaddingValues = PaddingValues(),
 ) {
     Surface(modifier = modifier.fillMaxSize()) {
+        // Whether there are cats decides this, not the load state. A refresh error or spinner
+        // only takes over the screen while there is nothing to show — once cats are up, a failed
+        // reload is the append footer's problem (see CatsFeed), not a reason to blank them out.
         val refresh = pagingItems.loadState.refresh
-        // A refresh error/spinner only takes over the whole screen while there is nothing
-        // to show yet — once cats are on screen, a failed reload becomes the append footer's
-        // problem (see CatsFeed), not a reason to blank out what's already loaded.
-        when (refresh) {
-            is LoadState.Loading if pagingItems.itemCount == 0 -> LoadingIndicator()
-            is LoadState.Error if pagingItems.itemCount == 0 -> ErrorMessage(
-                message = UiText.Resource(R.string.catslist_error_loading_cats),
-                onRetry = pagingItems::retry,
-            )
+        val hasNoCats = pagingItems.itemCount == 0
+        // On a cold start Room's PagingSource settles to "not loading, nothing here" while the
+        // RemoteMediator is still on the network, so anything short of a finished-and-empty or
+        // failed load still counts as working.
+        val isStillWorking = when (refresh) {
+            is LoadState.Loading -> true
+            is LoadState.NotLoading -> !refresh.endOfPaginationReached
+            is LoadState.Error -> false
+        }
+        // Only the skeleton is held, not the whole empty branch. Holding that would let it keep
+        // asserting "no cats" from a load state that has already moved on, over a feed that has
+        // in fact arrived — the held flag and the live state would be describing different
+        // moments.
+        val showSkeleton = heldAtLeast(hasNoCats && isStillWorking, SKELETON_MINIMUM_MILLIS)
+        when {
+            showSkeleton -> CatListPlaceholder(contentPadding = contentPadding)
+            hasNoCats -> EmptyFeed(refresh = refresh, onRetry = pagingItems::retry)
             else -> CatsFeed(
                 pagingItems = pagingItems,
                 state = state,
@@ -94,6 +109,27 @@ internal fun CatsListContent(
     }
 }
 
+/**
+ * Why there are no cats, for a load that has actually finished without producing any.
+ *
+ * Reached only once the caller has ruled out "still working" — a load in progress belongs to the
+ * skeleton, and rendering the feed itself in that window flashes a blank screen.
+ */
+@Composable
+private fun EmptyFeed(refresh: LoadState, onRetry: () -> Unit) {
+    if (refresh is LoadState.Error) {
+        ErrorMessage(message = UiText.Resource(R.string.catslist_error_loading_cats), onRetry = onRetry)
+    } else {
+        EmptyMessage(UiText.Resource(R.string.catslist_empty_message))
+    }
+}
+
+/**
+ * Pulling refreshes rather than prepends. `CatFeedRemoteMediator`'s REFRESH clears the cached
+ * feed and refetches from page 0, so a pull means "different cats, from the top" and the old
+ * ones are gone — which is the only thing it can mean here: TheCatAPI has no "newer than what I
+ * have" signal to prepend against, which is why PREPEND is a permanent no-op (ADR-0023).
+ */
 @Composable
 private fun CatsFeed(
     pagingItems: LazyPagingItems<Cat>,
@@ -101,59 +137,79 @@ private fun CatsFeed(
     onEvent: (CatsListEvent) -> Unit,
     contentPadding: PaddingValues,
 ) {
-    LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = contentPadding) {
-        when (state.favoritesStatus) {
-            CatsListFavoritesStatus.Live -> Unit
-            // A notice above the cats, not in place of them: the feed loaded fine, and only the
-            // star icons are stale. Blanking working content over that would be a worse lie.
-            CatsListFavoritesStatus.Unavailable -> item {
-                ListNotice {
-                    Text(
-                        text = stringResource(R.string.catslist_error_favorites_unavailable),
-                        style = MaterialTheme.typography.bodyMedium,
-                        textAlign = TextAlign.Center,
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                }
-            }
-        }
-
-        items(count = pagingItems.itemCount, key = pagingItems.itemKey { it.id }) { index ->
-            val cat = pagingItems[index] ?: return@items
-            // The paged cat never carries favorite status itself — see CatRepositoryImpl.feed's
-            // doc — so it's applied here, at render time, a plain Compose recomposition rather
-            // than another Paging generation.
-            val displayCat = cat.copy(isFavorite = cat.id in state.favoriteIds)
-            CatItem(
-                cat = displayCat,
-                onFavoriteClick = { onEvent(CatsListEvent.ToggleFavorite(displayCat)) },
-                onDownloadClick = { onEvent(CatsListEvent.Download(displayCat)) },
-            )
-        }
-
-        when (pagingItems.loadState.append) {
-            is LoadState.Loading -> item { ListNotice { CircularProgressIndicator() } }
-            is LoadState.Error -> item {
-                ListNotice {
-                    Text(
-                        text = stringResource(R.string.catslist_error_loading_cats),
-                        style = MaterialTheme.typography.bodyMedium,
-                        textAlign = TextAlign.Center,
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                    Button(onClick = pagingItems::retry) {
-                        Text(text = stringResource(R.string.catslist_action_retry))
+    // The mediator's refresh, not the combined one. Combined also turns Loading whenever Room
+    // hands Paging a new PagingSource generation, which happens on every page the mediator
+    // caches — so the indicator would appear on its own while simply scrolling. The mediator's
+    // own state is the only one that means "we are talking to the network".
+    val signal = when (pagingItems.loadState.mediator?.refresh) {
+        is LoadState.Loading -> RefreshSignal.Running
+        is LoadState.Error -> RefreshSignal.Failed
+        else -> RefreshSignal.Idle
+    }
+    CatPullToRefresh(
+        signal = signal,
+        onRefresh = pagingItems::refresh,
+        modifier = Modifier.fillMaxSize(),
+        // The same inset the list below uses, so the indicator clears the status bar that the
+        // cats themselves scroll under.
+        topInset = contentPadding.calculateTopPadding(),
+    ) {
+        LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = contentPadding) {
+            when (state.favoritesStatus) {
+                CatsListFavoritesStatus.Live -> Unit
+                // A notice above the cats, not in place of them: the feed loaded fine, and only
+                // the star icons are stale. Blanking working content over that is a worse lie.
+                CatsListFavoritesStatus.Unavailable -> item {
+                    ListNotice {
+                        Text(
+                            text = stringResource(R.string.catslist_error_favorites_unavailable),
+                            style = MaterialTheme.typography.bodyMedium,
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.error,
+                        )
                     }
                 }
             }
-            is LoadState.NotLoading -> Unit
+
+            items(count = pagingItems.itemCount, key = pagingItems.itemKey { it.id }) { index ->
+                val cat = pagingItems[index] ?: return@items
+                // The paged cat never carries favorite status itself — see CatRepositoryImpl's
+                // feed doc — so it's applied here, at render time, a plain Compose
+                // recomposition rather than another Paging generation.
+                val displayCat = cat.copy(isFavorite = cat.id in state.favoriteIds)
+                CatItem(
+                    cat = displayCat,
+                    onFavoriteClick = { onEvent(CatsListEvent.ToggleFavorite(displayCat)) },
+                    onDownloadClick = { onEvent(CatsListEvent.Download(displayCat)) },
+                )
+            }
+
+            when (pagingItems.loadState.append) {
+                // The next card's own skeleton rather than a spinner below the list, so the page
+                // arriving swaps shimmer for photo in place instead of shifting everything up.
+                is LoadState.Loading -> item { CatItemPlaceholder() }
+                is LoadState.Error -> item {
+                    ListNotice {
+                        Text(
+                            text = stringResource(R.string.catslist_error_loading_cats),
+                            style = MaterialTheme.typography.bodyMedium,
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                        Button(onClick = pagingItems::retry) {
+                            Text(text = stringResource(R.string.catslist_action_retry))
+                        }
+                    }
+                }
+                is LoadState.NotLoading -> Unit
+            }
         }
     }
 }
 
-/** Compact, in-list replacement for [LoadingIndicator]/[ErrorMessage] — those `fillMaxSize()`,
- * which inside a `LazyColumn` item takes the whole remaining viewport instead of sizing to its
- * content. Used both above the cats and as the append footer below them. */
+/** Compact, in-list replacement for [ErrorMessage] — it `fillMaxSize()`s, which inside a
+ * `LazyColumn` item takes the whole remaining viewport instead of sizing to its content. Used
+ * both above the cats and as the append-failure footer below them. */
 @Composable
 private fun ListNotice(content: @Composable () -> Unit) {
     Column(
@@ -164,6 +220,10 @@ private fun ListNotice(content: @Composable () -> Unit) {
         content()
     }
 }
+
+/** Long enough that a skeleton reads as loading rather than as a flicker, short enough not to
+ * slow down a genuinely fast page. */
+private const val SKELETON_MINIMUM_MILLIS = 300L
 
 @Preview(name = "Content", showBackground = true)
 @Composable
@@ -193,6 +253,20 @@ private fun CatsListFavoritesUnavailablePreview() {
             state = CatsListState(favoritesStatus = CatsListFavoritesStatus.Unavailable),
             onEvent = {},
         )
+    }
+}
+
+@Preview(name = "Loading", showBackground = true)
+@Composable
+private fun CatsListLoadingPreview() {
+    CatsListTheme {
+        val loadingStates = LoadStates(
+            refresh = LoadState.Loading,
+            prepend = LoadState.NotLoading(endOfPaginationReached = false),
+            append = LoadState.NotLoading(endOfPaginationReached = false),
+        )
+        val emptyFeed = flowOf(PagingData.from(emptyList<Cat>(), sourceLoadStates = loadingStates))
+        CatsListContent(pagingItems = emptyFeed.collectAsLazyPagingItems(), onEvent = {})
     }
 }
 
