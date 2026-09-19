@@ -33,6 +33,7 @@ import com.example.catslist.feature.feed.R
 import com.example.catslist.presentation.UiText
 import com.example.catslist.presentation.components.CatItem
 import com.example.catslist.presentation.components.CatItemPlaceholder
+import com.example.catslist.presentation.components.CatListPlaceholder
 import com.example.catslist.presentation.components.ErrorMessage
 import com.example.catslist.presentation.theme.CatsListTheme
 import kotlinx.collections.immutable.persistentSetOf
@@ -78,7 +79,8 @@ internal fun CatsListContent(
         // to show yet — once cats are on screen, a failed reload becomes the append footer's
         // problem (see CatsFeed), not a reason to blank out what's already loaded.
         when (refresh) {
-            is LoadState.Loading if pagingItems.itemCount == 0 -> CatsFeedPlaceholder(contentPadding)
+            is LoadState.Loading if pagingItems.itemCount == 0 ->
+                CatListPlaceholder(contentPadding = contentPadding)
             is LoadState.Error if pagingItems.itemCount == 0 -> ErrorMessage(
                 message = UiText.Resource(R.string.catslist_error_loading_cats),
                 onRetry = pagingItems::retry,
@@ -152,21 +154,6 @@ private fun CatsFeed(
     }
 }
 
-/**
- * The skeleton list shown before the first page arrives. Not scrollable: there is nothing below
- * it to reach, and a skeleton that moves invites the user to chase content that does not exist.
- */
-@Composable
-private fun CatsFeedPlaceholder(contentPadding: PaddingValues) {
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = contentPadding,
-        userScrollEnabled = false,
-    ) {
-        items(PLACEHOLDER_COUNT) { CatItemPlaceholder() }
-    }
-}
-
 /** Compact, in-list replacement for [ErrorMessage] — it `fillMaxSize()`s, which inside a
  * `LazyColumn` item takes the whole remaining viewport instead of sizing to its content. Used
  * both above the cats and as the append-failure footer below them. */
@@ -180,9 +167,6 @@ private fun ListNotice(content: @Composable () -> Unit) {
         content()
     }
 }
-
-/** Enough to fill a phone screen and then some, so the skeleton never ends mid-viewport. */
-private const val PLACEHOLDER_COUNT = 4
 
 @Preview(name = "Content", showBackground = true)
 @Composable

@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -19,17 +18,6 @@ import com.example.catslist.core.designsystem.R
 import com.example.catslist.presentation.UiText
 import com.example.catslist.presentation.resolve
 import com.example.catslist.presentation.theme.CatsListTheme
-
-@Composable
-fun LoadingIndicator(modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        CircularProgressIndicator()
-    }
-}
 
 @Composable
 fun EmptyMessage(message: UiText, modifier: Modifier = Modifier) {
@@ -70,12 +58,6 @@ fun ErrorMessage(
             }
         }
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun LoadingIndicatorPreview() {
-    CatsListTheme { LoadingIndicator() }
 }
 
 @Preview(showBackground = true)

@@ -5,18 +5,24 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -26,6 +32,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import coil3.compose.AsyncImagePainter
 import com.example.catslist.core.designsystem.R
 import com.example.catslist.domain.model.Cat
 import com.example.catslist.presentation.theme.CatsListTheme
@@ -38,6 +45,9 @@ fun CatItem(
     onDownloadClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // Keyed on the url so a recycled row starts shimmering again for its new cat instead of
+    // showing the previous one's finished state.
+    var isLoading by remember(cat.url) { mutableStateOf(true) }
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -47,6 +57,7 @@ fun CatItem(
             model = cat.url,
             contentDescription = null,
             contentScale = ContentScale.Crop,
+            onState = { isLoading = it is AsyncImagePainter.State.Loading },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(IMAGE_HEIGHT)
@@ -55,6 +66,16 @@ fun CatItem(
                 // shape would need the notch measurements repeated, and could drift from them.
                 .border(BORDER_WIDTH, MaterialTheme.colorScheme.outline, CAT_CARD_SHAPE),
         )
+        if (isLoading) {
+            // Composed only while loading, so the infinite animation stops costing frames once
+            // the photo is up. Drawn over the (still blank) image but under the actions.
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .clip(CAT_CARD_SHAPE)
+                    .background(shimmerBrush()),
+            )
+        }
         CatActions(
             isFavorite = cat.isFavorite,
             onFavoriteClick = onFavoriteClick,
@@ -86,6 +107,27 @@ fun CatItemPlaceholder(modifier: Modifier = Modifier) {
                 .background(shimmer)
                 .border(BORDER_WIDTH, MaterialTheme.colorScheme.outline, CAT_CARD_SHAPE),
         )
+    }
+}
+
+/**
+ * A screenful of [CatItemPlaceholder]s, for any screen waiting on its first cats.
+ *
+ * Not scrollable: there is nothing below the skeleton to reach, and one that moves invites the
+ * user to chase content that does not exist yet.
+ */
+@Composable
+fun CatListPlaceholder(
+    modifier: Modifier = Modifier,
+    contentPadding: PaddingValues = PaddingValues(),
+    count: Int = PLACEHOLDER_COUNT,
+) {
+    LazyColumn(
+        modifier = modifier.fillMaxSize(),
+        contentPadding = contentPadding,
+        userScrollEnabled = false,
+    ) {
+        items(count) { CatItemPlaceholder() }
     }
 }
 
@@ -148,6 +190,9 @@ private val NOTCH_WIDTH = 104.dp
 private val NOTCH_HEIGHT = 52.dp
 private val NOTCH_CORNER = 20.dp
 private val NOTCH_SWEEP = 16.dp
+
+/** Enough to fill a phone screen and then some, so the skeleton never ends mid-viewport. */
+private const val PLACEHOLDER_COUNT = 4
 
 /** Declared last on purpose: top-level initialisers run in file order, and this reads the rest. */
 private val CAT_CARD_SHAPE =
