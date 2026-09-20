@@ -27,31 +27,21 @@ class CatRepositoryImpl @Inject constructor(
         catDao.getAllCats().map { entities -> entities.map { it.toDomain() }.toPersistentList() }
 
     /**
-     * No favorite status here, ever — and not layered on via `combine()` either.
-     * `PagingData.map` is not safe to re-run on the same underlying `PagingData` more than
-     * once: `combine()`-ing this with a changing favorites flow re-invoked `.map` on the same
-     * instance on every favorite toggle, and the second, still-live subscription to the same
-     * generation's internal event stream crashed with "Attempt to collect twice from
-     * pageEventFlow". The live overlay belongs in the UI layer instead — `CatsListScreen`
-     * combines [ImmutableList]<Cat> from [favorites] with the plain `LazyPagingItems` from
-     * this at render time, which is ordinary Compose recomposition, not a second Paging
-     * generation.
+     * Never carries favorite status, and never `combine()`s it in: re-running `PagingData.map`
+     * on the same instance crashes with "Attempt to collect twice from pageEventFlow". The
+     * overlay is applied in `CatsListScreen` at render time instead.
      */
     override val feed: Flow<PagingData<Cat>> = Pager(
         config = PagingConfig(
             pageSize = PAGE_SIZE,
-            // Must equal pageSize. The API pages by (page, limit), so page N holds items
-            // N * limit onwards — a first load of a different size would put every later page
-            // at the wrong offset and quietly skip or repeat a block of cats.
+            // Must equal pageSize: the API pages by (page, limit), so a first load of another
+            // size puts every later page at the wrong offset.
             initialLoadSize = PAGE_SIZE,
-            // Defaults to pageSize, which at this card size is far more lookahead than the
-            // screen needs: about two cards are visible, so a ten-item distance is already
-            // satisfied the moment the first page lands.
+            // Smaller than the pageSize default: only about two cards are visible at a time.
             prefetchDistance = PREFETCH_DISTANCE,
             enablePlaceholders = false,
         ),
-        // A new source per generation, never a shared instance: a PagingSource is single-use
-        // once invalidated, and each one owns the de-duplication state for its own generation.
+        // A new source per generation: a PagingSource is single-use once invalidated.
         pagingSourceFactory = { CatFeedPagingSource(catApiService) },
     ).flow
 

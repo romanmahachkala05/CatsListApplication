@@ -7,10 +7,7 @@ import androidx.room.Query
 import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
 
-/**
- * An abstract class rather than an interface so [toggleFavorite] can carry a body
- * that Room wraps in a real transaction — see the comment on it.
- */
+/** An abstract class, not an interface, so [toggleFavorite] can carry a body Room wraps. */
 @Dao
 abstract class CatDao {
 
@@ -30,15 +27,9 @@ abstract class CatDao {
     abstract suspend fun deleteAllCats()
 
     /**
-     * Adds or removes [cat] in one transaction.
-     *
-     * The read and the write have to be atomic: two quick taps on the same cat each
-     * launch their own coroutine, and split across two statements both could read
-     * "not a favorite" before either writes. That would insert twice — which
-     * [insertCat] aborts on, since `id` is the primary key and the default conflict
-     * strategy is `ABORT` — and would leave the cat favorited after two taps that
-     * should have cancelled each other out. Room runs an `@Transaction` method on
-     * its transaction thread, so concurrent calls queue instead of interleaving.
+     * Adds or removes [cat] in one transaction. The read and the write have to be atomic:
+     * two quick taps could otherwise both read "not a favorite" and insert twice, which
+     * [insertCat] aborts on. `@Transaction` queues concurrent calls instead of interleaving.
      */
     @Transaction
     open suspend fun toggleFavorite(cat: CatEntity) {

@@ -49,8 +49,7 @@ fun CatItem(
     onDownloadClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // Every card fetches its own photo, so one cat can fail while the page around it loaded
-    // fine. Bumping `attempt` gives the failed one a fresh painter, and so a fresh request.
+    // Bumping `attempt` hands the image a fresh painter, and so a fresh request.
     var attempt by remember(cat.url) { mutableIntStateOf(0) }
     var status by remember(cat.url, attempt) { mutableStateOf(ImageStatus.Loading) }
     Box(
@@ -58,8 +57,7 @@ fun CatItem(
             .fillMaxWidth()
             .padding(horizontal = CARD_MARGIN_HORIZONTAL, vertical = CARD_MARGIN_VERTICAL),
     ) {
-        // One mask around the image and whatever stands in for it, rather than one per layer:
-        // each smoothClip costs an offscreen layer, and they would all clip to the same shape.
+        // One mask for the image and its stand-ins: each smoothClip costs an offscreen layer.
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -75,10 +73,7 @@ fun CatItem(
                     modifier = Modifier.fillMaxSize(),
                 )
             }
-            // Drawn over the image, which is blank in both of these states.
             when (status) {
-                // Composed only while loading, so the infinite animation stops costing frames
-                // once the photo is up.
                 ImageStatus.Loading -> Box(Modifier.fillMaxSize().background(shimmerBrush()))
                 ImageStatus.Loaded -> Unit
                 ImageStatus.Failed -> CatImageError(
@@ -87,8 +82,7 @@ fun CatItem(
                 )
             }
         }
-        // Outside the mask on purpose: a stroke is centred on the path, so masking it would
-        // erase its outer half and render the frame at half the width asked for.
+        // Outside the mask: a stroke is centered on the path, so clipping halves its width.
         Box(
             modifier = Modifier
                 .matchParentSize()
@@ -103,14 +97,7 @@ fun CatItem(
     }
 }
 
-/**
- * The skeleton shown before there is any cat to frame: the whole card is the shimmer, with no
- * outline. That is deliberately *not* how [CatItem] looks while its photo loads — there, the
- * frame is already drawn and only its inside shimmers. A framed card means "this cat exists,
- * its picture is coming"; an unframed shimmer means "we don't have a cat yet".
- *
- * It keeps [CatItem]'s footprint and shape, so nothing shifts when real cats replace it.
- */
+/** [CatItem]'s footprint with no cat yet: all shimmer, no frame. */
 @Composable
 fun CatItemPlaceholder(modifier: Modifier = Modifier) {
     val shimmer = shimmerBrush()
@@ -129,11 +116,7 @@ fun CatItemPlaceholder(modifier: Modifier = Modifier) {
     }
 }
 
-/**
- * Shown in place of a cat whose own image request failed, while the page around it loaded fine.
- * Tapping retries just this one — without that the card stays broken for as long as the list
- * keeps it alive, and a pull-to-refresh of the whole feed is a heavy way to recover one photo.
- */
+/** Stands in for a cat whose image request failed. Tapping retries just this one. */
 @Composable
 private fun CatImageError(onRetry: () -> Unit, modifier: Modifier = Modifier) {
     Column(
@@ -163,16 +146,11 @@ private enum class ImageStatus { Loading, Loaded, Failed }
 private fun AsyncImagePainter.State.toImageStatus(): ImageStatus = when (this) {
     is AsyncImagePainter.State.Loading -> ImageStatus.Loading
     is AsyncImagePainter.State.Error -> ImageStatus.Failed
-    // Empty means no request was made at all — nothing is coming, so nothing should shimmer.
+    // Empty means no request was made, so nothing is coming and nothing should shimmer.
     is AsyncImagePainter.State.Empty, is AsyncImagePainter.State.Success -> ImageStatus.Loaded
 }
 
-/**
- * A screenful of [CatItemPlaceholder]s, for any screen waiting on its first cats.
- *
- * Not scrollable: there is nothing below the skeleton to reach, and one that moves invites the
- * user to chase content that does not exist yet.
- */
+/** A screenful of [CatItemPlaceholder]s for a screen waiting on its first cats. */
 @Composable
 fun CatListPlaceholder(
     modifier: Modifier = Modifier,
@@ -188,12 +166,7 @@ fun CatListPlaceholder(
     }
 }
 
-/**
- * Sized from the very constants the notch is cut with, so the row cannot outgrow the gap it sits
- * in. The icons are on the app background here rather than on the image, so they take their
- * colour from the theme — the white tint this used to hardcode was only legible because it sat
- * on a photo.
- */
+/** Sized from the notch constants, so the row cannot outgrow the gap it sits in. */
 @Composable
 private fun CatActions(
     isFavorite: Boolean,
@@ -249,10 +222,9 @@ private val NOTCH_HEIGHT = 52.dp
 private val NOTCH_CORNER = 20.dp
 private val NOTCH_SWEEP = 16.dp
 
-/** Two is what fits on a phone screen at [IMAGE_HEIGHT] — enough to read as a list, no more. */
 private const val PLACEHOLDER_COUNT = 2
 
-/** Declared last on purpose: top-level initialisers run in file order, and this reads the rest. */
+/** Declared last: top-level initializers run in file order, and this one reads the rest. */
 private val CAT_CARD_SHAPE =
     CatCardShape(CARD_CORNER, NOTCH_WIDTH, NOTCH_HEIGHT, NOTCH_CORNER, NOTCH_SWEEP)
 

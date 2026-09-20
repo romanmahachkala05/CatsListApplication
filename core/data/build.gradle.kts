@@ -30,10 +30,8 @@ dependencies {
     implementation(libs.androidx.room.paging)
     ksp(libs.androidx.room.compiler)
 
-    // PagingData is part of CatRepository's public return type, so it must be on the
-    // classpath of anything depending on this module — a `PagingSource`/`RemoteMediator`
-    // implementation detail would stay `implementation`, but the type a consumer has to
-    // name to even call `repository.feed.collect { ... }` cannot.
+    // `api`, not `implementation`: PagingData is part of CatRepository's return type, so
+    // every consumer needs it on the classpath.
     api(libs.androidx.paging.runtime)
 
     testImplementation(project(":core:testing"))

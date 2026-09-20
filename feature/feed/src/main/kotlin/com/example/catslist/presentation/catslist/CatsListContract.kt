@@ -6,10 +6,9 @@ import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.persistentSetOf
 
 /**
- * Whether the favorite overlay is still live. Deliberately *not* a screen-wide `UiStatus` like
- * every other screen has: the paged list's own loading, error and retry are Paging's, read from
- * `LazyPagingItems.loadState` in the Composable (ADR-0023). This status covers only the part of
- * the screen Paging never loads.
+ * Whether the favorite overlay is still live. Not a screen-wide `UiStatus` as on other screens:
+ * the list's loading, error and retry are Paging's, read from `LazyPagingItems.loadState` in the
+ * Composable (ADR-0024).
  */
 @Immutable
 internal sealed interface CatsListFavoritesStatus {
@@ -23,11 +22,7 @@ internal sealed interface CatsListFavoritesStatus {
 @Immutable
 internal data class CatsListState(
     val favoritesStatus: CatsListFavoritesStatus = CatsListFavoritesStatus.Live,
-    /**
-     * Ids of the favorited cats, overlaid onto the paged cats at render time. A paged cat never
-     * carries its own favorite status — attaching it in SQL made a toggle invalidate the paging
-     * query and wipe the cached feed; see ADR-0023.
-     */
+    /** Ids of the favorited cats, overlaid onto the paged cats at render time (ADR-0024). */
     val favoriteIds: ImmutableSet<String> = persistentSetOf(),
 )
 

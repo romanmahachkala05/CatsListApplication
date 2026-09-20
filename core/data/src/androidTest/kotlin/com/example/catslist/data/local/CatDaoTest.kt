@@ -16,11 +16,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 
-/**
- * Runs against a real in-memory Room database, because the behaviour under test —
- * `@Transaction` serializing concurrent callers — is Room's, and no JVM fake can
- * stand in for it.
- */
+/** Runs against a real in-memory Room database: `@Transaction` is Room's, and no fake has it. */
 @RunWith(AndroidJUnit4::class)
 class CatDaoTest {
 
@@ -63,10 +59,8 @@ class CatDaoTest {
     }
 
     /**
-     * The regression test for the double-tap crash: before `toggleFavorite` became one
-     * `@Transaction`, concurrent callers could each read "not a favorite" and then both
-     * insert, aborting on the primary key. Serialized, an even number of toggles has to
-     * leave the table exactly as it found it.
+     * The regression test for the double-tap crash: unserialized, concurrent callers could
+     * each read "not a favorite" and both insert. An even number of toggles has to be a no-op.
      */
     @Test
     fun toggleFavorite_survivesConcurrentCallersAndEndsConsistent() = runBlocking {

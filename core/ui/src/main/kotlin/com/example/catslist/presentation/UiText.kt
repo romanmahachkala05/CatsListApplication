@@ -5,10 +5,7 @@ import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 
-/**
- * UI text that doesn't know where it will be rendered. ViewModels/StateHolders
- * put one of these in state; only a Composable resolves it to an actual String.
- */
+/** UI text that does not know where it will be rendered. Only a Composable resolves it. */
 sealed interface UiText {
     data class Raw(
         val value: String,
@@ -19,16 +16,14 @@ sealed interface UiText {
     ) : UiText
 }
 
-// The spread is how `stringResource`/`getString` take format arguments; detekt warns about
-// the array copy, which is not worth restructuring for the 0-2 arguments these ever carry.
-@Suppress("SpreadOperator")
+@Suppress("SpreadOperator") // How `stringResource` takes format arguments; 0-2 of them here.
 @Composable
 fun UiText.resolve(): String = when (this) {
     is UiText.Raw -> value
     is UiText.Resource -> stringResource(id, *args.toTypedArray())
 }
 
-/** For resolving outside composition, e.g. inside a [LaunchedEffect] collecting a one-shot effect. */
+/** For resolving outside composition, such as inside a `LaunchedEffect`. */
 @Suppress("SpreadOperator")
 fun UiText.resolve(context: Context): String = when (this) {
     is UiText.Raw -> value

@@ -9,14 +9,11 @@ import org.junit.rules.TestWatcher
 import org.junit.runner.Description
 
 /**
- * Swaps `Dispatchers.Main` — which `viewModelScope` runs on and which has no
- * implementation on the JVM — for a test dispatcher, and puts it back afterwards.
+ * Swaps `Dispatchers.Main`, which has no JVM implementation, for a test dispatcher.
  *
- * Defaults to [UnconfinedTestDispatcher] so coroutines a ViewModel starts in its
- * `init` run eagerly: by the time the constructor returns, the first collection
- * and the first load have already happened, and a test can assert on
- * `state.value` without advancing anything. Pass a `StandardTestDispatcher` in a
- * test that needs to control that ordering instead.
+ * Defaults to [UnconfinedTestDispatcher] so a ViewModel's `init` coroutines run eagerly and a
+ * test can assert on `state.value` straight away. Pass a `StandardTestDispatcher` to control
+ * that ordering instead.
  */
 class MainDispatcherRule(
     private val dispatcher: TestDispatcher = UnconfinedTestDispatcher(),

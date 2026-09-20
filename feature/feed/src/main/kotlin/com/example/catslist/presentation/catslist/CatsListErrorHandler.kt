@@ -8,11 +8,7 @@ internal interface ICatsListErrorHandler {
     fun onFavoriteIdsFailure(error: Throwable)
 }
 
-/**
- * Note what this handler does *not* cover: a failed load of the paged feed. That one belongs to
- * Paging, which reports and retries it through `LazyPagingItems.loadState` (ADR-0023). Only the
- * favorite overlay's failure reaches state through here.
- */
+/** Covers the favorite overlay only; a failed feed load is Paging's (ADR-0024). */
 @ViewModelScoped
 internal class CatsListErrorHandler @Inject constructor(
     private val stateHolder: ICatsListStateHolder,

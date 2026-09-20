@@ -10,9 +10,8 @@ class CatsListStateHolderTest {
 
     @Test
     fun `starts live with no favorites`() {
-        // Not Loading, unlike the favorites screen: nothing here waits on the favorite ids —
-        // the cats render either way, so an empty set is a valid first answer rather than a
-        // pending one.
+        // Unlike the favorites screen, nothing here waits on the ids: the cats render either
+        // way, so an empty set is a valid first answer.
         assertThat(stateHolder.state.value).isEqualTo(CatsListState())
         assertThat(stateHolder.state.value.favoritesStatus).isEqualTo(CatsListFavoritesStatus.Live)
     }

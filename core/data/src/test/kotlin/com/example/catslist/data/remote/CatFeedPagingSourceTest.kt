@@ -30,8 +30,7 @@ class CatFeedPagingSourceTest {
 
         val page = pagingSource.refresh() as PagingSource.LoadResult.Page
 
-        // There is no signal for cats newer than the ones already held, so nothing is ever above
-        // the first page and Paging must never be told to look.
+        // Nothing is ever above the first page, so Paging must never be told to look.
         assertThat(page.prevKey).isNull()
     }
 
@@ -56,9 +55,7 @@ class CatFeedPagingSourceTest {
 
     @Test
     fun `a cat already sent is not sent again by a later page`() = runTest {
-        // The Room cache this replaced deduplicated across pages via its primary key. Nothing
-        // does that now except this source, and the list keys its items by id — a repeat is a
-        // crash rather than a cosmetic double (ADR-0015).
+        // The list keys its items by id, so a repeat across pages is a crash (ADR-0015).
         api.enqueueResponse(catDto("1"), catDto("2"))
         api.enqueueResponse(catDto("2"), catDto("3"))
 
@@ -76,8 +73,8 @@ class CatFeedPagingSourceTest {
         val first = pagingSource.refresh() as PagingSource.LoadResult.Page
         val second = pagingSource.append(first.nextKey) as PagingSource.LoadResult.Page
 
-        // Emptied by de-duplication, not by the API running out — stopping here would strand the
-        // feed on a page the server still had more behind.
+        // Emptied by de-duplication, not by the API running out: stopping here would strand
+        // the feed on a page the server has more behind.
         assertThat(second.data).isEmpty()
         assertThat(second.nextKey).isEqualTo(2)
     }

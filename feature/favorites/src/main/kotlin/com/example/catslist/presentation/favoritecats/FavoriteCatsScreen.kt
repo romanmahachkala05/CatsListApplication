@@ -21,12 +21,11 @@ import com.example.catslist.presentation.components.ErrorMessage
 import com.example.catslist.presentation.theme.CatsListTheme
 import kotlinx.collections.immutable.persistentListOf
 
-/** The download/favorite Snackbar for the screen's ViewModel is collected by the app's shared
- * host (see MainActivity) so it survives a tab switch — not collected here. */
+/** Snackbars are collected by the app's shared host (see MainActivity), not here. */
 @Composable
 fun FavoriteCatsScreen(modifier: Modifier = Modifier, contentPadding: PaddingValues = PaddingValues()) {
-    // A public function can't take an internal type as a parameter, so hiltViewModel()'s
-    // default lives on this private overload instead — FavoriteCatsViewModel stays internal.
+    // A public function can't take an internal type, so hiltViewModel()'s default lives on the
+    // private overload and FavoriteCatsViewModel stays internal.
     FavoriteCatsScreen(modifier = modifier, contentPadding = contentPadding, viewModel = hiltViewModel())
 }
 

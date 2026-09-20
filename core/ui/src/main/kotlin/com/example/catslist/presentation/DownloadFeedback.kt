@@ -6,12 +6,12 @@ import com.example.catslist.domain.model.Cat
 import com.example.catslist.domain.usecase.DownloadCatImageUseCase
 import kotlinx.coroutines.Job
 
-/** Messages shared by every screen that downloads or favorites a cat, so the wording stays one thing. */
+/** Messages shared by every screen that downloads or favorites a cat. */
 val FAVORITE_FAILED = UiText.Resource(R.string.common_favorite_failed_message)
 val DOWNLOAD_FAILED = UiText.Resource(R.string.common_download_failed_message)
 val DOWNLOAD_STARTED = UiText.Resource(R.string.common_download_started_message)
 
-/** Downloads [cat]'s image and reports the start/failure via [notifier] — the one thing every screen does. */
+/** Downloads [cat]'s image and reports the start or the failure through [notifier]. */
 fun ViewModel.downloadCat(
     cat: Cat,
     downloadCatImage: DownloadCatImageUseCase,

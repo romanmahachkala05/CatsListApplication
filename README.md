@@ -69,7 +69,7 @@ live beside the code they test — in the same Gradle module, same package —
 rather than in one shared test source set.
 
 The instrumented ones are not optional extras. They are the only place three
-data-loss failures can be checked, because all three are Room behaviour that no
+data-loss failures can be checked, because all three are Room behavior that no
 JVM fake reproduces: that `@Transaction` really serializes concurrent writes,
 that `MIGRATION_2_3` copies every column, and that a v1 database opens instead
 of crashing.
