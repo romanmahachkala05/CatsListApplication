@@ -54,7 +54,11 @@ Also useful:
 | `./gradlew projects` | list every Gradle module |
 | `./gradlew :app:dependencies --configuration debugRuntimeClasspath` | inspect the resolved graph |
 
-Build JDK: **17**, via the Gradle toolchain.
+Build JDK: **17**, for both halves of the build. Compilation and tests use the Gradle
+toolchain; the Gradle daemon itself uses the criteria in
+`gradle/gradle-daemon-jvm.properties`, so `./gradlew` picks a JDK 17 daemon (downloading one
+if the machine has none) whatever `JAVA_HOME` happens to be. Regenerate that file with
+`./gradlew updateDaemonJvm --jvm-version=17`; do not hand-edit it.
 
 ---
 
