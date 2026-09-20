@@ -3,8 +3,6 @@ import org.gradle.api.JavaVersion
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.configure
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import org.jetbrains.kotlin.gradle.dsl.KotlinAndroidProjectExtension
 
 /**
  * The shared Android defaults, used by every module except `:app` and `:core:model`. Compose
@@ -15,7 +13,6 @@ class AndroidLibraryConventionPlugin : Plugin<Project> {
         with(target) {
             with(pluginManager) {
                 apply("com.android.library")
-                apply("org.jetbrains.kotlin.android")
                 apply("catslist.quality")
             }
 
@@ -42,11 +39,6 @@ class AndroidLibraryConventionPlugin : Plugin<Project> {
                 }
             }
 
-            extensions.configure<KotlinAndroidProjectExtension> {
-                compilerOptions {
-                    jvmTarget.set(JvmTarget.JVM_17)
-                }
-            }
         }
     }
 }
