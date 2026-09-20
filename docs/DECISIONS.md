@@ -49,8 +49,9 @@ that fail without the fix. They are here because finding them was the work.
 | [0020](#adr-0020) | One serialization library | Accepted |
 | [0021](#adr-0021) | Derive versionCode from the version name | Accepted |
 | [0022](#adr-0022) | Split the app into Gradle modules | Accepted |
-| [0023](#adr-0023) | Paging 3 for the feed, with a `RemoteMediator` | **Amended** by 0024 |
+| [0023](#adr-0023) | Paging 3 for the feed, with a `RemoteMediator` | **Superseded** by 0025 |
 | [0024](#adr-0024) | Paging owns the feed's *load* state, not its whole state | Accepted |
+| [0025](#adr-0025) | Page the feed from the network; persist only favorites | Accepted |
 
 ---
 
@@ -868,7 +869,7 @@ split by what it does then, not ahead of time.
 
 ### Move the feed to Paging 3, with a RemoteMediator caching pages into Room
 
-**Accepted** · 2026-09-19 · **amended** by [ADR-0024](#adr-0024)
+**Superseded** by [ADR-0025](#adr-0025) · 2026-09-20 · **amended** by [ADR-0024](#adr-0024)
 
 **Context.** The feed was a hand-rolled `MutableStateFlow<List<Cat>>` the
 ViewModel appended to on `fetchNextBatch()`, combined against Room's favorites
@@ -954,6 +955,18 @@ outside any state object as a bare `StateFlow<Set<String>>` on the ViewModel,
 and its failure path went missing with the error handler it was bundled into.
 [ADR-0024](#adr-0024) redraws the line.
 
+**Why it was superseded.** Paging 3 itself carries forward untouched — what
+[ADR-0025](#adr-0025) reverses is the other half of this entry, the
+`RemoteMediator` caching pages into Room. Two things undid it. The rejection of
+a network-only `PagingSource` above rested entirely on the favorite icon going
+stale in already-loaded pages, and [ADR-0024](#adr-0024) moved that overlay out
+of the paging query into the UI layer, so the objection no longer applies to
+any code that exists. And the cache turned out to have a cost this entry did
+not anticipate: the cached cats render at launch and are then replaced by the
+mandatory refresh, which reads as the screen loading twice. Keeping a copy of
+the feed on disk was never a requirement — it was the price of a live favorite
+star, and that price stopped being owed.
+
 
 ## ADR-0024
 
@@ -1018,3 +1031,57 @@ does; the ViewModel is also at §3b's ≈7 constructor-dependency cap.
 a documented exception; two means the contract in §3 should describe paged
 screens directly instead of carving them out.
 
+
+
+## ADR-0025
+
+### Page the feed from the network; persist only favorites
+
+**Accepted** · 2026-09-20 · supersedes [ADR-0023](#adr-0023)
+
+**Context.** [ADR-0023](#adr-0023) cached the feed into Room behind a
+`RemoteMediator`, for one reason: a plain network `PagingSource` would leave
+the favorite star stale on pages already loaded. [ADR-0024](#adr-0024) then
+moved the favorite overlay out of the paging query entirely — the screen
+applies it at render time from a separate flow — which left the cache with no
+argument for its existence.
+
+It was also costing something. Paging refreshes on every cold start, so the
+cached cats render first and are replaced moments later by the ones just
+fetched: the screen appears to load twice, and the second load is the app
+discarding work it had just shown. Tuning `initialLoadSize` and
+`prefetchDistance` removed a redundant *request*, but nothing in the paging
+configuration can stop a cache from being displayed before the refresh that
+replaces it.
+
+**Decision.** `CatFeedPagingSource` calls `CatApiService` directly and holds
+its pages in memory, for the lifetime of one Paging generation. Room keeps
+`favoriteCatsTable` and nothing else. `MIGRATION_4_5` drops `feedCatsTable` and
+`feedRemoteKeysTable`; no user data is lost, because none of what they held was
+the user's. Paging 3 itself is unchanged — this replaces where the pages come
+from, not how they are paged.
+
+**Consequences.** A launch is one request, a skeleton, then cats. There is no
+second load, because there is nothing cached to show first. The feed is also
+gone on relaunch, which is the intended reading of "the feed is what the
+network says right now": a cat seen yesterday was never promised to still be
+there, and anything the user wanted to keep is a favorite.
+
+The cache was doing one job nobody had written down: `feedCatsTable`'s primary
+key deduplicated cats across pages. TheCatAPI repeats them, the list keys its
+items by id, and a repeated key is a crash rather than a visible double — the
+failure [ADR-0013](#adr-0013) and [ADR-0015](#adr-0015) both circle. The
+mediator's `distinctBy` only ever covered a single response, so that protection
+was entirely incidental. `CatFeedPagingSource` now carries an explicit
+seen-id set per generation, which is the same guarantee stated out loud.
+
+Offline is worse, and that is accepted rather than overlooked: with nothing on
+disk there is nothing to show without a network, where the cache would have
+offered the previous session's cats. The alternative — keep the cache and
+refresh only when it is older than some window — needs a timestamp column and
+another schema version to answer a question this app does not have: a feed of
+random cats has no staleness, only novelty.
+
+**Review when:** the feed gains an identity worth returning to — a search, a
+filter, a breed — at which point the same cats on relaunch stops being noise
+and starts being state, and something has to persist it again.

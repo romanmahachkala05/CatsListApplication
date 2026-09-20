@@ -22,8 +22,8 @@ import org.junit.Test
 
 /**
  * Loading/error/retry for the feed itself is Paging's own state machine now (see
- * [CatsListViewModel.pagedCats]'s doc) — proven by [CatFeedRemoteMediatorTest] and
- * [com.example.catslist.data.local.CatFeedDaoTest], not here. What is still this
+ * [CatsListViewModel.pagedCats]'s doc) — proven by
+ * [com.example.catslist.data.remote.CatFeedPagingSourceTest], not here. What is still this
  * ViewModel's job: forwarding the paged feed and keeping the live favorite-id set in
  * [CatsListState] (never combined into the feed itself — see `CatRepositoryImpl.feed`'s doc and
  * ADR-0023), and handling favorite/download events.

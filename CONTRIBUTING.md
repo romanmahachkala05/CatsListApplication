@@ -72,7 +72,7 @@ for the full dependency graph and the rules behind it.
 | Theme, shared components (e.g. the cat image card) | `:core:designsystem` | `src/main/kotlin/…/presentation/theme/`, `…/components/` |
 | `MainDispatcherRule` and shared test fakes | `:core:testing` | `src/main/kotlin/…/testing/` |
 | One MVI screen (State/Event/StateHolder/VM/Screen/ErrorHandler) | `:feature:favorites` | `src/main/kotlin/…/presentation/<name>/` |
-| One paged screen (Event/VM/Screen; Paging 3 owns load/error/retry state — [ADR-0023](docs/DECISIONS.md#adr-0023)) | `:feature:feed` | `src/main/kotlin/…/presentation/<name>/` |
+| One paged screen (Event/VM/Screen; Paging 3 owns load/error/retry state — [ADR-0024](docs/DECISIONS.md#adr-0024)) | `:feature:feed` | `src/main/kotlin/…/presentation/<name>/` |
 | Unit tests | same module as the code they test | `src/test/kotlin/` |
 | Device tests (Room behaviour, migrations, upgrades) | `:core:data` | `src/androidTest/kotlin/` |
 | `App`, `MainActivity`, `NavDisplay` + back stack — composition root only | `:app` | `src/main/java/…/`, `…/presentation/navigation/` |
@@ -106,7 +106,7 @@ This is the outcome ADR-0001 anticipated and deferred — see
   Never hardcode `"group:name:version"` in a build file.
 - **Screen status** is one sealed `UiStatus`, never `isXVisible` booleans —
   except a paged screen's list-loading state, which is `LazyPagingItems.loadState`
-  ([ADR-0023](docs/DECISIONS.md#adr-0023)), not something to duplicate into a
+  ([ADR-0024](docs/DECISIONS.md#adr-0024)), not something to duplicate into a
   `UiStatus` of its own.
 - **No `var` state on a ViewModel** outside the `StateFlow` — model it in
   `XxxState`.

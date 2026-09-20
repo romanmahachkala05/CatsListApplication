@@ -38,6 +38,9 @@ val MIGRATION_2_3 = object : Migration(2, 3) {
  * brand new and start empty — nothing to copy, unlike [MIGRATION_2_3]. A destructive fallback
  * would have been just as safe here (there is no user data in either table), but a real
  * migration costs nothing extra and keeps every schema change in this file consistent.
+ *
+ * Kept although [MIGRATION_4_5] removes both tables again: a v3 install still has to reach v5,
+ * and Room walks the chain one step at a time.
  */
 val MIGRATION_3_4 = object : Migration(3, 4) {
     override fun migrate(db: SupportSQLiteDatabase) {
@@ -60,5 +63,20 @@ val MIGRATION_3_4 = object : Migration(3, 4) {
             )
             """.trimIndent(),
         )
+    }
+}
+
+/**
+ * v4 -> v5: drop the feed cache. The feed is paged straight from the network now, so nothing
+ * persists it — only favorites are kept on disk.
+ *
+ * Dropping rather than preserving is the whole point: the cached cats existed to be rendered at
+ * launch before a refresh replaced them, which is exactly the behaviour being removed. No user
+ * data is lost, because none of it was ever the user's — favoriteCatsTable is untouched.
+ */
+val MIGRATION_4_5 = object : Migration(4, 5) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("DROP TABLE IF EXISTS feedCatsTable")
+        db.execSQL("DROP TABLE IF EXISTS feedRemoteKeysTable")
     }
 }

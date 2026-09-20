@@ -83,9 +83,9 @@ internal fun CatsListContent(
         // reload is the append footer's problem (see CatsFeed), not a reason to blank them out.
         val refresh = pagingItems.loadState.refresh
         val hasNoCats = pagingItems.itemCount == 0
-        // On a cold start Room's PagingSource settles to "not loading, nothing here" while the
-        // RemoteMediator is still on the network, so anything short of a finished-and-empty or
-        // failed load still counts as working.
+        // Anything short of a finished-and-empty or failed load still counts as working, so a
+        // load that has not reached either verdict keeps the skeleton rather than claiming the
+        // feed is empty.
         val isStillWorking = when (refresh) {
             is LoadState.Loading -> true
             is LoadState.NotLoading -> !refresh.endOfPaginationReached
@@ -125,10 +125,9 @@ private fun EmptyFeed(refresh: LoadState, onRetry: () -> Unit) {
 }
 
 /**
- * Pulling refreshes rather than prepends. `CatFeedRemoteMediator`'s REFRESH clears the cached
- * feed and refetches from page 0, so a pull means "different cats, from the top" and the old
- * ones are gone — which is the only thing it can mean here: TheCatAPI has no "newer than what I
- * have" signal to prepend against, which is why PREPEND is a permanent no-op (ADR-0023).
+ * Pulling refreshes rather than prepends: a new `CatFeedPagingSource` starts again at page 0, so
+ * a pull means "different cats, from the top" and the old ones are gone. That is the only thing
+ * it can mean here — TheCatAPI has no "newer than what I have" signal to prepend against.
  */
 @Composable
 private fun CatsFeed(
@@ -137,11 +136,11 @@ private fun CatsFeed(
     onEvent: (CatsListEvent) -> Unit,
     contentPadding: PaddingValues,
 ) {
-    // The mediator's refresh, not the combined one. Combined also turns Loading whenever Room
-    // hands Paging a new PagingSource generation, which happens on every page the mediator
-    // caches — so the indicator would appear on its own while simply scrolling. The mediator's
-    // own state is the only one that means "we are talking to the network".
-    val signal = when (pagingItems.loadState.mediator?.refresh) {
+    // The plain refresh state, which is the network's: the feed pages straight from the API, so
+    // there is no local source to invalidate and no generation churn to mistake for a fetch.
+    // (`loadState.mediator` is null without a RemoteMediator, so reading that would leave this
+    // permanently Idle and the indicator permanently silent.)
+    val signal = when (pagingItems.loadState.refresh) {
         is LoadState.Loading -> RefreshSignal.Running
         is LoadState.Error -> RefreshSignal.Failed
         else -> RefreshSignal.Idle

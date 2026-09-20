@@ -35,8 +35,8 @@ module exposes exactly two public things, its `NavKey` and one entry
 sealed `UiStatus` (never boolean flags), an `Event` type, a `StateHolder` that
 is the only thing allowed to mutate state, an `ErrorHandler`, a ViewModel that
 merely orchestrates, and a stateless `Content` composable the previews render.
-`:feature:feed` is paged (Paging 3 + a `RemoteMediator` caching into Room —
-[ADR-0023](docs/DECISIONS.md#adr-0023)), so loading/error/retry for its list
+`:feature:feed` is paged (Paging 3 straight from the network, nothing cached —
+[ADR-0025](docs/DECISIONS.md#adr-0025)), so loading/error/retry for its list
 is `LazyPagingItems.loadState`, collected in the Composable, not this state
 machine — Paging already owns that, and reimplementing it would just be
 duplicating the library.
@@ -56,8 +56,8 @@ different reason than ADR-0001 predicted).
 | DI | Hilt |
 | Async | Coroutines, Flow |
 | Network | Retrofit |
-| Storage | Room, with real migrations and committed schemas |
-| Pagination | Paging 3, `RemoteMediator` caching network pages into Room |
+| Storage | Room, with real migrations and committed schemas — favorites only |
+| Pagination | Paging 3, paging the feed straight from the network |
 | Build | Gradle KTS, version catalog, KSP, JDK 17 |
 | Tests | JUnit4, Truth, `kotlinx-coroutines-test`, hand-written fakes |
 
