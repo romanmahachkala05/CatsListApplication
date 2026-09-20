@@ -1,9 +1,7 @@
 import java.util.Properties
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     // Still needed after CatDto moved out: the NavKeys are @Serializable too, and without
     // the plugin that fails at runtime rather than at compile time.
@@ -76,12 +74,6 @@ android {
             // Keeps android.util.Log, a JVM stub that throws, out of the way.
             isReturnDefaultValues = true
         }
-    }
-}
-
-kotlin {
-    compilerOptions {
-        jvmTarget.set(JvmTarget.JVM_17)
     }
 }
 
