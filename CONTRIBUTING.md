@@ -29,7 +29,7 @@ same one, so a red check can be reproduced without translating a CI step back
 into Gradle tasks.
 
 **`verifyOnDevice` is not optional before a PR.** It is the only thing that
-checks the failures which destroy user data — all of them Room behaviour, none
+checks the failures which destroy user data — all of them Room behavior, none
 of them reproducible off-device:
 
 | Instrumented test | What only it can catch |
@@ -74,7 +74,7 @@ for the full dependency graph and the rules behind it.
 | One MVI screen (State/Event/StateHolder/VM/Screen/ErrorHandler) | `:feature:favorites` | `src/main/kotlin/…/presentation/<name>/` |
 | One paged screen (Event/VM/Screen; Paging 3 owns load/error/retry state — [ADR-0024](docs/DECISIONS.md#adr-0024)) | `:feature:feed` | `src/main/kotlin/…/presentation/<name>/` |
 | Unit tests | same module as the code they test | `src/test/kotlin/` |
-| Device tests (Room behaviour, migrations, upgrades) | `:core:data` | `src/androidTest/kotlin/` |
+| Device tests (Room behavior, migrations, upgrades) | `:core:data` | `src/androidTest/kotlin/` |
 | `App`, `MainActivity`, `NavDisplay` + back stack — composition root only | `:app` | `src/main/java/…/`, `…/presentation/navigation/` |
 | Convention plugins (`catslist.android.library`, `.jvm.library`, `.compose`, `.hilt`, `.quality`) | `build-logic` | `build-logic/convention/src/main/kotlin/` |
 | Every dependency and version | — | `gradle/libs.versions.toml` |
@@ -140,6 +140,13 @@ This is the outcome ADR-0001 anticipated and deferred — see
   `when` with a guard (`is X if cond -> …`, Kotlin 2.1+), not `when { x is X
   && cond -> … }`.** The subject form smart-casts and reads as one decision
   tree instead of a flat boolean list.
+- **Comments are short and rare.** One or two lines, only where the code cannot
+  say it itself — a workaround, a constraint, a non-obvious ordering. No
+  paragraph-long rationale essays: durable reasoning belongs in
+  [`docs/DECISIONS.md`](docs/DECISIONS.md), and a KDoc that restates the
+  signature is noise.
+- **American English**, in code, comments, docs and strings alike: `color`,
+  `behavior`, `canceled`, `initialize`, `gray`.
 
 ---
 

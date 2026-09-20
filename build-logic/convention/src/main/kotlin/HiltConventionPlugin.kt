@@ -2,7 +2,7 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.dependencies
 
-/** Additive: applied alongside `catslist.android.library` by modules that actually declare `@Module`s. */
+/** Additive: applied alongside `catslist.android.library` by modules that declare `@Module`s. */
 class HiltConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) {
         with(target) {

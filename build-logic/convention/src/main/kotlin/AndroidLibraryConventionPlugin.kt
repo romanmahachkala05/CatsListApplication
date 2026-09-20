@@ -7,11 +7,8 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinAndroidProjectExtension
 
 /**
- * Used by every module except `:app` (which stays an application module for signing/versioning)
- * and `:core:model` (which stays framework-free) — the shared Android defaults only.
- * Deliberately no Compose or Hilt here: `:core:data` has no UI and nothing to inject, so both
- * are separate, additive plugins ([ComposeConventionPlugin], [HiltConventionPlugin]) applied
- * only by the modules that actually use them.
+ * The shared Android defaults, used by every module except `:app` and `:core:model`. Compose
+ * and Hilt are separate additive plugins, applied only by the modules that need them.
  */
 class AndroidLibraryConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) {
@@ -27,11 +24,8 @@ class AndroidLibraryConventionPlugin : Plugin<Project> {
 
                 defaultConfig {
                     minSdk = 27
-                    // Without this, AGP falls back to the legacy `android.test.InstrumentationTestRunner`,
-                    // which does not discover JUnit4 `@RunWith(AndroidJUnit4::class)` tests — instrumented
-                    // tests then silently run zero tests and report success. Bit twice: once here, once
-                    // when this module's androidTest sources were still part of `:app` and it had this
-                    // set directly.
+                    // Without this AGP falls back to the legacy runner, which discovers no
+                    // JUnit4 tests: instrumented tests then run zero tests and report success.
                     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
                 }
 
@@ -42,8 +36,7 @@ class AndroidLibraryConventionPlugin : Plugin<Project> {
 
                 testOptions {
                     unitTests {
-                        // Code that logs failures through android.util.Log — a stub on the JVM
-                        // that throws by default — stays testable without Robolectric.
+                        // Keeps android.util.Log, a JVM stub that throws, out of the way.
                         isReturnDefaultValues = true
                     }
                 }

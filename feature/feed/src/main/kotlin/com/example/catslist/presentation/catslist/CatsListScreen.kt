@@ -43,12 +43,11 @@ import com.example.catslist.presentation.theme.CatsListTheme
 import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.coroutines.flow.flowOf
 
-/** The download/favorite Snackbar for the screen's ViewModel is collected by the app's shared
- * host (see MainActivity) so it survives a tab switch — not collected here. */
+/** Snackbars are collected by the app's shared host (see MainActivity), not here. */
 @Composable
 fun CatsListScreen(modifier: Modifier = Modifier, contentPadding: PaddingValues = PaddingValues()) {
-    // A public function can't take an internal type as a parameter, so hiltViewModel()'s
-    // default lives on this private overload instead — CatsListViewModel stays internal.
+    // A public function can't take an internal type, so hiltViewModel()'s default lives on the
+    // private overload and CatsListViewModel stays internal.
     CatsListScreen(modifier = modifier, contentPadding = contentPadding, viewModel = hiltViewModel())
 }
 
@@ -78,23 +77,17 @@ internal fun CatsListContent(
     contentPadding: PaddingValues = PaddingValues(),
 ) {
     Surface(modifier = modifier.fillMaxSize()) {
-        // Whether there are cats decides this, not the load state. A refresh error or spinner
-        // only takes over the screen while there is nothing to show — once cats are up, a failed
-        // reload is the append footer's problem (see CatsFeed), not a reason to blank them out.
+        // Having cats decides this, not the load state: once cats are up, a failed reload is
+        // the append footer's problem rather than a reason to blank the screen.
         val refresh = pagingItems.loadState.refresh
         val hasNoCats = pagingItems.itemCount == 0
-        // Anything short of a finished-and-empty or failed load still counts as working, so a
-        // load that has not reached either verdict keeps the skeleton rather than claiming the
-        // feed is empty.
         val isStillWorking = when (refresh) {
             is LoadState.Loading -> true
             is LoadState.NotLoading -> !refresh.endOfPaginationReached
             is LoadState.Error -> false
         }
-        // Only the skeleton is held, not the whole empty branch. Holding that would let it keep
-        // asserting "no cats" from a load state that has already moved on, over a feed that has
-        // in fact arrived — the held flag and the live state would be describing different
-        // moments.
+        // Only the skeleton is held: holding the empty branch would keep claiming "no cats"
+        // over a feed that has since arrived.
         val showSkeleton = heldAtLeast(hasNoCats && isStillWorking, SKELETON_MINIMUM_MILLIS)
         when {
             showSkeleton -> CatListPlaceholder(contentPadding = contentPadding)
@@ -109,12 +102,7 @@ internal fun CatsListContent(
     }
 }
 
-/**
- * Why there are no cats, for a load that has actually finished without producing any.
- *
- * Reached only once the caller has ruled out "still working" — a load in progress belongs to the
- * skeleton, and rendering the feed itself in that window flashes a blank screen.
- */
+/** Why there are no cats. Reached only once the caller has ruled out "still working". */
 @Composable
 private fun EmptyFeed(refresh: LoadState, onRetry: () -> Unit) {
     if (refresh is LoadState.Error) {
@@ -124,11 +112,7 @@ private fun EmptyFeed(refresh: LoadState, onRetry: () -> Unit) {
     }
 }
 
-/**
- * Pulling refreshes rather than prepends: a new `CatFeedPagingSource` starts again at page 0, so
- * a pull means "different cats, from the top" and the old ones are gone. That is the only thing
- * it can mean here — TheCatAPI has no "newer than what I have" signal to prepend against.
- */
+/** Pulling restarts at page 0: TheCatAPI has no "newer than what I have" signal to prepend. */
 @Composable
 private fun CatsFeed(
     pagingItems: LazyPagingItems<Cat>,
@@ -136,10 +120,8 @@ private fun CatsFeed(
     onEvent: (CatsListEvent) -> Unit,
     contentPadding: PaddingValues,
 ) {
-    // The plain refresh state, which is the network's: the feed pages straight from the API, so
-    // there is no local source to invalidate and no generation churn to mistake for a fetch.
-    // (`loadState.mediator` is null without a RemoteMediator, so reading that would leave this
-    // permanently Idle and the indicator permanently silent.)
+    // `loadState.refresh`, not `.mediator`: there is no RemoteMediator, so mediator is always
+    // null and reading it would leave the indicator permanently silent.
     val signal = when (pagingItems.loadState.refresh) {
         is LoadState.Loading -> RefreshSignal.Running
         is LoadState.Error -> RefreshSignal.Failed
@@ -149,15 +131,12 @@ private fun CatsFeed(
         signal = signal,
         onRefresh = pagingItems::refresh,
         modifier = Modifier.fillMaxSize(),
-        // The same inset the list below uses, so the indicator clears the status bar that the
-        // cats themselves scroll under.
         topInset = contentPadding.calculateTopPadding(),
     ) {
         LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = contentPadding) {
             when (state.favoritesStatus) {
                 CatsListFavoritesStatus.Live -> Unit
-                // A notice above the cats, not in place of them: the feed loaded fine, and only
-                // the star icons are stale. Blanking working content over that is a worse lie.
+                // Above the cats, not in place of them: only the star icons are stale.
                 CatsListFavoritesStatus.Unavailable -> item {
                     ListNotice {
                         Text(
@@ -172,9 +151,8 @@ private fun CatsFeed(
 
             items(count = pagingItems.itemCount, key = pagingItems.itemKey { it.id }) { index ->
                 val cat = pagingItems[index] ?: return@items
-                // The paged cat never carries favorite status itself — see CatRepositoryImpl's
-                // feed doc — so it's applied here, at render time, a plain Compose
-                // recomposition rather than another Paging generation.
+                // The paged cat carries no favorite status, so it is applied at render time:
+                // a recomposition rather than another Paging generation.
                 val displayCat = cat.copy(isFavorite = cat.id in state.favoriteIds)
                 CatItem(
                     cat = displayCat,
@@ -184,8 +162,7 @@ private fun CatsFeed(
             }
 
             when (pagingItems.loadState.append) {
-                // The next card's own skeleton rather than a spinner below the list, so the page
-                // arriving swaps shimmer for photo in place instead of shifting everything up.
+                // The next card's skeleton, so the page swaps shimmer for photo in place.
                 is LoadState.Loading -> item { CatItemPlaceholder() }
                 is LoadState.Error -> item {
                     ListNotice {
@@ -206,9 +183,7 @@ private fun CatsFeed(
     }
 }
 
-/** Compact, in-list replacement for [ErrorMessage] — it `fillMaxSize()`s, which inside a
- * `LazyColumn` item takes the whole remaining viewport instead of sizing to its content. Used
- * both above the cats and as the append-failure footer below them. */
+/** In-list stand-in for [ErrorMessage], which `fillMaxSize()`s and would take the viewport. */
 @Composable
 private fun ListNotice(content: @Composable () -> Unit) {
     Column(
@@ -220,8 +195,6 @@ private fun ListNotice(content: @Composable () -> Unit) {
     }
 }
 
-/** Long enough that a skeleton reads as loading rather than as a flicker, short enough not to
- * slow down a genuinely fast page. */
 private const val SKELETON_MINIMUM_MILLIS = 300L
 
 @Preview(name = "Content", showBackground = true)

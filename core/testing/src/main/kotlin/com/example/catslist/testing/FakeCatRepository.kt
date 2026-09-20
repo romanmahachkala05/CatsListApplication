@@ -14,15 +14,11 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 
 /**
- * In-memory [CatRepository] matching the real one's contract: [feed] never carries favorite
- * status (see `CatRepositoryImpl.feed`'s doc, ADR-0023) — a consumer overlays it separately,
- * from [favorites].
+ * In-memory [CatRepository]. As in the real one, [feed] never carries favorite status
+ * (ADR-0024): a consumer overlays it from [favorites].
  *
- * [feed] wraps whatever [setFeed] last set in [PagingData.from] — a static, already-loaded
- * page. That's enough for a test exercising event handling (favoriting, downloading) against
- * a screen; it does not simulate real paging behaviour (appending further pages, load
- * states, [androidx.paging.RemoteMediator] errors) — that belongs to the real
- * `CatRepositoryImplTest`, which exercises the genuine `Pager`.
+ * [feed] is one static, already-loaded page, which is enough for event handling. Real paging
+ * belongs to `CatRepositoryImplTest`, which exercises the genuine `Pager`.
  */
 class FakeCatRepository : CatRepository {
 
@@ -41,8 +37,8 @@ class FakeCatRepository : CatRepository {
             .onEach { favoritesError?.let { error -> throw error } }
 
     override val feed: Flow<PagingData<Cat>> = fetched.map { cats ->
-        // Marked fully loaded in every direction — there is no real further page behind this
-        // fake, and `asSnapshot()` otherwise waits for an append that will never resolve.
+        // Fully loaded in every direction: `asSnapshot()` otherwise waits for an append
+        // that will never resolve.
         PagingData.from(
             data = cats,
             sourceLoadStates = LoadStates(
@@ -53,7 +49,7 @@ class FakeCatRepository : CatRepository {
         )
     }
 
-    /** Replaces the feed's contents outright — there is no page-by-page fetch to simulate. */
+    /** Replaces the feed outright; there is no page-by-page fetch to simulate. */
     fun setFeed(vararg cats: Cat) {
         fetched.value = cats.map { it.copy(isFavorite = false) }
     }

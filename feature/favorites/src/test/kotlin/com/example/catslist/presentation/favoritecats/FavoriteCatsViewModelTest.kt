@@ -103,7 +103,7 @@ class FavoriteCatsViewModelTest {
     }
 
     @Test
-    fun `a cancelled removal is not reported as a failure`() = runTest {
+    fun `a canceled removal is not reported as a failure`() = runTest {
         repository.setFavorites(cat("1"))
         val viewModel = viewModel()
         repository.favoriteError = CancellationException("screen left")
@@ -138,7 +138,7 @@ class FavoriteCatsViewModelTest {
     }
 
     @Test
-    fun `a cancelled download is not reported as a failure`() = runTest {
+    fun `a canceled download is not reported as a failure`() = runTest {
         downloader.error = CancellationException("screen left")
         val viewModel = viewModel()
 

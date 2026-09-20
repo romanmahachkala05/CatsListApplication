@@ -13,12 +13,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 
 /**
- * The sweep shown wherever something is still loading.
- *
- * The gradient's *end* is what animates, not its position: the band stretches out from the
- * origin rather than sliding across, which is what gives this its slow wash instead of a hard
- * glint. The greys are translucent on purpose, so the sweep reads against whatever sits behind
- * it in either theme.
+ * The sweep shown wherever something is still loading. The gradient's *end* animates, not its
+ * position, so the band stretches out from the origin instead of sliding across.
  */
 @Composable
 internal fun shimmerBrush(): Brush {
@@ -39,11 +35,7 @@ internal fun shimmerBrush(): Brush {
     )
 }
 
-/**
- * The middle stop is the moving highlight, and it is the *most* transparent of the three: what
- * sweeps across is the background showing through a grey field, not a light laid over it. So
- * widening the contrast means pulling the ends up and the middle down, not shifting all three.
- */
+/** The middle stop is the highlight, and the most transparent: the background showing through. */
 private val SHIMMER_COLORS = listOf(
     Color.LightGray.copy(alpha = 0.7f),
     Color.LightGray.copy(alpha = 0.1f),

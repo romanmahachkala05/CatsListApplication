@@ -36,20 +36,17 @@ internal class CatsListViewModel @Inject constructor(
     StateOwner<CatsListState> by stateHolder {
 
     /**
-     * The one thing on this screen that is not in [CatsListState], because it cannot be:
-     * `LazyPagingItems` is built by the Composable collecting this, and Paging drives its own
-     * loading, error and retry from there. See ADR-0023 for why that state machine stays
-     * Paging's rather than being mirrored into the state holder.
+     * Not part of [CatsListState], and cannot be: `LazyPagingItems` is built by the Composable
+     * collecting this, and Paging drives loading, error and retry from there (ADR-0024).
      */
     val pagedCats: Flow<PagingData<Cat>> = getCatFeed().cachedIn(viewModelScope)
 
     init {
         getFavoriteCats()
             .map { favorites -> favorites.map { it.id }.toPersistentSet() }
-            // Without this a throwing Room query would escape viewModelScope and kill the
-            // process. No RetryableFlow as on the favorites screen: there the stream *is* the
-            // screen, so a retry button has somewhere to live; here the feed renders on regardless
-            // and the only honest recovery is reopening the screen.
+            // Without this a throwing Room query escapes viewModelScope and kills the process.
+            // No RetryableFlow: the feed renders regardless, so there is no retry button to put
+            // anywhere.
             .catch { errorHandler.onFavoriteIdsFailure(it) }
             .onEach(stateHolder::showFavorites)
             .launchIn(viewModelScope)
@@ -59,8 +56,7 @@ internal class CatsListViewModel @Inject constructor(
 
     fun onEvent(event: CatsListEvent) {
         when (event) {
-            // A failed toggle leaves the feed itself intact, so it's a Snackbar rather
-            // than an error status — same treatment as the download below.
+            // A failed toggle leaves the feed intact, so it is a Snackbar, not an error state.
             is CatsListEvent.ToggleFavorite -> launchCatching(
                 onFailure = { notifier.showMessage(FAVORITE_FAILED) },
             ) {

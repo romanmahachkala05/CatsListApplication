@@ -5,18 +5,12 @@ import com.example.catslist.domain.model.Cat
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.flow.Flow
 
-/**
- * Single source of truth for cats: the paged, Room-cached feed and the Room-backed
- * favorites, both as [Flow]s so every observer stays in sync without a hand-rolled
- * listener bus.
- */
+/** Single source of truth for cats: the paged feed and the Room-backed favorites. */
 interface CatRepository {
 
     /**
-     * The feed, one page at a time. Paging owns when the next page loads (driven by
-     * scroll position) and caches loaded pages into Room, so a cat's [Cat.isFavorite]
-     * stays live — toggling it invalidates the underlying query the same way
-     * [favorites] already does.
+     * The feed, one page at a time, straight from the network. Never carries
+     * [Cat.isFavorite]; a consumer overlays that from [favorites] (ADR-0024).
      */
     val feed: Flow<PagingData<Cat>>
 

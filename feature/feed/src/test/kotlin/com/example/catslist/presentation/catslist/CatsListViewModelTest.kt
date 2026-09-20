@@ -21,12 +21,9 @@ import org.junit.Rule
 import org.junit.Test
 
 /**
- * Loading/error/retry for the feed itself is Paging's own state machine now (see
- * [CatsListViewModel.pagedCats]'s doc) — proven by
- * [com.example.catslist.data.remote.CatFeedPagingSourceTest], not here. What is still this
- * ViewModel's job: forwarding the paged feed and keeping the live favorite-id set in
- * [CatsListState] (never combined into the feed itself — see `CatRepositoryImpl.feed`'s doc and
- * ADR-0023), and handling favorite/download events.
+ * Loading, error and retry for the feed are Paging's, covered by `CatFeedPagingSourceTest`.
+ * What is left to this ViewModel: forwarding the feed, keeping the favorite-id set in
+ * [CatsListState], and handling favorite and download events.
  */
 class CatsListViewModelTest {
 
@@ -71,8 +68,7 @@ class CatsListViewModelTest {
 
     @Test
     fun `a broken favorites stream marks favorites unavailable and leaves the feed alone`() = runTest {
-        // Before this guard existed the throw escaped viewModelScope, which on Android kills
-        // the process — the feed itself loads independently and is unaffected.
+        // Without the guard the throw escapes viewModelScope and kills the process.
         repository.setFeed(cat("1"))
         repository.favoritesError = IOException("database is corrupt")
 
@@ -94,7 +90,7 @@ class CatsListViewModelTest {
     }
 
     @Test
-    fun `a cancelled favorite toggle is not reported as a failure`() = runTest {
+    fun `a canceled favorite toggle is not reported as a failure`() = runTest {
         repository.favoriteError = CancellationException("screen left")
         val viewModel = viewModel()
 
@@ -125,9 +121,8 @@ class CatsListViewModelTest {
     }
 
     @Test
-    fun `a cancelled download is not reported as a failure`() = runTest {
-        // Cancellation means the screen went away, not that the download broke — showing a
-        // "couldn't download" Snackbar for it would be a lie, and would swallow the cancellation.
+    fun `a canceled download is not reported as a failure`() = runTest {
+        // Cancellation means the screen went away, not that the download broke.
         downloader.error = CancellationException("screen left")
         val viewModel = viewModel()
 

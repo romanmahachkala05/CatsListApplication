@@ -378,10 +378,10 @@ API service, the downloader and the notifier.
 **Decision.** Real in-memory implementations backed by `MutableStateFlow`. No
 MockK, no Mockito.
 
-**Reasoning.** The repository has *behaviour*, not just calls: favoriting a cat
+**Reasoning.** The repository has *behavior*, not just calls: favoriting a cat
 has to change what the feed emits, without a re-fetch. A mocked
 `coEvery { repo.feed } returns flowOf(...)` returns a static list, so the test
-asserts the script the author wrote rather than the behaviour. Reproducing
+asserts the script the author wrote rather than the behavior. Reproducing
 re-emission from a mock means putting a `MutableStateFlow` inside it — a fake
 with extra ceremony. A fake also implements the interface contract directly, so
 a change to that interface surfaces as a compilation error in the fake;
@@ -394,7 +394,7 @@ thing, and one did: `FakeCatDao` accepted duplicate inserts where Room's default
 shipped one. What a JVM fake still cannot reproduce is Room's atomicity — that
 needs a device, which is ADR-0018.
 
-Where MockK would genuinely win is a port with no behaviour, only "was it
+Where MockK would genuinely win is a port with no behavior, only "was it
 called": `FakeImageDownloader` is 18 lines that one `coVerify` would replace.
 That was not worth a dependency here; at a larger scale it would be.
 
@@ -708,7 +708,7 @@ also two ways to spell the same thing.
 the model does not declare; kotlinx.serialization rejects it. Swapping one for
 the other therefore changes how the app reacts to an upstream field being added:
 from ignoring it to failing every response. `Json { ignoreUnknownKeys = true }`
-restores the tolerant behaviour deliberately rather than by default.
+restores the tolerant behavior deliberately rather than by default.
 
 Worth being precise, because the first version of that comment was wrong: the
 search endpoint currently returns exactly the four fields `CatDto` declares, so

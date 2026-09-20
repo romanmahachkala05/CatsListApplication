@@ -16,10 +16,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Runs the real `Pager` that `CatRepositoryImpl.feed` builds, not a fake standing in for it —
- * proving a `Pager` behaves under a real dispatcher isn't something a plain JVM `runTest`
- * reliably does. Room is still real here because `favorites` needs it; the feed no longer
- * touches it at all.
+ * Runs the real `Pager` that `CatRepositoryImpl.feed` builds, which a plain JVM `runTest` does
+ * not exercise reliably. Room is real here for `favorites`; the feed never touches it.
  */
 @RunWith(AndroidJUnit4::class)
 class CatRepositoryImplTest {
@@ -39,11 +37,7 @@ class CatRepositoryImplTest {
     @After
     fun tearDown() = database.close()
 
-    /**
-     * `feed` never carries favorite status — see `CatRepositoryImpl.feed`'s own doc for why
-     * (ADR-0023): the screen applies it at render time instead. A `false` here regardless of
-     * what is favorited is the contract, not an oversight.
-     */
+    /** `feed` never carries favorite status (ADR-0024); `false` here is the contract. */
     @Test
     fun feedNeverCarriesFavoriteStatus() = runBlocking {
         api.enqueue(dto("1"))
@@ -55,18 +49,17 @@ class CatRepositoryImplTest {
     }
 
     /**
-     * The regression this guards against (see ADR-0023): both a favoriting-invalidates-the-feed
-     * query design, and later a `combine()` re-mapping the same `PagingData` on every favorite
-     * change, made this fail — the first by wiping every page already loaded back to page 0,
-     * the second by crashing with "Attempt to collect twice from pageEventFlow".
+     * The regression this guards against (ADR-0024): a favoriting-invalidates-the-feed query
+     * wiped every loaded page, and a `combine()` re-mapping the same `PagingData` crashed with
+     * "Attempt to collect twice from pageEventFlow".
      */
     @Test
     fun favoritingDoesNotResetAlreadyLoadedPages() = runBlocking {
         api.enqueue(dto("1"))
         api.enqueue(dto("2"))
 
-        // Both calls inside one collection: `feed` is a single Pager instance, and asSnapshot
-        // starting a second, independent collection against it is not what it is meant for.
+        // Both calls in one collection: `feed` is a single Pager, and a second independent
+        // `asSnapshot` collection against it is not what it is for.
         val snapshot = repository.feed.asSnapshot {
             appendScrollWhile { it.id != "2" }
             repository.toggleFavorite(cat("1"))

@@ -11,15 +11,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 
 /**
- * A rounded card whose bottom trailing corner steps inward, leaving a notch for the action icons
- * so they never sit on top of the cat.
- *
- * All three transitions into the notch are rounded, and they alternate curvature — convex off the
- * card's edge, concave around the notch's inner corner, convex again into the bottom edge. That
- * alternation is the whole look: it reads as one continuous S rather than a rectangle subtracted
- * from another, which is also why this traces arcs explicitly instead of taking the difference of
- * two rounded rects. A difference can only round the inner corner; the two edge transitions come
- * out as square steps.
+ * A rounded card whose bottom trailing corner steps inward, leaving a notch for the action
+ * icons. The three transitions into the notch alternate curvature — convex, concave, convex —
+ * which is why this traces arcs rather than subtracting two rounded rects: a difference rounds
+ * only the inner corner and leaves the edge transitions as square steps.
  */
 internal data class CatCardShape(
     private val corner: Dp,
@@ -44,8 +39,7 @@ internal data class CatCardShape(
             notchCorner = notchCorner.toPx(),
             notchSweep = notchSweep.toPx(),
         )
-        // The notch belongs on the trailing side, so in RTL the whole outline flips rather
-        // than the path being written out a second time with every x mirrored by hand.
+        // The notch belongs on the trailing side, so RTL flips the whole outline.
         if (layoutDirection == LayoutDirection.Rtl) path.mirrorHorizontally(size.width)
         Outline.Generic(path)
     }
