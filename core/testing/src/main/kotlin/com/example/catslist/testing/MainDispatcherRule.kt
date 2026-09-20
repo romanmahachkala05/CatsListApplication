@@ -1,6 +1,7 @@
 package com.example.catslist.testing
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -15,6 +16,7 @@ import org.junit.runner.Description
  * test can assert on `state.value` straight away. Pass a `StandardTestDispatcher` to control
  * that ordering instead.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class MainDispatcherRule(
     private val dispatcher: TestDispatcher = UnconfinedTestDispatcher(),
 ) : TestWatcher() {

@@ -2,8 +2,8 @@ package com.example.catslist.data.download
 
 import android.app.DownloadManager
 import android.content.Context
-import android.net.Uri
 import android.os.Environment
+import androidx.core.net.toUri
 import com.example.catslist.core.data.R
 import com.example.catslist.data.di.CatsListDispatcher
 import com.example.catslist.data.di.Dispatcher
@@ -15,12 +15,12 @@ import kotlinx.coroutines.withContext
 
 /** Kicks off a system download of a cat image. The one place that talks to [DownloadManager]. */
 class CatImageDownloader @Inject constructor(
-    @ApplicationContext private val context: Context,
-    @Dispatcher(CatsListDispatcher.IO) private val ioDispatcher: CoroutineDispatcher,
+    @param:ApplicationContext private val context: Context,
+    @param:Dispatcher(CatsListDispatcher.IO) private val ioDispatcher: CoroutineDispatcher,
 ) : ImageDownloader {
 
     override suspend fun download(url: String, id: String) = withContext(ioDispatcher) {
-        val request = DownloadManager.Request(Uri.parse(url)).apply {
+        val request = DownloadManager.Request(url.toUri()).apply {
             setTitle(context.getString(R.string.common_download_notification_title, id))
             setDescription(context.getString(R.string.common_download_notification_description))
             setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "cat_$id.jpg")
