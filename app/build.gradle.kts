@@ -33,7 +33,7 @@ val versionPatch = 0
 
 android {
     namespace = "com.example.catslist"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.example.catslist"
