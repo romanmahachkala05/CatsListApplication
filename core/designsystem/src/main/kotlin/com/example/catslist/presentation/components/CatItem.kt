@@ -31,6 +31,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -150,6 +151,9 @@ private fun AsyncImagePainter.State.toImageStatus(): ImageStatus = when (this) {
     is AsyncImagePainter.State.Empty, is AsyncImagePainter.State.Success -> ImageStatus.Loaded
 }
 
+/** The skeleton shimmers; it has no text or role for a test to find it by. */
+const val CAT_LIST_PLACEHOLDER_TAG = "catListPlaceholder"
+
 /** A screenful of [CatItemPlaceholder]s for a screen waiting on its first cats. */
 @Composable
 fun CatListPlaceholder(
@@ -158,7 +162,7 @@ fun CatListPlaceholder(
     count: Int = PLACEHOLDER_COUNT,
 ) {
     LazyColumn(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize().testTag(CAT_LIST_PLACEHOLDER_TAG),
         contentPadding = contentPadding,
         userScrollEnabled = false,
     ) {

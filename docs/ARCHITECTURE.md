@@ -422,10 +422,18 @@ same package.
   Truth.
 - StateHolder tests assert each mutator produces a fully valid state (no
   half-set status).
-- Recommended additions: Compose UI tests (`createAndroidComposeRule`),
-  screenshot tests over previews (Paparazzi / Roborazzi), and — if Room is used —
-  migration tests with `MigrationTestHelper` (set `exportSchema = true` and
-  commit the schema JSON).
+- **Every screen gets a Compose UI test**, in its own module under
+  `src/androidTest/kotlin`: `createComposeRule()`, the stateless `XxxContent`
+  with fake state, one test per branch, plus the events its controls send. A
+  ViewModel test proves which status the screen reaches; only this proves what
+  that status puts on screen. For the feed there is no alternative at all — its
+  loading, empty, error and retry come from `LazyPagingItems.loadState`
+  ([ADR-0024](DECISIONS.md#adr-0024)), which exists only inside composition.
+  Hold the test clock (`mainClock.autoAdvance = false`) — the shimmer never
+  ends, so a test that waits for idle waits forever.
+- Recommended additions: screenshot tests over previews (Paparazzi /
+  Roborazzi), and — if Room is used — migration tests with
+  `MigrationTestHelper` (set `exportSchema = true` and commit the schema JSON).
 
 ---
 

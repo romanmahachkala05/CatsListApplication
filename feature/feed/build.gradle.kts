@@ -33,4 +33,13 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.truth)
     testImplementation(libs.androidx.paging.testing)
+
+    androidTestImplementation(project(":core:testing"))
+    androidTestImplementation(libs.androidx.junit)
+    // Compose's test rule syncs through Espresso, and the version it pulls in transitively
+    // (3.5.0) reflects on an InputManager method this platform no longer has.
+    androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation(libs.truth)
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
 }
