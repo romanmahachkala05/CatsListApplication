@@ -3,9 +3,8 @@ package com.example.catslist.data.remote
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import com.example.catslist.domain.model.Cat
-import java.io.IOException
 import java.util.concurrent.ConcurrentHashMap
-import retrofit2.HttpException
+import kotlinx.coroutines.CancellationException
 
 /** Pages the feed straight from TheCatAPI, keeping nothing on disk. Only favorites persist. */
 class CatFeedPagingSource(
@@ -22,6 +21,11 @@ class CatFeedPagingSource(
     /** Always restarts at the first page: random cats have no stable position to return to. */
     override fun getRefreshKey(state: PagingState<Int, Cat>): Int? = null
 
+    /**
+     * Every failure becomes a [LoadResult.Error]: anything thrown out of here reaches
+     * `viewModelScope` through `cachedIn` and kills the process (ADR-0013).
+     */
+    @Suppress("TooGenericExceptionCaught")
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Cat> {
         val page = params.key ?: STARTING_PAGE
         return try {
@@ -34,9 +38,10 @@ class CatFeedPagingSource(
                 // more pages behind it.
                 nextKey = if (cats.isEmpty()) null else page + 1,
             )
-        } catch (error: IOException) {
-            LoadResult.Error(error)
-        } catch (error: HttpException) {
+        } catch (error: CancellationException) {
+            // Paging cancels a load it no longer needs; that is not a failure to report.
+            throw error
+        } catch (error: Exception) {
             LoadResult.Error(error)
         }
     }
