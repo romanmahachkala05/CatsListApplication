@@ -14,7 +14,7 @@ pull request at a time, with the build green at every commit.
 
 | Feed | Favorites | Failure and recovery |
 | --- | --- | --- |
-| ![Cats list](docs/images/cats-list.png) | ![Favorites](docs/images/favorites.png) | ![Error state with retry](docs/images/error-retry.png) |
+| <img src="docs/images/cats-list.png" width="250" alt="Cats list"/> | <img src="docs/images/favorites.png" width="250" alt="Favorites"/> | <img src="docs/images/error-retry.png" width="250" alt="Error state with retry"/> |
 
 ---
 
