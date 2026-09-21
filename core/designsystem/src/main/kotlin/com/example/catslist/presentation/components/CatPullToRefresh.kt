@@ -28,8 +28,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
@@ -148,7 +146,6 @@ private fun RefreshIndicator(
     pullFraction: Float,
     modifier: Modifier = Modifier,
 ) {
-    val refreshing = stringResource(R.string.common_cd_refreshing)
     val refreshing = stringResource(R.string.common_cd_refreshing)
     Surface(
         modifier = modifier.size(INDICATOR_SIZE),
