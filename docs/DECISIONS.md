@@ -44,7 +44,7 @@ that fail without the fix. They are here because finding them was the work.
 | [0015](#adr-0015) | Dedupe a page on write, not with an in-flight guard | Accepted |
 | [0016](#adr-0016) | Feed errors are not retryable | **Superseded** by 0019 |
 | [0017](#adr-0017) | Version-scoped destructive fallback | Accepted |
-| [0018](#adr-0018) | Two-tier verification | Accepted |
+| [0018](#adr-0018) | Two-tier verification | Accepted, **amended** by 0030 |
 | [0019](#adr-0019) | Make the feed resubscribable instead | Accepted |
 | [0020](#adr-0020) | One serialization library | Accepted |
 | [0021](#adr-0021) | Derive versionCode from the version name | Accepted |
@@ -56,6 +56,7 @@ that fail without the fix. They are here because finding them was the work.
 | [0027](#adr-0027) | Connectivity as a `Flow`, not a pre-flight check | Accepted |
 | [0028](#adr-0028) | Classify failures once, in `data`, as `AppError` | Accepted |
 | [0029](#adr-0029) | Measure recomposition, then fix stability at the source | Accepted |
+| [0030](#adr-0030) | Run CI on every pull request; `verify` was never enforced | Accepted |
 
 ---
 
@@ -624,7 +625,7 @@ policy decision, made again, and needs the same explicit justification.
 
 ### Two-tier verification
 
-**Accepted** · 2026-09-14
+**Accepted** · 2026-09-14 · **amended** by [ADR-0030](#adr-0030)
 
 **Context.** The instrumented tests only ran when someone remembered to point
 Gradle at a device — and they are the only coverage of the three failures that
@@ -1318,3 +1319,77 @@ not ours to annotate at all.
 Moving `Cat` out of `:core:model` into a module that applies the Compose
 compiler. That trades a two-line config entry for putting Compose on the
 classpath of the one module [ADR-0022](#adr-0022) deliberately keeps free of it.
+
+---
+
+## ADR-0030
+
+### Run CI on every pull request; `verify` was never enforced
+
+**Accepted** · 2026-09-21 · **amends** [ADR-0018](#adr-0018)
+
+**Context.** Four stacked pull requests were opened, each based on the branch
+below it because each depended on the one before. One of them ran CI. The other
+three reported no checks at all, and nothing said why.
+
+The cause is that `pull_request`'s `branches:` filter matches the **base**
+branch, not the head:
+
+    on:
+      pull_request:
+        branches: [dev, master]
+
+A pull request based on `dev` matched. One based on `tech/network-monitor-flow`
+matched nothing, so no workflow ran, so it sat with no checks — which looks
+exactly like a queue that has not started yet. The filter reads as an economy
+and behaves as a hole, and the hole opens precisely when a change was large
+enough to be worth splitting up.
+
+Checking whether the eventual merge into `dev` would catch these anyway turned
+up the second half of this entry. [ADR-0018](#adr-0018) states:
+
+> `verify` is a required status check on `dev`, so the gate is enforced rather
+> than remembered.
+
+**That was never true.** Neither `dev` nor `master` has ever had branch
+protection — both report `protected: false`, and the repository's only two
+rulesets are auto-imported tag protections for `v1.0.1` and `v1.0.2`. No rule
+references `verify` anywhere. CI runs, CI reports, and a red pull request can be
+merged.
+
+**Decision.** Drop the `branches:` filter from the `pull_request` trigger, so
+every pull request runs `verify` whatever it targets. The `push` trigger keeps
+its `[dev]` filter, which is genuinely a base-branch question.
+
+Turn on branch protection for `dev` and `master` with `verify` required, making
+ADR-0018's sentence true as written. That is a repository setting rather than a
+file here, so it is recorded in this entry and applied by hand.
+
+**Consequences.** CI minutes are spent on intermediate bases in a stack — which
+is the point: an intermediate pull request is the one whose code nobody has run.
+The cost is bounded by `concurrency`, which already cancels superseded runs.
+
+Until branch protection is actually switched on, CI in this repository is
+**advisory**. ADR-0018's claim is corrected rather than deleted, because the
+wrong sentence is the more useful record: it is the one that stopped anyone
+checking, and it went unexamined through twelve merged pull requests.
+
+**A second hazard, recorded because it also bit.** A stacked pull request must be
+merged **bottom-up**, letting GitHub retarget each one to `dev` after the one
+below it lands. Merging them in the other order — or merging each into the
+literal base branch it was opened against — marks all four green and merged
+while only the bottom one reaches `dev`; the rest land in feature branches that
+nothing points at. That happened here, and took a branch-by-branch comparison
+against `dev` to notice, because every pull request said "merged". CI could not
+have caught it: each merge was individually valid. The defence is merge order,
+and the cheaper alternative is not to stack at all.
+
+**Alternatives rejected.** Adding each stack's intermediate branches to the
+filter. It puts the burden on whoever opens the stack, at the moment they are
+least likely to be thinking about CI configuration, and it fails silently again
+the first time someone forgets.
+
+Flattening a stack so every pull request targets `dev` directly. The
+dependencies are real — the error classification does not compile without the
+network monitor — so flattening either duplicates commits across pull requests
+or opens ones that cannot build.
