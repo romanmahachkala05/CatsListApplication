@@ -52,6 +52,7 @@ that fail without the fix. They are here because finding them was the work.
 | [0023](#adr-0023) | Paging 3 for the feed, with a `RemoteMediator` | **Superseded** by 0025 |
 | [0024](#adr-0024) | Paging owns the feed's *load* state, not its whole state | Accepted |
 | [0025](#adr-0025) | Page the feed from the network; persist only favorites | Accepted |
+| [0026](#adr-0026) | One shared, configured `OkHttpClient` | Accepted |
 
 ---
 
@@ -218,6 +219,9 @@ newer one, sharing the single-module classpath, was masking it. Both now
 resolve to one pinned version (`libs.versions.toml`'s `okhttp`). They are
 still two separate `OkHttpClient` instances, each with its own connection pool
 and cache — that part of this gap is unchanged.
+
+Fully closed by [ADR-0026](#adr-0026): one client, provided by Hilt, handed to
+both.
 
 ---
 
@@ -1085,3 +1089,46 @@ random cats has no staleness, only novelty.
 **Review when:** the feed gains an identity worth returning to — a search, a
 filter, a breed — at which point the same cats on relaunch stops being noise
 and starts being state, and something has to persist it again.
+
+---
+
+## ADR-0026
+
+### One shared, configured `OkHttpClient`
+
+**Accepted** · 2026-09-21
+
+**Context.** [ADR-0006](#adr-0006) left this open and the README listed it under
+**Known gaps**: `NetworkModule` handed Retrofit no client and `:app` built no
+`ImageLoader`, so each library fell back to its own default. Two clients meant
+two connection pools, two thread pools and two sets of timeouts — over a single
+host, `api.thecatapi.com`, that the app talks to constantly. The timeouts were
+the sharper half: OkHttp defaults `callTimeout` to 0, so no request had an
+end-to-end cap at all. A call that kept almost-progressing could hang behind the
+feed's spinner indefinitely, with nothing to report and nothing to retry.
+
+**Decision.** `NetworkModule` provides one `@Singleton OkHttpClient` with a 15s
+call, connect and read timeout. Retrofit takes it via `.client(...)`. `App`
+implements `SingletonImageLoader.Factory` and registers
+`OkHttpNetworkFetcherFactory` over the same client, injected as `dagger.Lazy`.
+
+**Consequences.** One connection pool, so an image request reuses the TLS
+connection the feed's JSON request just warmed. One place to add an interceptor
+or change a timeout. Every request now fails within a bounded time, so a
+hung call becomes a failure the screen can report instead of a spinner with
+nothing behind it.
+
+`dagger.Lazy`, not a direct injection: field injection into `Application` runs
+during `onCreate`, and building the client there would open its pools on the
+main thread at startup for an app that may never make a request.
+
+The registration is explicit rather than left to `coil-network-okhttp`'s
+`ServiceLoader`, which would build an `OkHttpClient()` of its own.
+`RealImageLoader` assembles the builder's components ahead of the
+ServiceLoader's, so the explicit factory is matched first and that default is
+never constructed.
+
+**Alternatives rejected.** Building the `ImageLoader` in `:core:designsystem`,
+where `AsyncImage` lives: that module applies neither Hilt nor `:core:data`, so
+it cannot reach the client. Wiring one singleton across two libraries is
+composition-root work, and `:app` is the composition root.

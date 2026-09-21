@@ -111,6 +111,13 @@ dependencies {
     // themselves, and hiltViewModel(), now live in the feature modules.
     implementation(libs.hilt.android)
     ksp(libs.hilt.android.compiler)
+    // App builds Coil's singleton loader over the one OkHttpClient the Hilt graph provides,
+    // so the composition root needs all three types (ADR-0026).
+    implementation(libs.okhttp)
+    implementation(platform(libs.coil.bom))
+    implementation(libs.coil)
+    implementation(libs.coil.core)
+    implementation(libs.coil.network.okhttp)
 
     testImplementation(project(":core:testing"))
     testImplementation(libs.junit)

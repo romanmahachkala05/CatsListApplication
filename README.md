@@ -138,7 +138,4 @@ JDK 17. No API key required — TheCatAPI's search endpoint is open.
 
 Tracked honestly rather than hidden: the instrumented tests do not yet run in
 CI, which is why `verifyOnDevice` is a local step before a release
-([ADR-0018](docs/DECISIONS.md#adr-0018)); and Coil
-and Retrofit still build two separate `OkHttpClient` instances rather than
-sharing one configured client — `NetworkModule` hands Retrofit no client, so
-each library falls back to its own default ([ADR-0006](docs/DECISIONS.md#adr-0006)).
+([ADR-0018](docs/DECISIONS.md#adr-0018)).
