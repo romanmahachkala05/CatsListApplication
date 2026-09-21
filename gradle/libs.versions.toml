@@ -23,7 +23,10 @@ androidxHilt = "1.2.0"
 composeBom = "2026.03.00"
 activityCompose = "1.10.1"
 
-detekt = "1.23.8"
+# An alpha, deliberately: 1.23.8 is the last of the 1.x line and its Gradle plugin calls
+# ReportingExtension.file(), the one thing left in this build that Gradle 10 will reject.
+# Review when: detekt 2.0 goes stable.
+detekt = "2.0.0-alpha.6"
 ktlint = "14.2.0"
 ktlintEngine = "1.6.0"
 
@@ -85,7 +88,7 @@ kotlin-gradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", ve
 # The plugin marker coordinate, not the (differently-named) implementation module — this form
 # always resolves regardless of what the real artifact is called underneath.
 ktlint-gradlePlugin = { module = "org.jlleitschuh.gradle.ktlint:org.jlleitschuh.gradle.ktlint.gradle.plugin", version.ref = "ktlint" }
-detekt-gradlePlugin = { module = "io.gitlab.arturbosch.detekt:detekt-gradle-plugin", version.ref = "detekt" }
+detekt-gradlePlugin = { module = "dev.detekt:detekt-gradle-plugin", version.ref = "detekt" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
@@ -97,4 +100,4 @@ ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 hilt-android = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 androidx-room = { id = "androidx.room", version.ref = "room" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint" }
-detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
+detekt = { id = "dev.detekt", version.ref = "detekt" }
