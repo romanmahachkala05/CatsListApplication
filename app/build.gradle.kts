@@ -28,8 +28,8 @@ val hasReleaseSigning = listOf("storeFile", "storePassword", "keyAlias", "keyPas
 // versionCode is derived from the name, so the two cannot drift apart. Minor and patch are
 // allowed 0-99 each.
 val versionMajor = 2
-val versionMinor = 2
-val versionPatch = 1
+val versionMinor = 3
+val versionPatch = 0
 
 android {
     namespace = "com.example.catslist"
@@ -78,6 +78,12 @@ android {
     }
 }
 
+// :app configures Compose directly rather than through `catslist.compose`, which is an Android
+// *library* convention — so the shared stability config is pointed at by hand here (ADR-0029).
+composeCompiler {
+    stabilityConfigurationFiles.add(rootProject.layout.projectDirectory.file("config/compose-stability.conf"))
+}
+
 java {
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(17))
@@ -85,7 +91,6 @@ java {
 }
 
 dependencies {
-    implementation(project(":core:model"))
     implementation(project(":core:data"))
     implementation(project(":core:ui"))
     implementation(project(":core:designsystem"))
@@ -111,6 +116,13 @@ dependencies {
     // themselves, and hiltViewModel(), now live in the feature modules.
     implementation(libs.hilt.android)
     ksp(libs.hilt.android.compiler)
+    // App builds Coil's singleton loader over the one OkHttpClient the Hilt graph provides,
+    // so the composition root needs all three types (ADR-0026).
+    implementation(libs.okhttp)
+    implementation(platform(libs.coil.bom))
+    implementation(libs.coil)
+    implementation(libs.coil.core)
+    implementation(libs.coil.network.okhttp)
 
     testImplementation(project(":core:testing"))
     testImplementation(libs.junit)
