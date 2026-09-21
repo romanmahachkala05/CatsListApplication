@@ -28,7 +28,7 @@ val hasReleaseSigning = listOf("storeFile", "storePassword", "keyAlias", "keyPas
 // versionCode is derived from the name, so the two cannot drift apart. Minor and patch are
 // allowed 0-99 each.
 val versionMajor = 2
-val versionMinor = 1
+val versionMinor = 2
 val versionPatch = 0
 
 android {
