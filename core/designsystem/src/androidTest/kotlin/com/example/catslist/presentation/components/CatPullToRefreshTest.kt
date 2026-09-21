@@ -17,6 +17,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeDown
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -98,14 +99,14 @@ class CatPullToRefreshTest {
 
     /** What `topInset` is for: parked behind the status bar, the indicator says nothing. */
     @Test
-    fun theSpinnerClearsTheStatusBar() {
+    fun theSpinnerRestsBelowTheStatusBarInAFullBleedWindow() {
         showPullToRefresh()
         pull()
 
         signalNow(RefreshSignal.Running)
 
         val spinner = composeRule.onNodeWithContentDescription(string(R.string.common_cd_refreshing))
-        assertThat(spinner.fetchSemanticsNode().boundsInWindow.top).isAtLeast(topInsetPx.toFloat())
+        assertFullBleedButClearOfTheStatusBar(spinner.fetchSemanticsNode().boundsInWindow.top)
     }
 
     @Test
@@ -133,6 +134,20 @@ class CatPullToRefreshTest {
 
         composeRule.onNodeWithContentDescription(string(R.string.common_cd_refresh_failed)).assertIsDisplayed()
         composeRule.onNodeWithContentDescription(string(R.string.common_cd_refresh_succeeded)).assertDoesNotExist()
+    }
+
+    /**
+     * Edge-to-edge is two claims, and a test of it owes both: the window runs the full height
+     * of the display, *and* the content is padded clear of the bar drawn over it. The inset
+     * itself is checked too — where it is zero, neither claim means anything.
+     */
+    private fun assertFullBleedButClearOfTheStatusBar(contentTop: Float) {
+        val root = composeRule.onRoot().fetchSemanticsNode().boundsInWindow
+        val decorHeight = composeRule.runOnUiThread { composeRule.activity.window.decorView.height }
+        assertThat(topInsetPx).isGreaterThan(0)
+        assertThat(root.top).isEqualTo(0f)
+        assertThat(root.height).isEqualTo(decorHeight.toFloat())
+        assertThat(contentTop).isAtLeast(topInsetPx.toFloat())
     }
 
     private fun showPullToRefresh() {

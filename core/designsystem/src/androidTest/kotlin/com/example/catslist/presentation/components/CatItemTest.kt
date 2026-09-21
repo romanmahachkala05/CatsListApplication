@@ -6,13 +6,16 @@ import androidx.activity.ComponentActivity
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.core.graphics.createBitmap
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -62,14 +65,13 @@ class CatItemTest {
         imageFile.delete()
     }
 
-    /** Edge-to-edge: the card draws under the status bar unless its list insets it. */
     @Test
-    fun theCardClearsTheStatusBar() {
+    fun theCardSitsClearOfTheStatusBarInAFullBleedList() {
         showCatItem()
 
         val card = composeRule.onAllNodesWithTag(CAT_CARD_TAG)[0].fetchSemanticsNode()
 
-        assertThat(card.boundsInWindow.top).isAtLeast(topInsetPx.toFloat())
+        assertFullBleedButClearOfTheStatusBar(card.boundsInWindow.top)
     }
 
     @Test
@@ -91,12 +93,29 @@ class CatItemTest {
         awaitFailureStandIn(present = false)
     }
 
+    /**
+     * Edge-to-edge is two claims, and a test of it owes both: the window runs the full height
+     * of the display, *and* the content is padded clear of the bar drawn over it. The inset
+     * itself is checked too — where it is zero, neither claim means anything.
+     */
+    private fun assertFullBleedButClearOfTheStatusBar(contentTop: Float) {
+        val root = composeRule.onRoot().fetchSemanticsNode().boundsInWindow
+        val decorHeight = composeRule.runOnUiThread { composeRule.activity.window.decorView.height }
+        assertThat(topInsetPx).isGreaterThan(0)
+        assertThat(root.top).isEqualTo(0f)
+        assertThat(root.height).isEqualTo(decorHeight.toFloat())
+        assertThat(contentTop).isAtLeast(topInsetPx.toFloat())
+    }
+
     private fun showCatItem() {
         composeRule.setContent {
             CatsListTheme {
                 topInsetPx = WindowInsets.safeDrawing.getTop(LocalDensity.current)
                 // A card is never on its own in the app: it sits in an inset list, edge-to-edge.
-                LazyColumn(contentPadding = WindowInsets.safeDrawing.asPaddingValues()) {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = WindowInsets.safeDrawing.asPaddingValues(),
+                ) {
                     item {
                         CatItem(
                             cat = cat("1").copy(url = "file://${imageFile.absolutePath}"),

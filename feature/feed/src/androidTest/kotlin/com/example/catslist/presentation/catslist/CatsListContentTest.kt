@@ -12,6 +12,7 @@ import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.paging.LoadState
 import androidx.paging.LoadStates
@@ -124,14 +125,13 @@ class CatsListContentTest {
             .assertIsDisplayed()
     }
 
-    /** Edge-to-edge: the list draws under the status bar, so its first card must start below it. */
     @Test
-    fun theFirstCatClearsTheStatusBar() {
+    fun theFeedRunsUnderTheStatusBarAndKeepsItsCatsClearOfIt() {
         showContent(cats = listOf(cat("1")), states = settled())
 
         val firstCard = composeRule.onAllNodesWithTag(CAT_CARD_TAG)[0].fetchSemanticsNode()
 
-        assertThat(firstCard.boundsInWindow.top).isAtLeast(topInsetPx.toFloat())
+        assertFullBleedButClearOfTheStatusBar(firstCard.boundsInWindow.top)
     }
 
     @Test
@@ -143,6 +143,20 @@ class CatsListContentTest {
 
         composeRule.onNodeWithText(string(R.string.catslist_error_loading_cats)).assertIsDisplayed()
         composeRule.onNodeWithText(string(R.string.catslist_action_retry)).assertIsDisplayed()
+    }
+
+    /**
+     * Edge-to-edge is two claims, and a test of it owes both: the window runs the full height
+     * of the display, *and* the content is padded clear of the bar drawn over it. The inset
+     * itself is checked too — where it is zero, neither claim means anything.
+     */
+    private fun assertFullBleedButClearOfTheStatusBar(contentTop: Float) {
+        val root = composeRule.onRoot().fetchSemanticsNode().boundsInWindow
+        val decorHeight = composeRule.runOnUiThread { composeRule.activity.window.decorView.height }
+        assertThat(topInsetPx).isGreaterThan(0)
+        assertThat(root.top).isEqualTo(0f)
+        assertThat(root.height).isEqualTo(decorHeight.toFloat())
+        assertThat(contentTop).isAtLeast(topInsetPx.toFloat())
     }
 
     private fun showContent(
