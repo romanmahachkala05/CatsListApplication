@@ -1,14 +1,20 @@
 package com.example.catslist.presentation.components
 
+import androidx.activity.ComponentActivity
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Text
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performTouchInput
@@ -32,11 +38,20 @@ import org.junit.runner.RunWith
 class CatPullToRefreshTest {
 
     @get:Rule
-    val composeRule = createComposeRule()
+    val composeRule = createAndroidComposeRule<ComponentActivity>()
 
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
     private val signal = mutableStateOf(RefreshSignal.Idle)
     private var refreshes = 0
+
+    /** Set from composition, because only the composable can read the window's insets. */
+    private var topInsetPx = 0
+
+    /** The app runs edge-to-edge, so the composable under test has to as well. */
+    @Before
+    fun goEdgeToEdge() {
+        composeRule.runOnUiThread { composeRule.activity.enableEdgeToEdge() }
+    }
 
     /** Each phase is held deliberately, so the clock is the thing under test as much as the state. */
     @Before
@@ -81,6 +96,18 @@ class CatPullToRefreshTest {
         composeRule.onNodeWithContentDescription(string(R.string.common_cd_refreshing)).assertIsDisplayed()
     }
 
+    /** What `topInset` is for: parked behind the status bar, the indicator says nothing. */
+    @Test
+    fun theSpinnerClearsTheStatusBar() {
+        showPullToRefresh()
+        pull()
+
+        signalNow(RefreshSignal.Running)
+
+        val spinner = composeRule.onNodeWithContentDescription(string(R.string.common_cd_refreshing))
+        assertThat(spinner.fetchSemanticsNode().boundsInWindow.top).isAtLeast(topInsetPx.toFloat())
+    }
+
     @Test
     fun aRefreshThatWorkedShowsTheTickBeforeRetracting() {
         showPullToRefresh()
@@ -111,10 +138,14 @@ class CatPullToRefreshTest {
     private fun showPullToRefresh() {
         composeRule.setContent {
             CatsListTheme {
+                topInsetPx = WindowInsets.safeDrawing.getTop(LocalDensity.current)
                 CatPullToRefresh(
                     signal = signal.value,
                     onRefresh = { refreshes++ },
                     modifier = Modifier.fillMaxSize(),
+                    // The reason this parameter exists: under edge-to-edge the indicator
+                    // would otherwise rest behind the status bar.
+                    topInset = WindowInsets.safeDrawing.asPaddingValues().calculateTopPadding(),
                 ) {
                     // Scrollable on purpose: the pull is delivered through nested scroll.
                     LazyColumn(modifier = Modifier.fillMaxSize().testTag(CONTENT_TAG)) {

@@ -34,6 +34,8 @@ dependencies {
 
     androidTestImplementation(project(":core:testing"))
     androidTestImplementation(libs.androidx.junit)
+    // The host activity, so a test can run the composable edge-to-edge as the app does.
+    androidTestImplementation(libs.androidx.activity.compose)
     // Compose's test rule syncs through Espresso, and the version it pulls in transitively
     // (3.5.0) reflects on an InputManager method this platform no longer has.
     androidTestImplementation(libs.androidx.espresso.core)

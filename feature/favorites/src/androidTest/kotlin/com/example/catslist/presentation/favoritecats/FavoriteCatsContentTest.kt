@@ -1,9 +1,16 @@
 package com.example.catslist.presentation.favoritecats
 
+import androidx.activity.ComponentActivity
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -12,6 +19,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.example.catslist.core.designsystem.R as designsystemR
 import com.example.catslist.feature.favorites.R
 import com.example.catslist.presentation.UiText
+import com.example.catslist.presentation.components.CAT_CARD_TAG
 import com.example.catslist.presentation.components.CAT_LIST_PLACEHOLDER_TAG
 import com.example.catslist.presentation.theme.CatsListTheme
 import com.example.catslist.testing.cat
@@ -30,9 +38,18 @@ import org.junit.runner.RunWith
 class FavoriteCatsContentTest {
 
     @get:Rule
-    val composeRule = createComposeRule()
+    val composeRule = createAndroidComposeRule<ComponentActivity>()
 
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
+
+    /** Set from composition, because only the composable can read the window's insets. */
+    private var topInsetPx = 0
+
+    /** The app runs edge-to-edge, so the composable under test has to as well. */
+    @Before
+    fun goEdgeToEdge() {
+        composeRule.runOnUiThread { composeRule.activity.enableEdgeToEdge() }
+    }
 
     /**
      * The skeleton and the cards shimmer forever, and an animation that never ends never lets
@@ -43,13 +60,24 @@ class FavoriteCatsContentTest {
         composeRule.mainClock.autoAdvance = false
     }
 
+    /** A count, not an identity check: which cat is which is pinned by the event tests below. */
     @Test
-    fun contentPutsEveryFavoriteOnScreen() {
+    fun contentPutsACardUpForEveryFavorite() {
         showContent(FavoriteCatsState(status = FavoriteCatsUiStatus.Content, cats = twoCats))
 
         composeRule.onAllNodesWithContentDescription(string(designsystemR.string.common_cd_favorite_cat))
             .assertCountEquals(2)
         composeRule.onNodeWithTag(CAT_LIST_PLACEHOLDER_TAG).assertDoesNotExist()
+    }
+
+    /** Edge-to-edge: the list draws under the status bar, so its first card must start below it. */
+    @Test
+    fun theFirstFavoriteClearsTheStatusBar() {
+        showContent(FavoriteCatsState(status = FavoriteCatsUiStatus.Content, cats = twoCats))
+
+        val firstCard = composeRule.onAllNodesWithTag(CAT_CARD_TAG)[0].fetchSemanticsNode()
+
+        assertThat(firstCard.boundsInWindow.top).isAtLeast(topInsetPx.toFloat())
     }
 
     @Test
@@ -113,7 +141,15 @@ class FavoriteCatsContentTest {
 
     private fun showContent(state: FavoriteCatsState, onEvent: (FavoriteCatsEvent) -> Unit = {}) {
         composeRule.setContent {
-            CatsListTheme { FavoriteCatsContent(state = state, onEvent = onEvent) }
+            CatsListTheme {
+                topInsetPx = WindowInsets.safeDrawing.getTop(LocalDensity.current)
+                FavoriteCatsContent(
+                    state = state,
+                    onEvent = onEvent,
+                    // What CatsNavDisplay hands the screen: the bars' insets, not zero.
+                    contentPadding = WindowInsets.safeDrawing.asPaddingValues(),
+                )
+            }
         }
         // Enough for the first frame, and past any hold a status change animates through.
         composeRule.mainClock.advanceTimeBy(SETTLE_MILLIS)

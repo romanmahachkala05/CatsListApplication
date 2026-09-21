@@ -2,7 +2,9 @@ package com.example.catslist.presentation.components
 
 import android.graphics.Bitmap
 import android.os.SystemClock
-import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.activity.ComponentActivity
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -27,7 +29,7 @@ import org.junit.runner.RunWith
 class CatItemTest {
 
     @get:Rule
-    val composeRule = createComposeRule()
+    val composeRule = createAndroidComposeRule<ComponentActivity>()
 
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
 
@@ -37,8 +39,10 @@ class CatItemTest {
      */
     private val imageFile = File(context.cacheDir, "cat-under-test-${SystemClock.elapsedRealtimeNanos()}.png")
 
+    /** The app runs edge-to-edge, so the composable under test has to as well. */
     @Before
     fun holdTheClockAndStartWithNoImage() {
+        composeRule.runOnUiThread { composeRule.activity.enableEdgeToEdge() }
         composeRule.mainClock.autoAdvance = false
         imageFile.delete()
     }

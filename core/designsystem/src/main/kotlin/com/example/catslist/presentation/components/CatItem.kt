@@ -42,6 +42,9 @@ import com.example.catslist.core.designsystem.R
 import com.example.catslist.domain.model.Cat
 import com.example.catslist.presentation.theme.CatsListTheme
 
+/** A card is all Boxes and an undescribed image, so a test has nothing else to find it by. */
+const val CAT_CARD_TAG = "catCard"
+
 /** One cat card: image in a notched frame, with the action icons sitting in the notch. */
 @Composable
 fun CatItem(
@@ -56,7 +59,8 @@ fun CatItem(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = CARD_MARGIN_HORIZONTAL, vertical = CARD_MARGIN_VERTICAL),
+            .padding(horizontal = CARD_MARGIN_HORIZONTAL, vertical = CARD_MARGIN_VERTICAL)
+            .testTag(CAT_CARD_TAG),
     ) {
         // One mask for the image and its stand-ins: each smoothClip costs an offscreen layer.
         Box(
