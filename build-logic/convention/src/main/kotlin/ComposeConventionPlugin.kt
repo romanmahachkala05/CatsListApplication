@@ -17,6 +17,9 @@ class ComposeConventionPlugin : Plugin<Project> {
 
             val bom = versionCatalog.findLibrary("androidx-compose-bom").get()
             dependencies.add("implementation", dependencies.platform(bom))
+            // The same BOM for the UI tests, so a Compose module that adds one does not have
+            // to remember to pin its test artifacts separately.
+            dependencies.add("androidTestImplementation", dependencies.platform(bom))
         }
     }
 }

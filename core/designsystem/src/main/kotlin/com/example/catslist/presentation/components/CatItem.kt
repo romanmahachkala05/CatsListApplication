@@ -31,6 +31,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -40,6 +41,9 @@ import coil3.compose.AsyncImagePainter
 import com.example.catslist.core.designsystem.R
 import com.example.catslist.domain.model.Cat
 import com.example.catslist.presentation.theme.CatsListTheme
+
+/** A card is all Boxes and an undescribed image, so a test has nothing else to find it by. */
+const val CAT_CARD_TAG = "catCard"
 
 /** One cat card: image in a notched frame, with the action icons sitting in the notch. */
 @Composable
@@ -55,7 +59,8 @@ fun CatItem(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = CARD_MARGIN_HORIZONTAL, vertical = CARD_MARGIN_VERTICAL),
+            .padding(horizontal = CARD_MARGIN_HORIZONTAL, vertical = CARD_MARGIN_VERTICAL)
+            .testTag(CAT_CARD_TAG),
     ) {
         // One mask for the image and its stand-ins: each smoothClip costs an offscreen layer.
         Box(
@@ -150,6 +155,9 @@ private fun AsyncImagePainter.State.toImageStatus(): ImageStatus = when (this) {
     is AsyncImagePainter.State.Empty, is AsyncImagePainter.State.Success -> ImageStatus.Loaded
 }
 
+/** The skeleton shimmers; it has no text or role for a test to find it by. */
+const val CAT_LIST_PLACEHOLDER_TAG = "catListPlaceholder"
+
 /** A screenful of [CatItemPlaceholder]s for a screen waiting on its first cats. */
 @Composable
 fun CatListPlaceholder(
@@ -158,7 +166,7 @@ fun CatListPlaceholder(
     count: Int = PLACEHOLDER_COUNT,
 ) {
     LazyColumn(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize().testTag(CAT_LIST_PLACEHOLDER_TAG),
         contentPadding = contentPadding,
         userScrollEnabled = false,
     ) {
