@@ -218,7 +218,7 @@ private val ERROR_ICON_SIZE = 40.dp
 
 /** Two 48dp touch targets side by side, plus the breathing room around them. */
 private val NOTCH_WIDTH = 104.dp
-private val NOTCH_HEIGHT = 52.dp
+private val NOTCH_HEIGHT = 42.dp
 private val NOTCH_CORNER = 20.dp
 private val NOTCH_SWEEP = 16.dp
 
