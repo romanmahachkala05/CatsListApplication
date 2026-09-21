@@ -94,6 +94,9 @@ androidx-paging-testing = { module = "androidx.paging:paging-testing", version.r
 # artifacts as regular dependencies, not just the [plugins] aliases a build script uses.
 android-gradlePlugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
 kotlin-gradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+# The Compose compiler's own Gradle plugin, separate from kotlin-gradle-plugin. Needed on the
+# convention classpath to configure its `composeCompiler { }` extension (ADR-0029).
+compose-gradlePlugin = { module = "org.jetbrains.kotlin:compose-compiler-gradle-plugin", version.ref = "kotlin" }
 # The plugin marker coordinate, not the (differently-named) implementation module — this form
 # always resolves regardless of what the real artifact is called underneath.
 ktlint-gradlePlugin = { module = "org.jlleitschuh.gradle.ktlint:org.jlleitschuh.gradle.ktlint.gradle.plugin", version.ref = "ktlint" }

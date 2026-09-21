@@ -55,6 +55,7 @@ that fail without the fix. They are here because finding them was the work.
 | [0026](#adr-0026) | One shared, configured `OkHttpClient` | Accepted |
 | [0027](#adr-0027) | Connectivity as a `Flow`, not a pre-flight check | Accepted |
 | [0028](#adr-0028) | Classify failures once, in `data`, as `AppError` | Accepted |
+| [0029](#adr-0029) | Measure recomposition, then fix stability at the source | Accepted |
 
 ---
 
@@ -1251,3 +1252,69 @@ by throwing and a `PagingSource` that Paging requires to report a `Throwable`.
 Neither returns a value that a `Result` could wrap, so the type would have been
 carried by two `suspend` write methods and nothing else. Worth revisiting when
 there is a call that genuinely returns a value that can fail.
+## ADR-0029
+
+### Measure recomposition, then fix stability at the source
+
+**Accepted** · 2026-09-21
+
+**Context.** Strong skipping has been on by default since Kotlin 2.0.2x, which
+retired most of the `@Stable` annotation habit — an unstable parameter now costs
+an identity comparison rather than an unconditional recomposition, and lambdas
+are remembered automatically. What it did not retire is the two cases the
+compiler genuinely cannot infer. Nobody here had looked, and "it is probably
+fine" is not something this repo has a way to check.
+
+**Decision.** Turn on the Compose compiler's own metrics and stability reports
+behind `-Pcatslist.composeMetrics`, read them, and fix what they actually said.
+
+**What they said.** Three findings, none of them guesses:
+
+- `CatItem(unstable cat: Cat)`. `Cat` lives in `:core:model`, a pure-Kotlin
+  module with no Compose compiler on it, so it carries no stability metadata and
+  is assumed unstable. The feed hands every card a fresh instance each pass —
+  `cat.copy(isFavorite = ...)`, the render-time overlay of [ADR-0024](#adr-0024)
+  — and an unstable parameter is compared by **identity**, so no card in the
+  list could ever skip. The `copy` is harmless against a stable type, whose
+  comparison is `equals`; against an unstable one it defeats skipping entirely.
+- `ErrorMessage(unstable message: UiText)` and `EmptyMessage` likewise.
+  [`ARCHITECTURE.md`](ARCHITECTURE.md) §8 has specified `@Immutable sealed
+  interface UiText` since ADR-0003; the code never had the annotation.
+- `UiText.Resource` was *itself* inferred unstable — `args: List<Any>`, a raw
+  interface that could be a `MutableList`. So the missing annotation would have
+  been a lie as well as missing.
+
+**The fixes, in the place each belongs.** `Cat` and `androidx.paging.LoadState`
+are declared in `config/compose-stability.conf`, which every Compose module
+points at — the mechanism that exists for classes you cannot annotate, whether
+because the module has no Compose compiler or because you do not own the code.
+`UiText` gained the `@Immutable` its spec already required, and `args` became an
+`ImmutableList`, which is what makes that annotation true rather than merely
+present.
+
+**Consequences.** Every parameter across `:core:designsystem`, `:feature:feed`
+and `:feature:favorites` is now stable, with two exceptions that should stay
+that way: the `viewModel` on each screen's private entry overload. A ViewModel
+is genuinely unstable, that composable is called once per screen with the
+instance `hiltViewModel()` returns, and skipping it is not a thing anyone wants.
+`:feature:feed` went from 12 known-unstable arguments to 0 that matter.
+
+Metrics stay **off** by default. They are diagnostic output, and generating them
+on every build costs time an ordinary build gets nothing back for. The stability
+config is always on, because unlike the reports it changes what the compiler
+generates.
+
+**No automated guard.** Re-running the flag and reading the report is a manual
+step; nothing fails the build if a future change makes a parameter unstable
+again. A recomposition-count test would catch it, but it needs a device and
+would therefore sit behind `verifyOnDevice` ([ADR-0018](#adr-0018)) rather than
+the gate every PR runs. Recorded as a known limit rather than papered over.
+
+**Alternatives rejected.** Annotating more types by hand. It does not reach
+either of the two real cases: a class in a module without the Compose compiler
+cannot be annotated usefully from outside it, and `androidx.paging.LoadState` is
+not ours to annotate at all.
+
+Moving `Cat` out of `:core:model` into a module that applies the Compose
+compiler. That trades a two-line config entry for putting Compose on the
+classpath of the one module [ADR-0022](#adr-0022) deliberately keeps free of it.
