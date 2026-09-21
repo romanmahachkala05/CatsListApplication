@@ -109,7 +109,7 @@ internal fun CatsListContent(
 @Composable
 private fun EmptyFeed(refresh: LoadState, onRetry: () -> Unit) {
     if (refresh is LoadState.Error) {
-        // Not one message for every failure any more: the PagingSource classified it, so
+        // Not one message for every failure anymore: the PagingSource classified it, so
         // being offline, being rate-limited and a 503 each read differently (ADR-0028).
         ErrorMessage(message = refresh.error.asAppError().toUiText(), onRetry = onRetry)
     } else {
