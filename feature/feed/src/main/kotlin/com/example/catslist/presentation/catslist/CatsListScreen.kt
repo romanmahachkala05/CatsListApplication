@@ -81,11 +81,9 @@ internal fun CatsListContent(
         // the append footer's problem rather than a reason to blank the screen.
         val refresh = pagingItems.loadState.refresh
         val hasNoCats = pagingItems.itemCount == 0
-        val isStillWorking = when (refresh) {
-            is LoadState.Loading -> true
-            is LoadState.NotLoading -> !refresh.endOfPaginationReached
-            is LoadState.Error -> false
-        }
+        // Only a load in flight counts: Paging never marks a refresh `endOfPaginationReached`,
+        // so a finished one is `NotLoading` whether or not it found any cats.
+        val isStillWorking = refresh is LoadState.Loading || pagingItems.loadState.append is LoadState.Loading
         // Only the skeleton is held: holding the empty branch would keep claiming "no cats"
         // over a feed that has since arrived.
         val showSkeleton = heldAtLeast(hasNoCats && isStillWorking, SKELETON_MINIMUM_MILLIS)
