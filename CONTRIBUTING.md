@@ -21,8 +21,9 @@ Two gates, both real tasks in the root `build.gradle.kts`:
   itself rather than naming module-specific task paths. Adding a module wires
   it into `verify` automatically; nothing to remember to update.
 - **`verifyOnDevice`** = `verify` + every module's `connectedDebugAndroidTest`
-  (`:core:data` for the Room paths, each `:feature:*` for its screen's Compose
-  UI tests — computed the same way, no hardcoded module list).
+  (`:core:data` for the Room paths, `:core:designsystem` for the components that
+  animate, each `:feature:*` for its screen — computed the same way, no
+  hardcoded module list).
 
 CI runs `verify` on every pull request. The local command is deliberately the
 same one, so a red check can be reproduced without translating a CI step back
@@ -40,6 +41,8 @@ the feed's branches at all — none of them reproducible off-device:
 | `CatRepositoryImplTest` | the real `Pager`, and favoriting not wiping loaded pages |
 | `CatsListContentTest` | which branch the feed shows for a given `LoadState` |
 | `FavoriteCatsContentTest` | which branch favorites shows for a given `UiStatus`, and the events its cards send |
+| `CatPullToRefreshTest` | a real pull, and the spinner/tick/cross sequence it earns |
+| `CatItemTest` | the card's image failing, and the retry asking again |
 
 A JVM fake cannot stand in for any of them — `FakeCatDao` runs the transaction
 block inline, so it proves the logic and not the atomicity, and the feed's
@@ -84,6 +87,7 @@ for the full dependency graph and the rules behind it.
 | Unit tests | same module as the code they test | `src/test/kotlin/` |
 | Device tests (Room behavior, migrations, upgrades) | `:core:data` | `src/androidTest/kotlin/` |
 | Compose UI tests (which branch a screen shows) | the screen's own module | `src/androidTest/kotlin/` |
+| Compose UI tests for a component (gestures, phases, image states) | `:core:designsystem` | `src/androidTest/kotlin/` |
 | `App`, `MainActivity`, `NavDisplay` + back stack — composition root only | `:app` | `src/main/java/…/`, `…/presentation/navigation/` |
 | Convention plugins (`catslist.android.library`, `.jvm.library`, `.compose`, `.hilt`, `.quality`) | `build-logic` | `build-logic/convention/src/main/kotlin/` |
 | Every dependency and version | — | `gradle/libs.versions.toml` |
