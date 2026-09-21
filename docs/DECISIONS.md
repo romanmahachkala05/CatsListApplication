@@ -54,6 +54,7 @@ that fail without the fix. They are here because finding them was the work.
 | [0025](#adr-0025) | Page the feed from the network; persist only favorites | Accepted |
 | [0026](#adr-0026) | One shared, configured `OkHttpClient` | Accepted |
 | [0027](#adr-0027) | Connectivity as a `Flow`, not a pre-flight check | Accepted |
+| [0028](#adr-0028) | Classify failures once, in `data`, as `AppError` | Accepted |
 
 ---
 
@@ -1182,3 +1183,71 @@ tapped.
 Reporting offline when `ConnectivityManager` is unavailable. The monitor sends
 `true` instead: refusing to try on a device that may well be online fails a
 request that would have worked, and the request itself is the better judge.
+
+---
+
+## ADR-0028
+
+### Classify failures once, in `data`, as `AppError`
+
+**Accepted** · 2026-09-21
+
+**Context.** [`ARCHITECTURE.md`](ARCHITECTURE.md) §3c has said since ADR-0003 that
+an error handler branches on "a sealed error type from the data layer, never on
+raw exception classes in the ViewModel". No such type existed. Both error
+handlers took a `Throwable` and *ignored the parameter*:
+
+    override fun onFavoriteIdsFailure(error: Throwable) {
+        stateHolder.showFavoritesUnavailable()
+    }
+
+The cost was on screen. A failed feed load rendered one string —
+"Couldn't load a cat. Check your connection and try again." — for every cause:
+an unresolvable host, a 429 from TheCatAPI's anonymous rate limit, a 503, a
+socket timeout, a response the wire model no longer parses. Two of those five
+tell a connected user to go and fix a connection that is not broken, and the
+rate-limited one, the most common of them in practice, hides the only advice
+that would have worked: wait a moment.
+
+**Decision.** A sealed `AppError` in `:core:model`, with a single `ErrorMapper`
+in `:core:data` that is the only code in the app that knows what a
+`SocketTimeoutException` or an HTTP 429 means. Everything crossing out of `data`
+is classified: `CatRepositoryImpl` wraps its writes and its favorites stream,
+`CatFeedPagingSource` puts one in `LoadResult.Error`. `presentation` unwraps
+with `Throwable.asAppError()` and renders through a shared `AppError.toUiText()`,
+which a screen overrides per case when it can say something better.
+
+**Consequences.** Nine distinguishable messages where there was one. The mapping
+is unit-tested per branch, including the two that need it most: the same
+`UnknownHostException` is `NoConnection` offline and `Unreachable` online.
+
+`ErrorMapper.map` is `suspend`, which is the price of that distinction — telling
+those two apart means asking [ADR-0027](#adr-0027)'s `NetworkMonitor`, and asking
+it *at the moment of failure* rather than before the request, when the answer
+would have been a guess about the future.
+
+`FakeCatRepository` now throws `AppErrorException` too, and its error fields
+changed from `Throwable?` to `AppError?`. That is the point rather than a cost:
+a fake that threw a bare `IOException` let a ViewModel pass a test it would fail
+against the real repository.
+
+**The throwable is not carried.** `AppError` holds a classification and, for HTTP,
+a status code — not the exception. It is logged in `ErrorMapper`, the one place
+with the full stack trace and the context to say what it was doing. Downstream,
+nothing can act on a `SocketTimeoutException` that it cannot act on with
+`Timeout`. Leaving it out also makes these compare by value, so a test asserts
+`AppError.Server(503)` instead of reaching into an exception it had to construct
+to get a value it can match.
+
+**`AppErrorException` is a carrier, not a decision.** `PagingSource.LoadResult.Error`
+and a `Flow`'s failure channel both insist on a `Throwable`, so one wraps the
+`AppError` across those two boundaries. It is thrown only by `data` and unwrapped
+only by `Throwable.asAppError()`, which is the single `as?` this design costs.
+
+**Alternatives rejected.** Returning `Result<T, AppError>` from the repository
+instead of throwing. It is the better shape in the abstract, and it does not fit
+what is actually here: the two failing paths are a `Flow` that Room terminates
+by throwing and a `PagingSource` that Paging requires to report a `Throwable`.
+Neither returns a value that a `Result` could wrap, so the type would have been
+carried by two `suspend` write methods and nothing else. Worth revisiting when
+there is a call that genuinely returns a value that can fail.

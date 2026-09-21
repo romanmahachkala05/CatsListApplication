@@ -1,6 +1,7 @@
 package com.example.catslist.presentation.catslist
 
 import com.example.catslist.presentation.StateOwner
+import com.example.catslist.presentation.UiText
 import dagger.hilt.android.scopes.ViewModelScoped
 import javax.inject.Inject
 import kotlinx.collections.immutable.ImmutableSet
@@ -11,7 +12,7 @@ import kotlinx.coroutines.flow.update
 
 internal interface ICatsListStateHolder : StateOwner<CatsListState> {
     fun showFavorites(ids: ImmutableSet<String>)
-    fun showFavoritesUnavailable()
+    fun showFavoritesUnavailable(message: UiText)
     fun reset()
 }
 
@@ -26,8 +27,8 @@ internal class CatsListStateHolder @Inject constructor() : ICatsListStateHolder 
     }
 
     /** Keeps the ids already on screen: the stars stop updating rather than all switching off. */
-    override fun showFavoritesUnavailable() = _state.update {
-        it.copy(favoritesStatus = CatsListFavoritesStatus.Unavailable)
+    override fun showFavoritesUnavailable(message: UiText) = _state.update {
+        it.copy(favoritesStatus = CatsListFavoritesStatus.Unavailable(message))
     }
 
     override fun reset() = _state.update { CatsListState() }
