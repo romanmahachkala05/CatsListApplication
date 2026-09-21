@@ -109,15 +109,26 @@ Rules:
   so a consumer needs those types too — `:core:testing` exposes `:core:model`,
   `:core:data`, and `:core:ui` as `api`.
 - Everything else is `implementation`.
-- `:core:data` exposes nothing but Hilt `@Binds`/`@Provides` methods and use
-  cases wrapping its own repository, so all its dependencies are
-  `implementation`.
+- `:core:data` exposes Hilt `@Binds`/`@Provides` methods and use cases
+  wrapping its own repository, so almost all its dependencies are
+  `implementation` — the one exception is `androidx.paging:paging-runtime`,
+  `api` because `CatRepository.feed` returns `Flow<PagingData<Cat>>` and
+  `PagingData` is therefore part of this module's public surface too
+  ([ADR-0025](DECISIONS.md#adr-0025)).
 
 ---
 
 ## 3. MVI — the screen contract
 
-Every screen is a subpackage / module with these parts:
+Every screen is a subpackage / module with these parts, including a *paged*
+screen (currently only `:feature:feed`). The one exception there is narrow:
+Paging 3 owns **load** state — loading, error and retry for the list itself —
+read from `LazyPagingItems.loadState` in the Composable, so a paged screen has
+no screen-wide `UiStatus` and no `LoadMore`/`Retry` events. It still has a
+`State`, a `StateHolder` and an `ErrorHandler` for everything Paging does not
+load; `PagingData` is exposed alongside `state` rather than inside it, because
+`LazyPagingItems` can only be built by the Composable that collects it. See
+[ADR-0024](DECISIONS.md#adr-0024) and [ADR-0025](DECISIONS.md#adr-0025).
 
 | File | Role |
 | --- | --- |
@@ -411,10 +422,23 @@ same package.
   Truth.
 - StateHolder tests assert each mutator produces a fully valid state (no
   half-set status).
-- Recommended additions: Compose UI tests (`createAndroidComposeRule`),
-  screenshot tests over previews (Paparazzi / Roborazzi), and — if Room is used —
-  migration tests with `MigrationTestHelper` (set `exportSchema = true` and
-  commit the schema JSON).
+- **Every screen gets a Compose UI test**, in its own module under
+  `src/androidTest/kotlin`: `createComposeRule()`, the stateless `XxxContent`
+  with fake state, one test per branch, plus the events its controls send. A
+  ViewModel test proves which status the screen reaches; only this proves what
+  that status puts on screen. For the feed there is no alternative at all — its
+  loading, empty, error and retry come from `LazyPagingItems.loadState`
+  ([ADR-0024](DECISIONS.md#adr-0024)), which exists only inside composition.
+  Hold the test clock (`mainClock.autoAdvance = false`) — the shimmer never
+  ends, so a test that waits for idle waits forever.
+- **A design-system component with behavior of its own gets the same treatment**
+  in `:core:designsystem`: a gesture, a phase that is held for a while, an
+  image that fails. Work the component from the outside — a real swipe, a real
+  request — because that is where these break, and a component test is the only
+  place a screen test's setup cannot hide it.
+- Recommended additions: screenshot tests over previews (Paparazzi /
+  Roborazzi), and — if Room is used — migration tests with
+  `MigrationTestHelper` (set `exportSchema = true` and commit the schema JSON).
 
 ---
 

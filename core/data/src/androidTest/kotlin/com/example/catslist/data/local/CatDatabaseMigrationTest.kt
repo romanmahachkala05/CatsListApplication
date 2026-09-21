@@ -11,9 +11,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Exercises [MIGRATION_2_3] against a real database created from the committed v2 schema.
- * A migration that is never run is a guess: if it drops the wrong thing or leaves the
- * schema disagreeing with the entity, the first upgrade takes the user's favorites with it.
+ * Exercises [MIGRATION_2_3] against a real database built from the committed v2 schema. An
+ * untested migration takes the user's favorites with it the first time it is wrong.
  */
 @RunWith(AndroidJUnit4::class)
 class CatDatabaseMigrationTest {
@@ -44,8 +43,8 @@ class CatDatabaseMigrationTest {
 
     @Test
     fun migrate2To3_carriesEveryColumnAcrossTheRebuild() {
-        // The migration recreates the table and copies rows over, so a column left out of the
-        // INSERT would silently become null or default rather than failing.
+        // The migration recreates the table, so a column left out of the INSERT would end up
+        // null or default rather than failing.
         helper.createDatabase(TEST_DB, 2).use { db ->
             db.execSQL(insertV2(id = "1", favorite = 1))
         }
@@ -90,9 +89,37 @@ class CatDatabaseMigrationTest {
         }
     }
 
+    @Test
+    fun migrate3To4_createsTheEmptyFeedCacheTables() {
+        helper.createDatabase(TEST_DB, 3).use { db ->
+            db.execSQL(insertV3(id = "1"))
+        }
+
+        val migrated = helper.runMigrationsAndValidate(TEST_DB, 4, true, MIGRATION_3_4)
+
+        migrated.query("SELECT COUNT(*) FROM feedCatsTable").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals(0, cursor.getInt(0))
+        }
+        migrated.query("SELECT COUNT(*) FROM feedRemoteKeysTable").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals(0, cursor.getInt(0))
+        }
+        // Nothing about the existing favorites table is touched by an unrelated migration.
+        migrated.query("SELECT id FROM favoriteCatsTable").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals("1", cursor.getString(0))
+        }
+    }
+
     private fun insertV2(id: String, favorite: Int) = """
         INSERT INTO favoriteCatsTable (id, url, width, height, favorite)
         VALUES ('$id', 'https://cdn.example/$id.jpg', 300, 200, $favorite)
+    """.trimIndent()
+
+    private fun insertV3(id: String) = """
+        INSERT INTO favoriteCatsTable (id, url, width, height)
+        VALUES ('$id', 'https://cdn.example/$id.jpg', 300, 200)
     """.trimIndent()
 
     private companion object {

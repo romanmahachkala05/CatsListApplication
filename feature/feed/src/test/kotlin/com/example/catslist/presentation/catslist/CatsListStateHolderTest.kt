@@ -1,9 +1,7 @@
 package com.example.catslist.presentation.catslist
 
-import com.example.catslist.presentation.UiText
-import com.example.catslist.testing.cat
 import com.google.common.truth.Truth.assertThat
-import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentSetOf
 import org.junit.Test
 
 class CatsListStateHolderTest {
@@ -11,97 +9,49 @@ class CatsListStateHolderTest {
     private val stateHolder = CatsListStateHolder()
 
     @Test
-    fun `starts loading with no cats`() {
+    fun `starts live with no favorites`() {
+        // Unlike the favorites screen, nothing here waits on the ids: the cats render either
+        // way, so an empty set is a valid first answer.
         assertThat(stateHolder.state.value).isEqualTo(CatsListState())
-        assertThat(stateHolder.state.value.status).isEqualTo(CatsListUiStatus.Loading)
+        assertThat(stateHolder.state.value.favoritesStatus).isEqualTo(CatsListFavoritesStatus.Live)
     }
 
     @Test
-    fun `showing cats switches to content`() {
-        stateHolder.showContent(persistentListOf(cat("1"), cat("2")))
+    fun `showing favorites replaces the id set`() {
+        stateHolder.showFavorites(persistentSetOf("1", "2"))
+
+        stateHolder.showFavorites(persistentSetOf("2"))
+
+        assertThat(stateHolder.state.value.favoriteIds).containsExactly("2")
+    }
+
+    @Test
+    fun `going unavailable keeps the ids already on screen`() {
+        stateHolder.showFavorites(persistentSetOf("1"))
+
+        stateHolder.showFavoritesUnavailable()
 
         val state = stateHolder.state.value
-        assertThat(state.status).isEqualTo(CatsListUiStatus.Content)
-        assertThat(state.cats.map { it.id }).containsExactly("1", "2").inOrder()
+        assertThat(state.favoritesStatus).isEqualTo(CatsListFavoritesStatus.Unavailable)
+        assertThat(state.favoriteIds).containsExactly("1")
     }
 
     @Test
-    fun `an empty first emission stays loading rather than flashing empty content`() {
-        // The feed flow emits its empty initial value before the first fetch completes.
-        stateHolder.showContent(persistentListOf())
+    fun `a later emission recovers from unavailable`() {
+        stateHolder.showFavoritesUnavailable()
 
-        assertThat(stateHolder.state.value.status).isEqualTo(CatsListUiStatus.Loading)
-        assertThat(stateHolder.state.value.cats).isEmpty()
-    }
+        stateHolder.showFavorites(persistentSetOf("1"))
 
-    @Test
-    fun `an empty emission after content is content, not loading`() {
-        stateHolder.showContent(persistentListOf(cat("1")))
-
-        stateHolder.showContent(persistentListOf())
-
-        assertThat(stateHolder.state.value.status).isEqualTo(CatsListUiStatus.Content)
-        assertThat(stateHolder.state.value.cats).isEmpty()
-    }
-
-    @Test
-    fun `showing an error keeps the cats already on screen`() {
-        stateHolder.showContent(persistentListOf(cat("1")))
-
-        stateHolder.showError(MESSAGE)
-
-        val state = stateHolder.state.value
-        assertThat(state.status).isEqualTo(CatsListUiStatus.Error(MESSAGE))
-        assertThat(state.cats.map { it.id }).containsExactly("1")
-    }
-
-    @Test
-    fun `an empty emission while showing an error does not clear it`() {
-        // Reachable from an unrelated feed emission (e.g. favorites changing) that carries no
-        // new cats — unlike a LoadMore that actually appends something, it isn't real recovery.
-        stateHolder.showContent(persistentListOf(cat("1")))
-        stateHolder.showError(MESSAGE)
-
-        stateHolder.showContent(persistentListOf())
-
-        assertThat(stateHolder.state.value.status).isEqualTo(CatsListUiStatus.Error(MESSAGE))
-    }
-
-    @Test
-    fun `a non-empty emission while showing an error is treated as recovery`() {
-        stateHolder.showContent(persistentListOf(cat("1")))
-        stateHolder.showError(MESSAGE)
-
-        stateHolder.showContent(persistentListOf(cat("1"), cat("2")))
-
-        val state = stateHolder.state.value
-        assertThat(state.status).isEqualTo(CatsListUiStatus.Content)
-        assertThat(state.cats.map { it.id }).containsExactly("1", "2").inOrder()
-    }
-
-    @Test
-    fun `going back to loading keeps the cats already on screen`() {
-        stateHolder.showContent(persistentListOf(cat("1")))
-        stateHolder.showError(MESSAGE)
-
-        stateHolder.showLoading()
-
-        val state = stateHolder.state.value
-        assertThat(state.status).isEqualTo(CatsListUiStatus.Loading)
-        assertThat(state.cats.map { it.id }).containsExactly("1")
+        assertThat(stateHolder.state.value.favoritesStatus).isEqualTo(CatsListFavoritesStatus.Live)
     }
 
     @Test
     fun `reset returns to the initial state`() {
-        stateHolder.showContent(persistentListOf(cat("1")))
-        stateHolder.showError(MESSAGE)
+        stateHolder.showFavorites(persistentSetOf("1"))
+        stateHolder.showFavoritesUnavailable()
 
         stateHolder.reset()
 
         assertThat(stateHolder.state.value).isEqualTo(CatsListState())
-    }
-
-    private companion object {
-        val MESSAGE = UiText.Raw("Couldn't load a cat")
     }
 }

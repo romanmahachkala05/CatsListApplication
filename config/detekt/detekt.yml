@@ -27,7 +27,7 @@ style:
     # are the schema versions, and `RoundedCornerShape(50)` behind a named `BAR_SHAPE`.
     ignorePropertyDeclaration: true
 
-  UnusedPrivateMember:
+  UnusedPrivateFunction:
     # @Preview composables are called by the IDE renderer, which detekt cannot see.
     # ARCHITECTURE.md §10 requires them, so deleting them is not the fix.
     ignoreAnnotated: ['Preview']

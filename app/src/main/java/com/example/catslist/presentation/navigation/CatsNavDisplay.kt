@@ -48,13 +48,9 @@ import com.example.catslist.presentation.favoritecats.FavoriteCatsScreen
 import com.example.catslist.presentation.resolve
 
 /**
- * [CatsListNavKey] and [FavoriteCatsNavKey] are peer top-level destinations switched via the
- * floating bottom bar, each with its own back stack — so switching tabs shows that screen's own
- * preserved scroll position and ViewModel instead of resetting them, the way a single shared,
- * cleared-and-replaced back stack would. Mirrors Navigation 3's own `MultipleBackStackSample`.
- * Each screen's ViewModel is still created lazily by its own `hiltViewModel()` default — this
- * composable never needs to know either one's concrete type, since Snackbar delivery goes
- * through the shared [com.example.catslist.presentation.SnackbarNotifier] instead.
+ * Peer top-level destinations switched from the floating bottom bar, each with its own back
+ * stack so a tab switch preserves that screen's scroll position and ViewModel. Mirrors
+ * Navigation 3's `MultipleBackStackSample`.
  */
 @Composable
 fun CatsNavDisplay(notifier: SnackbarNotifier, modifier: Modifier = Modifier) {
@@ -75,13 +71,9 @@ fun CatsNavDisplay(notifier: SnackbarNotifier, modifier: Modifier = Modifier) {
             FloatingBottomBar(selected = selected, onSelect = { selected = it })
         },
     ) { innerPadding ->
-        // Deliberately not padding the content: the bar floats over it, so cats run full-bleed
-        // underneath. The insets go to each list as contentPadding so items still scroll clear.
-        //
-        // Each tab's rememberDecoratedNavEntries call runs on every recomposition regardless of
-        // which tab is selected, so its SaveableStateHolder/ViewModelStore decorators — and
-        // whatever they're holding — stay alive the whole time. NavDisplay below only ever
-        // renders the entries for the tab that's currently selected.
+        // The content is not padded: the bar floats over it and each list takes the insets as
+        // contentPadding instead. Both tabs' entries are remembered on every recomposition so
+        // their decorators stay alive; NavDisplay renders only the selected tab's.
         val catsListBackStack = rememberNavBackStack(CatsListNavKey)
         val catsListEntries = rememberDecoratedNavEntries(
             backStack = catsListBackStack,
@@ -117,11 +109,8 @@ fun CatsNavDisplay(notifier: SnackbarNotifier, modifier: Modifier = Modifier) {
 }
 
 /**
- * Material3's [NavigationBar] — which brings the selection indicator, its animations and the
- * `selectableGroup()` semantics with it — shaped into a floating pill instead of spanning the
- * screen edge to edge. `Modifier.shadow` clips to the shape, so the bar paints its own container
- * and needs no wrapping Surface. `IntrinsicSize.Min` keeps it hugging its two items, since
- * [NavigationBarItem] otherwise weights itself across the full available width.
+ * Material3's [NavigationBar] shaped into a floating pill. `Modifier.shadow` clips to the shape,
+ * so no wrapping Surface is needed, and `IntrinsicSize.Min` keeps the bar hugging its two items.
  */
 @Composable
 private fun FloatingBottomBar(
@@ -130,14 +119,14 @@ private fun FloatingBottomBar(
     modifier: Modifier = Modifier,
 ) {
     NavigationBar(
-        // The bottomBar slot lays out from the start edge, so centre the pill within it.
+        // The bottomBar slot lays out from the start edge, so center the pill within it.
         modifier = modifier
             .fillMaxWidth()
             .padding(32.dp)
             .wrapContentWidth()
             .width(IntrinsicSize.Min)
             .shadow(6.dp, BAR_SHAPE),
-        // The Scaffold slot already handles system bars; NavigationBar's own insets would double them.
+        // The Scaffold slot already handles system bars; these would double them.
         windowInsets = WindowInsets(0, 0, 0, 0),
     ) {
         NavigationBarItem(
@@ -162,15 +151,12 @@ private fun FloatingBottomBar(
 
 private val BAR_SHAPE = RoundedCornerShape(50)
 
-/** Labels stay the same plain on-surface colour in both states; only the icon reflects selection. */
+/** Labels keep the same on-surface color in both states; only the icon reflects selection. */
 @Composable
 private fun navigationBarItemColors() = NavigationBarItemDefaults.colors(
     selectedTextColor = MaterialTheme.colorScheme.onSurface,
     unselectedTextColor = MaterialTheme.colorScheme.onSurface,
 )
 
-/**
- * 24.dp is [Icon]'s default; the M3 active-indicator behind it is a fixed 64x32.dp,
- * so much past this looks cramped.
- */
-private val ICON_SIZE = 48.dp
+/** The M3 active indicator behind it is a fixed 64x32.dp, so much past this looks cramped. */
+private val ICON_SIZE = 38.dp

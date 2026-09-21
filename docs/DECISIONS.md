@@ -7,7 +7,9 @@ Each entry follows the ADR shape — **Context**, **Decision**, **Consequences**
 and the alternatives that were rejected where the rejection is the interesting
 part. Entries are append-only: a decision that turns out to be wrong is not
 edited, it is **superseded** by a later one, so the reasoning stays legible in
-both directions.
+both directions. A decision whose core still holds but which was written more
+broadly than it needed to be is **amended** instead — same append-only rule,
+narrower correction.
 
 **What belongs here.** If another engineer could reasonably make a different
 choice without knowing why this one was made, it is an ADR. If the answer is
@@ -47,6 +49,9 @@ that fail without the fix. They are here because finding them was the work.
 | [0020](#adr-0020) | One serialization library | Accepted |
 | [0021](#adr-0021) | Derive versionCode from the version name | Accepted |
 | [0022](#adr-0022) | Split the app into Gradle modules | Accepted |
+| [0023](#adr-0023) | Paging 3 for the feed, with a `RemoteMediator` | **Superseded** by 0025 |
+| [0024](#adr-0024) | Paging owns the feed's *load* state, not its whole state | Accepted |
+| [0025](#adr-0025) | Page the feed from the network; persist only favorites | Accepted |
 
 ---
 
@@ -373,10 +378,10 @@ API service, the downloader and the notifier.
 **Decision.** Real in-memory implementations backed by `MutableStateFlow`. No
 MockK, no Mockito.
 
-**Reasoning.** The repository has *behaviour*, not just calls: favoriting a cat
+**Reasoning.** The repository has *behavior*, not just calls: favoriting a cat
 has to change what the feed emits, without a re-fetch. A mocked
 `coEvery { repo.feed } returns flowOf(...)` returns a static list, so the test
-asserts the script the author wrote rather than the behaviour. Reproducing
+asserts the script the author wrote rather than the behavior. Reproducing
 re-emission from a mock means putting a `MutableStateFlow` inside it — a fake
 with extra ceremony. A fake also implements the interface contract directly, so
 a change to that interface surfaces as a compilation error in the fake;
@@ -389,7 +394,7 @@ thing, and one did: `FakeCatDao` accepted duplicate inserts where Room's default
 shipped one. What a JVM fake still cannot reproduce is Room's atomicity — that
 needs a device, which is ADR-0018.
 
-Where MockK would genuinely win is a port with no behaviour, only "was it
+Where MockK would genuinely win is a port with no behavior, only "was it
 called": `FakeImageDownloader` is 18 lines that one `coVerify` would replace.
 That was not worth a dependency here; at a larger scale it would be.
 
@@ -703,7 +708,7 @@ also two ways to spell the same thing.
 the model does not declare; kotlinx.serialization rejects it. Swapping one for
 the other therefore changes how the app reacts to an upstream field being added:
 from ignoring it to failing every response. `Json { ignoreUnknownKeys = true }`
-restores the tolerant behaviour deliberately rather than by default.
+restores the tolerant behavior deliberately rather than by default.
 
 Worth being precise, because the first version of that comment was wrong: the
 search endpoint currently returns exactly the four fields `CatDto` declares, so
@@ -858,3 +863,225 @@ grows enough (e.g. a download manager needing its own persistence) that
 "everything data-related in one module" stops being one responsibility —
 split by what it does then, not ahead of time.
 
+---
+
+## ADR-0023
+
+### Move the feed to Paging 3, with a RemoteMediator caching pages into Room
+
+**Superseded** by [ADR-0025](#adr-0025) · 2026-09-20 · **amended** by [ADR-0024](#adr-0024)
+
+**Context.** The feed was a hand-rolled `MutableStateFlow<List<Cat>>` the
+ViewModel appended to on `fetchNextBatch()`, combined against Room's favorites
+so toggling one updated the feed live (see [ADR-0015](#adr-0015) for the
+duplicate-key crash that shape of code already caused once). Nothing about
+that feed was persisted — a process death or a rotation past what
+`rememberSaveable` covers re-fetched from page 1. Switching to Paging 3 was
+requested directly, to have the same infrastructure a production app would use
+for a list that can grow into the thousands, and to pick up scroll-driven
+loading and load-state handling instead of the screen's own
+`derivedStateOf`-on-scroll-position trigger.
+
+**Decision.** A `RemoteMediator<Int, FeedCatEntity>` (`CatFeedRemoteMediator`)
+fetches pages from `CatApiService` and caches them into a new Room table,
+`feedCatsTable`, keyed by fetch order rather than by `id` — the API hands back
+cats in no order a `SELECT` could otherwise recover. `CatFeedDao.pagingSource()`
+reads only `feedCatsTable`; favorite status is *not* part of that query. It is
+attached afterward, in `CatRepositoryImpl.feed`, by `combine()`-ing the paged
+flow with a separate `Flow<Set<String>>` of favorite ids and re-mapping each
+already-loaded item — the same live-update outcome the old hand-rolled
+`combine()` version had, kept as a `combine()`, not moved into SQL.
+
+An `EXISTS`-against-`favoriteCatsTable` join on `pagingSource()` was the first
+version of this and reached this branch before being caught: Room's
+invalidation tracker watches every table a `@Query` reads, so a favorite
+toggle invalidated the query, which handed Paging a new `PagingSource`
+generation, which made Paging re-run the `RemoteMediator`'s REFRESH — wiping
+the entire cached feed back to page 0 on every favorite toggle, discovered by
+scrolling down, favoriting a cat, and watching the list jump to the top. Fixed
+by moving the favorite overlay out of the query entirely; see
+[`CatFeedDaoTest.pagingSource_isNotInvalidatedByAFavoriteToggle`](../core/data/src/androidTest/kotlin/com/example/catslist/data/local/CatFeedDaoTest.kt)
+for the regression test.
+
+The feed only ever appends. TheCatAPI's search endpoint has no signal for
+"cats newer than what I already have," so `LoadType.PREPEND` is always a
+no-op and `LoadType.REFRESH` always restarts from page 0. A second table,
+`feedRemoteKeysTable`, holds a single row recording the next page to fetch —
+not the per-item remote-keys table the Paging 3 samples use, which exists to
+support prepending, something this feed never does.
+
+**Alternatives rejected.** A `PagingSource` reading straight from the network,
+with no Room cache, was the simpler option and was raised explicitly as the
+alternative to a `RemoteMediator`. It was rejected because Paging caches
+loaded pages internally and does not re-run a plain network `PagingSource` on
+an unrelated write, so the favorite icon in an already-loaded page would not
+update until the next full reload — a real behavior regression from what the
+app already did, not a neutral simplification. (The join-based favorite
+lookup above was a second, different way of chasing that same live-update
+requirement, and turned out to have its own regression instead.)
+
+**Consequences.** Two new Room entities, a fourth schema version
+(`MIGRATION_3_4`), and a new `RemoteMediator`. The screen's own state machine
+(`CatsListState`, `CatsListUiStatus`, the `LoadMore`/`Retry` events,
+`CatsListStateHolder`, `CatsListErrorHandler`) is gone outright rather than
+adapted — `LazyPagingItems.loadState`, collected in the Composable via
+`collectAsLazyPagingItems()`, already tracks initial-load, append and error
+state, and reimplementing that inside `CatsListViewModel` would just be
+duplicating what Paging already owns. This is a real, deliberate narrowing of
+this codebase's own "one sealed `UiStatus`, ViewModel merely orchestrates"
+rule for this one screen: loading/error/retry for the paged list now lives in
+the Composable, not the ViewModel, because `LazyPagingItems` is fundamentally
+a Compose-collected type that cannot be constructed inside a ViewModel.
+`CatsListViewModel` still owns everything that *is* still its job — favoriting
+and downloading.
+
+Running the new instrumented tests surfaced an unrelated, pre-existing bug:
+`:core:data` never had `testInstrumentationRunner` configured after its
+`androidTest` sources moved out of `:app` during [ADR-0022](#adr-0022)'s
+module split, so `connectedDebugAndroidTest` silently discovered zero tests
+and reported success. `verifyOnDevice` had not actually run an instrumented
+test since the module split landed. Fixed in the convention plugin so every
+module gets it, not just `:core:data`.
+
+**Review when:** the feed needs to support prepending (e.g. a "jump to
+newest" action) — the single global remote key stops being enough and this
+needs the standard per-item remote-keys table instead.
+
+**Why it was amended.** The Paging decision above stands unchanged. What was
+drawn too wide is the sentence deleting "the screen's own state machine": only
+*load* state was ever Paging's to own, and the clause was written as though it
+covered all of the screen's state. It did not. The favorite overlay was left
+outside any state object as a bare `StateFlow<Set<String>>` on the ViewModel,
+and its failure path went missing with the error handler it was bundled into.
+[ADR-0024](#adr-0024) redraws the line.
+
+**Why it was superseded.** Paging 3 itself carries forward untouched — what
+[ADR-0025](#adr-0025) reverses is the other half of this entry, the
+`RemoteMediator` caching pages into Room. Two things undid it. The rejection of
+a network-only `PagingSource` above rested entirely on the favorite icon going
+stale in already-loaded pages, and [ADR-0024](#adr-0024) moved that overlay out
+of the paging query into the UI layer, so the objection no longer applies to
+any code that exists. And the cache turned out to have a cost this entry did
+not anticipate: the cached cats render at launch and are then replaced by the
+mandatory refresh, which reads as the screen loading twice. Keeping a copy of
+the feed on disk was never a requirement — it was the price of a live favorite
+star, and that price stopped being owed.
+
+
+## ADR-0024
+
+### Paging owns the feed's *load* state, not its whole state
+
+**Accepted** · 2026-09-19 · amends [ADR-0023](#adr-0023)
+
+**Context.** [ADR-0023](#adr-0023) removed `CatsListState`,
+`CatsListStateHolder` and `CatsListErrorHandler` together, on the reasoning
+that `LazyPagingItems.loadState` already tracks loading, error and retry. That
+reasoning is correct and still holds — for loading, error and retry. It does
+not extend to the rest of the screen, and bundling the removals together took
+two things with it that Paging never replaced:
+
+- **The favorite overlay had no state object.** It lived as a public
+  `StateFlow<Set<String>>` beside `pagedCats`, which is the "state scattered
+  outside one State object" shape [`ARCHITECTURE.md`](ARCHITECTURE.md) §3a
+  exists to forbid — the feed was the only screen not following it.
+- **The favorites stream had no failure path.** A plain `.map {}.stateIn(…)`
+  with no `catch`: a throwing Room query would escape `viewModelScope` and
+  reach the default handler, which on Android kills the process. This is the
+  exact failure [ADR-0013](#adr-0013) introduced `launchCatching` for, and the
+  favorites screen already guards with `RetryableFlow`. The feed lost that
+  guard along with the error handler it had been attached to.
+
+**Decision.** The carve-out is narrowed to what the library actually forces.
+`PagingData` stays outside the state object, because `LazyPagingItems` is built
+by the Composable collecting it and cannot be constructed in a ViewModel —
+that constraint is real and is the whole of it. Everything else on the screen
+follows §3 like any other: `CatsListState` holds the favorite ids and a
+`CatsListFavoritesStatus`, `CatsListStateHolder` owns the mutation, and
+`CatsListErrorHandler` maps a dead favorites stream into
+`CatsListFavoritesStatus.Unavailable`.
+
+`CatsListUiStatus` stays deleted, and so do the `LoadMore` and `Retry` events.
+Those *were* duplicating Paging, which is the part of ADR-0023 that was right.
+
+**Alternatives rejected.** Mapping `loadState` into a screen-wide `UiStatus`
+so the feed looks like every other screen — rejected for ADR-0023's original
+reason, unchanged: it is a second copy of a state machine Paging already runs,
+kept in sync by hand, and the uniformity it buys is cosmetic.
+
+Reporting the stream failure with a Snackbar instead of putting it in state was
+the cheaper fix and was rejected as dishonest about duration.
+[`LaunchCatching`](../core/ui/src/main/kotlin/com/example/catslist/presentation/LaunchCatching.kt)'s
+own contract draws the line: a one-off action that failed while the screen is
+fine gets a Snackbar, a condition the screen has to *stay* in belongs in state.
+`catch` terminates the flow, so the overlay is dead for that ViewModel's whole
+life — a transient Snackbar for a permanent condition, on a screen the user
+keeps scrolling, would be gone long before it stopped being true.
+
+**Consequences.** The feed keeps rendering when favorites break, with an inline
+notice above the cats and the last known stars left as they were, rather than
+blanking working content or silently freezing. The status is a two-case sealed
+type scoped to the overlay, deliberately not named `UiStatus` — a reader who
+greps for that name on this screen should find nothing, because the screen-wide
+one genuinely does not exist here. The cost is that this one screen now reads
+its state from two sources, `state` and `pagingItems`, which no other screen
+does; the ViewModel is also at §3b's ≈7 constructor-dependency cap.
+
+**Review when:** a second paged screen appears. One screen shaped like this is
+a documented exception; two means the contract in §3 should describe paged
+screens directly instead of carving them out.
+
+
+
+## ADR-0025
+
+### Page the feed from the network; persist only favorites
+
+**Accepted** · 2026-09-20 · supersedes [ADR-0023](#adr-0023)
+
+**Context.** [ADR-0023](#adr-0023) cached the feed into Room behind a
+`RemoteMediator`, for one reason: a plain network `PagingSource` would leave
+the favorite star stale on pages already loaded. [ADR-0024](#adr-0024) then
+moved the favorite overlay out of the paging query entirely — the screen
+applies it at render time from a separate flow — which left the cache with no
+argument for its existence.
+
+It was also costing something. Paging refreshes on every cold start, so the
+cached cats render first and are replaced moments later by the ones just
+fetched: the screen appears to load twice, and the second load is the app
+discarding work it had just shown. Tuning `initialLoadSize` and
+`prefetchDistance` removed a redundant *request*, but nothing in the paging
+configuration can stop a cache from being displayed before the refresh that
+replaces it.
+
+**Decision.** `CatFeedPagingSource` calls `CatApiService` directly and holds
+its pages in memory, for the lifetime of one Paging generation. Room keeps
+`favoriteCatsTable` and nothing else. `MIGRATION_4_5` drops `feedCatsTable` and
+`feedRemoteKeysTable`; no user data is lost, because none of what they held was
+the user's. Paging 3 itself is unchanged — this replaces where the pages come
+from, not how they are paged.
+
+**Consequences.** A launch is one request, a skeleton, then cats. There is no
+second load, because there is nothing cached to show first. The feed is also
+gone on relaunch, which is the intended reading of "the feed is what the
+network says right now": a cat seen yesterday was never promised to still be
+there, and anything the user wanted to keep is a favorite.
+
+The cache was doing one job nobody had written down: `feedCatsTable`'s primary
+key deduplicated cats across pages. TheCatAPI repeats them, the list keys its
+items by id, and a repeated key is a crash rather than a visible double — the
+failure [ADR-0013](#adr-0013) and [ADR-0015](#adr-0015) both circle. The
+mediator's `distinctBy` only ever covered a single response, so that protection
+was entirely incidental. `CatFeedPagingSource` now carries an explicit
+seen-id set per generation, which is the same guarantee stated out loud.
+
+Offline is worse, and that is accepted rather than overlooked: with nothing on
+disk there is nothing to show without a network, where the cache would have
+offered the previous session's cats. The alternative — keep the cache and
+refresh only when it is older than some window — needs a timestamp column and
+another schema version to answer a question this app does not have: a feed of
+random cats has no staleness, only novelty.
+
+**Review when:** the feed gains an identity worth returning to — a search, a
+filter, a breed — at which point the same cats on relaunch stops being noise
+and starts being state, and something has to persist it again.

@@ -2,29 +2,17 @@ import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    // Not just for CatDto (which moved to :core:data with it) — CatsListNavKey and
-    // FavoriteCatsNavKey are @Serializable too, for Navigation 3's saved-state support, and
-    // stayed here. Removing this when CatDto left broke navigation at runtime, not compile
-    // time: @Serializable without the compiler plugin fails only when something actually
-    // looks the serializer up.
+    // Still needed after CatDto moved out: the NavKeys are @Serializable too, and without
+    // the plugin that fails at runtime rather than at compile time.
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt.android)
     id("catslist.quality")
 }
 
-// Declared once, in parts, with versionCode derived from them. The 2022 app shipped
-// versionCode 1 for *both* v1.0.1 and v1.0.2: Play rejects an upload whose versionCode has
-// not increased, so the second of those could never have shipped. Deriving the number means
-// the two cannot drift apart again — bumping the name necessarily bumps the code.
-//
-// Minor and patch are allowed 0-99 each, which is a wider range than this project will use.
-// Release signing credentials, if this machine has them. Read once, defensively: a fresh
-// clone and CI have no keystore, and reading them unconditionally would fail *configuration*
-// for everyone — not just release builds. `keystore.properties` is gitignored; CI would use
-// the environment instead.
+// Release signing credentials, if this machine has any. Read defensively: a fresh clone and
+// CI have no keystore, and failing here would fail configuration for every build type.
 val keystoreProperties = Properties().apply {
     val file = rootProject.file("keystore.properties")
     if (file.exists()) file.inputStream().use(::load)
@@ -37,22 +25,22 @@ fun releaseSigningValue(key: String): String? =
 val hasReleaseSigning = listOf("storeFile", "storePassword", "keyAlias", "keyPassword")
     .all { !releaseSigningValue(it).isNullOrBlank() }
 
+// versionCode is derived from the name, so the two cannot drift apart. Minor and patch are
+// allowed 0-99 each.
 val versionMajor = 2
-val versionMinor = 1
+val versionMinor = 2
 val versionPatch = 0
 
 android {
     namespace = "com.example.catslist"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.example.catslist"
         minSdk = 27
-        targetSdk = 36
+        targetSdk = 37
         versionCode = versionMajor * 10_000 + versionMinor * 100 + versionPatch
         versionName = "$versionMajor.$versionMinor.$versionPatch"
-
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     signingConfigs {
@@ -68,9 +56,7 @@ android {
 
     buildTypes {
         release {
-            // Null where no keystore is configured, which produces an unsigned release APK
-            // rather than failing the build. That keeps `assembleRelease` runnable by anyone
-            // who clones this, and means only a machine holding the key can ship a signed one.
+            // Null with no keystore, producing an unsigned APK rather than a failed build.
             signingConfig = signingConfigs.findByName("release")
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
@@ -83,13 +69,9 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = "17"
-    }
     testOptions {
         unitTests {
-            // ViewModels log failures through android.util.Log, which is a stub on the JVM and
-            // throws by default. Returning defaults keeps those paths testable without Robolectric.
+            // Keeps android.util.Log, a JVM stub that throws, out of the way.
             isReturnDefaultValues = true
         }
     }

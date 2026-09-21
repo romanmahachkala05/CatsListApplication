@@ -31,10 +31,15 @@ module exposes exactly two public things, its `NavKey` and one entry
 `@Composable`; everything else — ViewModel, StateHolder, ErrorHandler — is
 `internal`, enforced by the compiler rather than by convention.
 
-Every screen is the same six pieces: an immutable `State` with one sealed
-`UiStatus` (never boolean flags), an `Event` type, a `StateHolder` that is the
-only thing allowed to mutate state, an `ErrorHandler`, a ViewModel that merely
-orchestrates, and a stateless `Content` composable the previews render.
+`:feature:favorites` is the same six pieces: an immutable `State` with one
+sealed `UiStatus` (never boolean flags), an `Event` type, a `StateHolder` that
+is the only thing allowed to mutate state, an `ErrorHandler`, a ViewModel that
+merely orchestrates, and a stateless `Content` composable the previews render.
+`:feature:feed` is paged (Paging 3 straight from the network, nothing cached —
+[ADR-0025](docs/DECISIONS.md#adr-0025)), so loading/error/retry for its list
+is `LazyPagingItems.loadState`, collected in the Composable, not this state
+machine — Paging already owns that, and reimplementing it would just be
+duplicating the library.
 
 This started single-module and split once a second feature and a shared
 component were actually about to need it, not ahead of time — see
@@ -51,19 +56,20 @@ different reason than ADR-0001 predicted).
 | DI | Hilt |
 | Async | Coroutines, Flow |
 | Network | Retrofit |
-| Storage | Room, with real migrations and committed schemas |
+| Storage | Room, with real migrations and committed schemas — favorites only |
+| Pagination | Paging 3, paging the feed straight from the network |
 | Build | Gradle KTS, version catalog, KSP, JDK 17 |
 | Tests | JUnit4, Truth, `kotlinx-coroutines-test`, hand-written fakes |
 
 ## Tests
 
-**80 unit tests, 11 instrumented.** No mocking library — every test double is a
+**51 unit tests, 15 instrumented.** No mocking library — every test double is a
 real in-memory implementation ([ADR-0012](docs/DECISIONS.md#adr-0012)). Tests
 live beside the code they test — in the same Gradle module, same package —
 rather than in one shared test source set.
 
 The instrumented ones are not optional extras. They are the only place three
-data-loss failures can be checked, because all three are Room behaviour that no
+data-loss failures can be checked, because all three are Room behavior that no
 JVM fake reproduces: that `@Transaction` really serializes concurrent writes,
 that `MIGRATION_2_3` copies every column, and that a v1 database opens instead
 of crashing.
@@ -75,7 +81,7 @@ fail proves nothing.
 ## Engineering notes
 
 The interesting part of this repo is not the cat list. It is
-[`docs/DECISIONS.md`](docs/DECISIONS.md): 22 decision records with the rejected
+[`docs/DECISIONS.md`](docs/DECISIONS.md): 23 decision records with the rejected
 alternative and the consequences, including two decisions superseded by a
 later one. A sample:
 

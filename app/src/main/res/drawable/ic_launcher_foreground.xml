@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Ears, then head: both white, so the overlap reads as one silhouette. -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M31,30L47,41L34,55z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M77,30L61,41L74,55z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M28,60a26,22 0 1,0 52,0a26,22 0 1,0 -52,0z" />
+    <path
+        android:fillColor="#D0BCFF"
+        android:pathData="M35.5,37.5L43.5,42.5L37,49.5z" />
+    <path
+        android:fillColor="#D0BCFF"
+        android:pathData="M72.5,37.5L64.5,42.5L71,49.5z" />
+    <path
+        android:fillColor="#21005D"
+        android:pathData="M38.9,59.5a3.6,3.6 0 1,0 7.2,0a3.6,3.6 0 1,0 -7.2,0z" />
+    <path
+        android:fillColor="#21005D"
+        android:pathData="M61.9,59.5a3.6,3.6 0 1,0 7.2,0a3.6,3.6 0 1,0 -7.2,0z" />
+    <path
+        android:fillColor="#EFB8C8"
+        android:pathData="M49.5,66h9q0,4.5 -4.5,6.2Q49.5,70.5 49.5,66z" />
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#21005D"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:pathData="M54,72.2v2.2M54,74.4q-3.2,3 -6.4,0M54,74.4q3.2,3 6.4,0" />
+</vector>

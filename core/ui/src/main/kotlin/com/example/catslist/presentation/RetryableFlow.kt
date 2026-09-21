@@ -8,11 +8,8 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.update
 
 /**
- * A [source] flow that [retry] resubscribes to instead of restarting the whole chain.
- *
- * `catch` sits on the inner flow on purpose. Downstream of `flatMapLatest` it would terminate
- * the whole chain including the trigger, and `retry` would be a dead button. Here only the
- * failed subscription ends, so a later [retry] can start a new one.
+ * A [source] flow that [retry] resubscribes to. `catch` sits on the inner flow: downstream of
+ * `flatMapLatest` it would end the trigger too, and `retry` would be a dead button.
  */
 class RetryableFlow<T>(
     source: () -> Flow<T>,

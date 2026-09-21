@@ -1,9 +1,8 @@
 package com.example.catslist.presentation.catslist
 
-import com.example.catslist.feature.feed.R
-import com.example.catslist.presentation.UiText
 import com.google.common.truth.Truth.assertThat
 import java.io.IOException
+import kotlinx.collections.immutable.persistentSetOf
 import org.junit.Test
 
 class CatsListErrorHandlerTest {
@@ -12,30 +11,18 @@ class CatsListErrorHandlerTest {
     private val errorHandler = CatsListErrorHandler(stateHolder)
 
     @Test
-    fun `a load failure becomes an error on screen`() {
-        errorHandler.onLoadFailure(IOException("offline"))
+    fun `a broken favorites stream marks the overlay unavailable`() {
+        errorHandler.onFavoriteIdsFailure(IOException("database is corrupt"))
 
-        assertThat(stateHolder.state.value.status).isEqualTo(
-            CatsListUiStatus.Error(UiText.Resource(R.string.catslist_error_loading_cats)),
-        )
+        assertThat(stateHolder.state.value.favoritesStatus).isEqualTo(CatsListFavoritesStatus.Unavailable)
     }
 
     @Test
-    fun `a dead feed gets its own message`() {
-        errorHandler.onFeedFailure(IOException("database is corrupt"))
+    fun `the failure does not clear the ids the feed is already rendering`() {
+        stateHolder.showFavorites(persistentSetOf("1"))
 
-        assertThat(stateHolder.state.value.status).isEqualTo(
-            CatsListUiStatus.Error(UiText.Resource(R.string.catslist_error_feed_stopped)),
-        )
-    }
+        errorHandler.onFavoriteIdsFailure(IOException("database is corrupt"))
 
-    @Test
-    fun `the same message covers any load failure, so no exception detail leaks to the user`() {
-        errorHandler.onLoadFailure(IllegalStateException("boom"))
-        val fromIllegalState = stateHolder.state.value.status
-
-        errorHandler.onLoadFailure(IOException("offline"))
-
-        assertThat(stateHolder.state.value.status).isEqualTo(fromIllegalState)
+        assertThat(stateHolder.state.value.favoriteIds).containsExactly("1")
     }
 }

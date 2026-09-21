@@ -12,10 +12,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 
-/**
- * Opens a database left behind by an older version of the app through the very builder the
- * app ships ([catDatabaseBuilder]), so the upgrade path under test is the real one.
- */
+/** Opens an older database through [catDatabaseBuilder], so the upgrade path is the real one. */
 @RunWith(AndroidJUnit4::class)
 class CatDatabaseUpgradeTest {
 
@@ -28,8 +25,8 @@ class CatDatabaseUpgradeTest {
     fun tearDown() = deleteTestDatabase()
 
     /**
-     * v1 shipped a `favoriteCats` table with a `favourite` column and was only ever wiped,
-     * never migrated. Registering MIGRATION_2_3 alone turned that into a crash on launch.
+     * v1 shipped a different table and was only ever wiped, never migrated. Registering
+     * MIGRATION_2_3 alone turned that into a crash on launch.
      */
     @Test
     fun aVersion1DatabaseIsRecreatedInsteadOfCrashing() {
@@ -44,8 +41,7 @@ class CatDatabaseUpgradeTest {
 
     @Test
     fun aVersion2DatabaseKeepsItsFavorites() {
-        // The contrast that makes the test above meaningful: v2 has a migration, so it is
-        // upgraded rather than wiped. Only the version with no path loses data.
+        // The contrast: v2 has a migration, so it is upgraded rather than wiped.
         writeVersion2Database()
 
         val database = catDatabaseBuilder(context, TEST_DB).build()

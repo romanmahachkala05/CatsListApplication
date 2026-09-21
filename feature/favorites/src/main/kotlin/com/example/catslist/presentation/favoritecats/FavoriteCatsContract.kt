@@ -8,8 +8,7 @@ import kotlinx.collections.immutable.persistentListOf
 
 @Immutable
 internal sealed interface FavoriteCatsUiStatus {
-    // Declared most-likely first, and every `when` over this mirrors the order — so the
-    // branch order is checkable against this list instead of being an unverifiable claim.
+    // Declared most-likely first, and every `when` over this mirrors the order.
     data object Content : FavoriteCatsUiStatus
     data object Empty : FavoriteCatsUiStatus
     data object Loading : FavoriteCatsUiStatus

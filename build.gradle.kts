@@ -16,27 +16,20 @@ tasks.register<Delete>("clean") {
 }
 
 /**
- * The gate every change has to pass. Needs no device, so it is the one to run constantly.
- *
- * Depends on every subproject's own `check` — which ktlint, detekt and the unit test tasks
- * all attach themselves to by default — rather than naming module-specific task paths. An
- * Android module's unit tests are named differently from a pure-Kotlin module's, and the
- * module list itself keeps growing; `check` is the one name every module has in common.
+ * The gate every change has to pass; needs no device. Depends on each subproject's own `check`
+ * rather than named task paths, so a new module is wired in without touching this.
  */
 tasks.register("verify") {
     group = "verification"
     description = "Checks formatting and static analysis, assembles the debug APK, runs every unit test in every module. No device needed."
     dependsOn(":app:assembleDebug")
-    // `include(":core:data")` also creates an unbuildable ":core" grouping project with no
-    // build.gradle.kts of its own — filter to the subprojects that are actual modules.
+    // `include(":core:data")` also creates an unbuildable ":core" grouping project.
     dependsOn(subprojects.filter { it.buildFile.exists() }.map { "${it.path}:check" })
 }
 
 /**
- * The gate before a PR. Adds every module's instrumented tests, which need a connected device
- * or a running emulator — and which are the only coverage of the things that can destroy user
- * data: the favorite toggle's transaction, MIGRATION_2_3, and the v1 upgrade path. None of
- * those can be checked off-device, so an instrumented suite nobody runs is no suite at all.
+ * The gate before a PR. Adds the instrumented tests, which need a device and are the only
+ * coverage of the paths that can destroy user data.
  */
 tasks.register("verifyOnDevice") {
     group = "verification"
