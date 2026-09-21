@@ -49,7 +49,7 @@ class AppErrorTextTest {
 
     @Test
     fun `anything that arrived unclassified is Unknown`() {
-        // Nothing below presentation throws a raw exception any more, so reaching this means
+        // Nothing below presentation throws a raw exception anymore, so reaching this means
         // something bypassed the data layer's boundary — and Unknown is the honest answer.
         assertThat(IOException("straight from somewhere else").asAppError()).isEqualTo(AppError.Unknown)
     }

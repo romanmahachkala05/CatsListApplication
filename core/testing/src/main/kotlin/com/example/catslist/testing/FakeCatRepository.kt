@@ -85,7 +85,7 @@ class FakeCatRepository : CatRepository {
     }
 
     private fun failIfAsked() {
-        if (favoriteCancelled) throw CancellationException("cancelled by the test")
+        if (favoriteCancelled) throw CancellationException("canceled by the test")
         favoriteError?.let { throw AppErrorException(it) }
     }
 

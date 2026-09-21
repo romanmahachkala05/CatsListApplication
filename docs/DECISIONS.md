@@ -22,7 +22,7 @@ and "which Room fallback" qualify; "used a `HashSet` for O(1) lookup" does not.
 
 Several entries record defects that were introduced *by this modernization* —
 not inherited from the 2022 app. ADR-0013, ADR-0014 and ADR-0015 are all bugs
-written during the rewrite, found afterwards, reproduced, and fixed with tests
+written during the rewrite, found afterward, reproduced, and fixed with tests
 that fail without the fix. They are here because finding them was the work.
 
 | # | Decision | Status |
@@ -566,7 +566,7 @@ retryable) and `onFeedFailure` (the stream died, not retryable). The error
 screen said "Please restart the app".
 
 **Reasoning at the time.** Offering Retry would have been a dead button —
-fetching another page updates a feed nothing is collecting any more. A button
+fetching another page updates a feed nothing is collecting anymore. A button
 that silently does nothing is worse than no button.
 
 **Why it was superseded.** The premise was that a terminated flow is
@@ -713,7 +713,7 @@ R8 is next on the list. kotlinx.serialization generates its serializers at
 compile time, reducing that reflective surface. Two libraries doing one job is
 also two ways to spell the same thing.
 
-**The behavioural difference that matters.** Gson silently ignores a JSON key
+**The behavioral difference that matters.** Gson silently ignores a JSON key
 the model does not declare; kotlinx.serialization rejects it. Swapping one for
 the other therefore changes how the app reacts to an upstream field being added:
 from ignoring it to failing every response. `Json { ignoreUnknownKeys = true }`
@@ -909,8 +909,9 @@ generation, which made Paging re-run the `RemoteMediator`'s REFRESH — wiping
 the entire cached feed back to page 0 on every favorite toggle, discovered by
 scrolling down, favoriting a cat, and watching the list jump to the top. Fixed
 by moving the favorite overlay out of the query entirely; see
-[`CatFeedDaoTest.pagingSource_isNotInvalidatedByAFavoriteToggle`](../core/data/src/androidTest/kotlin/com/example/catslist/data/local/CatFeedDaoTest.kt)
-for the regression test.
+`CatFeedDaoTest.pagingSource_isNotInvalidatedByAFavoriteToggle` for the
+regression test — removed along with the Room-cached feed by
+[ADR-0025](#adr-0025), so the link is deliberately not live.
 
 The feed only ever appends. TheCatAPI's search endpoint has no signal for
 "cats newer than what I already have," so `LoadType.PREPEND` is always a
@@ -1174,7 +1175,7 @@ reports changes from the moment it registers. Without that a collector on a
 steady connection would wait forever for its first value.
 
 **Alternatives rejected.** `suspend fun hasInternetConnection(): Boolean`, called
-before each request — the shape this was modelled on, and the tempting one
+before each request — the shape this was modeled on, and the tempting one
 because it reads as a guard. It answers only "should I try?", and it answers it
 about an instant that has already passed by the time the request goes out: a
 device can pass the check and lose the network mid-flight, which is precisely
@@ -1382,7 +1383,7 @@ literal base branch it was opened against — marks all four green and merged
 while only the bottom one reaches `dev`; the rest land in feature branches that
 nothing points at. That happened here, and took a branch-by-branch comparison
 against `dev` to notice, because every pull request said "merged". CI could not
-have caught it: each merge was individually valid. The defence is merge order,
+have caught it: each merge was individually valid. The defense is merge order,
 and the cheaper alternative is not to stack at all.
 
 **Alternatives rejected.** Adding each stack's intermediate branches to the

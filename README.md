@@ -1,6 +1,6 @@
 # CatsList
 
-<img src="docs/images/app-icon.png" width="88" align="right" alt="CatsList app icon">
+<img src="docs/images/app-icon.png" width="88" alt="CatsList app icon" style="float: right;">
 
 [![CI](https://github.com/romanmahachkala05/CatsListApplication/actions/workflows/ci.yml/badge.svg?branch=dev)](https://github.com/romanmahachkala05/CatsListApplication/actions/workflows/ci.yml)
 
