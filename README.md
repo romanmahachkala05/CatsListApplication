@@ -28,7 +28,10 @@ Eight Gradle modules, Clean Architecture, one direction of dependency:
 ```
 
 `:core:model` knows nothing about Android — no SDK, no Compose, no Room, no
-Hilt. `:core:data` implements the repository a use case declares. Each feature
+Hilt. `:core:data` implements the repository a use case declares, and is the
+only layer that knows what a `SocketTimeoutException` or an HTTP 429 means:
+everything crossing out of it is an `AppError`, so no screen branches on an
+exception class ([ADR-0028](docs/DECISIONS.md#adr-0028)). Each feature
 module exposes exactly two public things, its `NavKey` and one entry
 `@Composable`; everything else — ViewModel, StateHolder, ErrorHandler — is
 `internal`, enforced by the compiler rather than by convention.
@@ -57,7 +60,7 @@ different reason than ADR-0001 predicted).
 | Navigation | Navigation 3 (`NavDisplay`, typed `NavKey`s) |
 | DI | Hilt |
 | Async | Coroutines, Flow |
-| Network | Retrofit 3, OkHttp 5 |
+| Network | Retrofit 3, OkHttp 5 — one client, shared with Coil |
 | Storage | Room, with real migrations and committed schemas — favorites only |
 | Pagination | Paging 3, paging the feed straight from the network |
 | Build | Gradle KTS, version catalog, KSP, JDK 17 |
@@ -65,7 +68,7 @@ different reason than ADR-0001 predicted).
 
 ## Tests
 
-**58 unit tests, 36 instrumented.** No mocking library — every test double is a
+**76 unit tests, 37 instrumented.** No mocking library — every test double is a
 real in-memory implementation ([ADR-0012](docs/DECISIONS.md#adr-0012)). Tests
 live beside the code they test — in the same Gradle module, same package —
 rather than in one shared test source set.
@@ -84,9 +87,9 @@ fail proves nothing.
 ## Engineering notes
 
 The interesting part of this repo is not the cat list. It is
-[`docs/DECISIONS.md`](docs/DECISIONS.md): 25 decision records with the rejected
-alternative and the consequences, including two decisions superseded by a
-later one. A sample:
+[`docs/DECISIONS.md`](docs/DECISIONS.md): 31 decision records with the rejected
+alternative and the consequences, including three superseded by a later one and
+two amended by one. A sample:
 
 - **[ADR-0014](docs/DECISIONS.md#adr-0014)** — a double tap on the favorite
   button crashed the app. `OnConflictStrategy.REPLACE` would have stopped the
@@ -106,6 +109,18 @@ later one. A sample:
 - **[ADR-0001 → ADR-0022](docs/DECISIONS.md#adr-0001)** — single-module was a
   decision with a stated trigger for splitting; the split happened for a
   related but different reason than the one that was written down.
+- **[ADR-0028](docs/DECISIONS.md#adr-0028)** — every failure showed one
+  message, so a rate-limited feed told the user to check a connection that was
+  working. Telling "offline" from "server unreachable" turns out to need a
+  connectivity stream ([ADR-0027](docs/DECISIONS.md#adr-0027)) consulted at the
+  moment of failure, not a boolean checked before the request.
+- **[ADR-0029](docs/DECISIONS.md#adr-0029)** — the Compose compiler's own
+  stability report, not a guess: `Cat` was unstable because `:core:model` has no
+  Compose compiler, so every card in the feed compared by identity against a
+  freshly copied instance and none of them could skip.
+- **[ADR-0018 → ADR-0031](docs/DECISIONS.md#adr-0031)** — a documented gate that
+  was never actually configured, and a tier split that quietly assumed
+  compiling a test needed the same device as running it.
 
 Several of those were introduced during this rebuild, not inherited. They are
 recorded because finding them was the work.
@@ -121,11 +136,16 @@ cd CatsListApplication
 JDK 17. No API key required — TheCatAPI's search endpoint is open.
 
 ```bash
-./gradlew verify           # assemble + every unit test. No device needed.
-./gradlew verifyOnDevice   # the above + instrumented tests. Needs a device.
+./gradlew verify           # assemble, every unit test, and compile the instrumented ones. No device needed.
+./gradlew verifyOnDevice   # the above + running the instrumented tests. Needs a device.
 ```
 
-`verify` runs on every pull request and is a required check on `dev`.
+`verify` builds each module's instrumented test APK even though it cannot run
+it, because compiling those tests needs no device and not compiling them let
+three of them break unnoticed ([ADR-0031](docs/DECISIONS.md#adr-0031)).
+
+`verify` runs on every pull request — whatever branch it targets
+([ADR-0030](docs/DECISIONS.md#adr-0030)) — and is a required check on `dev`.
 
 ## Documentation
 
@@ -138,4 +158,10 @@ JDK 17. No API key required — TheCatAPI's search endpoint is open.
 
 Tracked honestly rather than hidden: the instrumented tests do not yet run in
 CI, which is why `verifyOnDevice` is a local step before a release
-([ADR-0018](docs/DECISIONS.md#adr-0018)).
+([ADR-0018](docs/DECISIONS.md#adr-0018)). `verify` now at least compiles them
+([ADR-0031](docs/DECISIONS.md#adr-0031)), so what a device is still needed for
+is an assertion that compiles and is wrong.
+
+The "Failure and recovery" screenshot above predates
+[ADR-0028](docs/DECISIONS.md#adr-0028) and shows a message the app no longer
+has; it is regenerated on a device, so it is stale until the next run.
