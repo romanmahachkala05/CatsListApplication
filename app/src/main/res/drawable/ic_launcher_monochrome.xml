@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- One evenOdd path: ears and head as a single outline, eyes and nose as holes.
+         The system tints every opaque pixel, so cutouts are the only way to keep features. -->
+    <path
+        android:fillColor="#000000"
+        android:fillType="evenOdd"
+        android:pathData="M30.44,50.7L31,30L45.11,39.33A26,22 0 0 1 62.89,39.33L77,30L77.56,50.7A26,22 0 1 1 30.44,50.7zM38.9,59.5a3.6,3.6 0 1,0 7.2,0a3.6,3.6 0 1,0 -7.2,0zM61.9,59.5a3.6,3.6 0 1,0 7.2,0a3.6,3.6 0 1,0 -7.2,0zM49.5,66h9q0,4.5 -4.5,6.2Q49.5,70.5 49.5,66z" />
+</vector>
