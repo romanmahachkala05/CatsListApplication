@@ -3,25 +3,25 @@ agp = "9.4.1"
 kotlin = "2.3.21"
 ksp = "2.3.12"
 
-androidxCoreKtx = "1.13.1"
-appcompat = "1.7.0"
-material = "1.12.0"
-lifecycle = "2.8.7"
+androidxCoreKtx = "1.19.0"
+appcompat = "1.8.0"
+material = "1.14.0"
+lifecycle = "2.11.0"
 retrofit = "3.0.0"
 # Retrofit and Coil each bring their own OkHttp, so the version is pinned here rather than
 # left to whichever asks first — the "two OkHttpClients, unpinned" loose end of ADR-0006.
 okhttp = "5.5.0"
-coilBom = "3.4.0"
-kotlinxCollectionsImmutable = "0.4.0"
-kotlinxSerialization = "1.10.0"
+coilBom = "3.6.3"
+kotlinxCollectionsImmutable = "0.5.2"
+kotlinxSerialization = "1.11.0"
 navigation3 = "1.1.7"
-lifecycleViewmodelNavigation3 = "2.10.0"
+lifecycleViewmodelNavigation3 = "2.11.0"
 room = "2.8.5"
 paging = "3.5.1"
 hilt = "2.60.1"
-androidxHilt = "1.2.0"
-composeBom = "2026.03.00"
-activityCompose = "1.10.1"
+androidxHilt = "1.4.0"
+composeBom = "2026.09.00"
+activityCompose = "1.13.0"
 
 # An alpha, deliberately: 1.23.8 is the last of the 1.x line and its Gradle plugin calls
 # ReportingExtension.file(), the one thing left in this build that Gradle 10 will reject.
@@ -31,11 +31,14 @@ ktlint = "14.2.0"
 ktlintEngine = "1.6.0"
 
 junit = "4.13.2"
-androidxJunit = "1.2.1"
-espressoCore = "3.6.1"
-# Matches the kotlinx-coroutines version the app already resolves to transitively.
+androidxJunit = "1.3.0"
+espressoCore = "3.7.0"
+# Only kotlinx-coroutines-test uses this, and it deliberately lags the latest release to
+# match the coroutines version the app itself resolves to transitively (1.10.2). Tests that
+# run on a different dispatcher implementation than production are not testing production.
+# Review when: something pulls a newer kotlinx-coroutines into the app's runtime classpath.
 coroutines = "1.10.2"
-truth = "1.4.4"
+truth = "1.4.5"
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidxCoreKtx" }
@@ -57,7 +60,7 @@ androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
 hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
 hilt-android-compiler = { module = "com.google.dagger:hilt-android-compiler", version.ref = "hilt" }
 androidx-hilt-compiler = { module = "androidx.hilt:hilt-compiler", version.ref = "androidxHilt" }
-androidx-hilt-navigation-compose = { module = "androidx.hilt:hilt-navigation-compose", version.ref = "androidxHilt" }
+androidx-hilt-lifecycle-viewmodel-compose = { module = "androidx.hilt:hilt-lifecycle-viewmodel-compose", version.ref = "androidxHilt" }
 androidx-compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
 androidx-compose-ui = { module = "androidx.compose.ui:ui" }
 androidx-compose-ui-graphics = { module = "androidx.compose.ui:ui-graphics" }
