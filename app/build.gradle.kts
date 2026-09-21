@@ -38,7 +38,7 @@ android {
     defaultConfig {
         applicationId = "com.example.catslist"
         minSdk = 27
-        targetSdk = 36
+        targetSdk = 37
         versionCode = versionMajor * 10_000 + versionMinor * 100 + versionPatch
         versionName = "$versionMajor.$versionMinor.$versionPatch"
     }
