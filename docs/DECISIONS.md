@@ -53,6 +53,7 @@ that fail without the fix. They are here because finding them was the work.
 | [0024](#adr-0024) | Paging owns the feed's *load* state, not its whole state | Accepted |
 | [0025](#adr-0025) | Page the feed from the network; persist only favorites | Accepted |
 | [0026](#adr-0026) | One shared, configured `OkHttpClient` | Accepted |
+| [0027](#adr-0027) | Connectivity as a `Flow`, not a pre-flight check | Accepted |
 
 ---
 
@@ -1132,3 +1133,52 @@ never constructed.
 where `AsyncImage` lives: that module applies neither Hilt nor `:core:data`, so
 it cannot reach the client. Wiring one singleton across two libraries is
 composition-root work, and `:app` is the composition root.
+
+---
+
+## ADR-0027
+
+### Connectivity as a `Flow`, not a pre-flight check
+
+**Accepted** · 2026-09-21
+
+**Context.** The app had no idea whether the device was online. Nothing asked,
+and `ACCESS_NETWORK_STATE` was not even requested. Every transport failure
+therefore looked the same from the inside: a `UnknownHostException` is what you
+get with the radio off *and* what you get when the host's DNS is down, and
+without a second source of truth there is no way to tell which sentence to put
+on screen.
+
+**Decision.** A `NetworkMonitor` port in `:core:data`, exposing
+`isOnline: Flow<Boolean>` over `ConnectivityManager.registerNetworkCallback`.
+The permission is declared in this module's own manifest and merges up.
+
+**Consequences.** The one thing it is for: a failure can now be classified as
+"you are offline" only when that is actually true. Everything else stays
+"couldn't reach the server", which is the difference between sending a connected
+user to check a connection that is not broken and telling them what happened.
+
+The stream is keyed on `NET_CAPABILITY_VALIDATED`, not on `onAvailable`.
+`onAvailable` fires as soon as a network attaches, before anything has confirmed
+it carries traffic — the state a captive-portal Wi-Fi never gets past, and where
+requests fail while the device looks connected. Validated networks are tracked
+as a **set**: Wi-Fi and cellular can be validated at once, and losing one of them
+is not going offline.
+
+The current state is seeded by hand on collection, because the callback only
+reports changes from the moment it registers. Without that a collector on a
+steady connection would wait forever for its first value.
+
+**Alternatives rejected.** `suspend fun hasInternetConnection(): Boolean`, called
+before each request — the shape this was modelled on, and the tempting one
+because it reads as a guard. It answers only "should I try?", and it answers it
+about an instant that has already passed by the time the request goes out: a
+device can pass the check and lose the network mid-flight, which is precisely
+the case that needs the good error message. A `Flow` answers that question too,
+and also "did it come back?", which is the half a boolean cannot express at all
+— it is what would let a screen recover on its own rather than waiting to be
+tapped.
+
+Reporting offline when `ConnectivityManager` is unavailable. The monitor sends
+`true` instead: refusing to try on a device that may well be online fails a
+request that would have worked, and the request itself is the better judge.
