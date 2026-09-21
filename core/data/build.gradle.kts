@@ -42,6 +42,9 @@ dependencies {
     testImplementation(libs.truth)
     testImplementation(libs.androidx.paging.testing)
 
+    // Same shared fakes the unit tests use (ADR-0012); the instrumented ones need
+    // FakeNetworkMonitor to build an ErrorMapper.
+    androidTestImplementation(project(":core:testing"))
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.room.testing)
