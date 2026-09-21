@@ -44,7 +44,7 @@ that fail without the fix. They are here because finding them was the work.
 | [0015](#adr-0015) | Dedupe a page on write, not with an in-flight guard | Accepted |
 | [0016](#adr-0016) | Feed errors are not retryable | **Superseded** by 0019 |
 | [0017](#adr-0017) | Version-scoped destructive fallback | Accepted |
-| [0018](#adr-0018) | Two-tier verification | Accepted, **amended** by 0030 |
+| [0018](#adr-0018) | Two-tier verification | Accepted, **amended** by 0030, 0031 |
 | [0019](#adr-0019) | Make the feed resubscribable instead | Accepted |
 | [0020](#adr-0020) | One serialization library | Accepted |
 | [0021](#adr-0021) | Derive versionCode from the version name | Accepted |
@@ -57,6 +57,7 @@ that fail without the fix. They are here because finding them was the work.
 | [0028](#adr-0028) | Classify failures once, in `data`, as `AppError` | Accepted |
 | [0029](#adr-0029) | Measure recomposition, then fix stability at the source | Accepted |
 | [0030](#adr-0030) | Run CI on every pull request; `verify` was never enforced | Accepted |
+| [0031](#adr-0031) | `verify` compiles the instrumented tests it cannot run | Accepted |
 
 ---
 
@@ -625,7 +626,7 @@ policy decision, made again, and needs the same explicit justification.
 
 ### Two-tier verification
 
-**Accepted** · 2026-09-14 · **amended** by [ADR-0030](#adr-0030)
+**Accepted** · 2026-09-14 · **amended** by [ADR-0030](#adr-0030), [ADR-0031](#adr-0031)
 
 **Context.** The instrumented tests only ran when someone remembered to point
 Gradle at a device — and they are the only coverage of the three failures that
@@ -1393,3 +1394,57 @@ Flattening a stack so every pull request targets `dev` directly. The
 dependencies are real — the error classification does not compile without the
 network monitor — so flattening either duplicates commits across pull requests
 or opens ones that cannot build.
+
+---
+
+## ADR-0031
+
+### `verify` compiles the instrumented tests it cannot run
+
+**Accepted** · 2026-09-21 · **amends** [ADR-0018](#adr-0018)
+
+**Context.** [ADR-0028](#adr-0028) changed what the feed renders for a failed
+load, and [ADR-0029](#adr-0029) changed `UiText` and
+`CatsListFavoritesStatus.Unavailable` from objects into types carrying a value.
+The unit tests were updated with them. The instrumented tests were not, and
+nothing said so: `verify` passed, CI passed, five pull requests merged.
+
+Three tests were broken, in two different ways. `CatsListContentTest` asserted
+`catslist_error_loading_cats` — a string the screen had stopped rendering, which
+would have failed at runtime. Worse, `CatsListContentTest` and
+`CatRepositoryImplTest` no longer **compiled**: one constructed
+`CatsListFavoritesStatus.Unavailable` as an object, the other called
+`CatRepositoryImpl` without its new `ErrorMapper`. The whole instrumented source
+set was unbuildable, and the gate had nothing to say about it.
+
+[ADR-0018](#adr-0018) split verification because instrumented tests need a
+device and a gate that fails without one teaches people to skip it. That
+reasoning is still right, and it quietly conflated two different things:
+*running* those tests needs a device, *compiling* them does not.
+
+**Decision.** `verify` additionally depends on `assembleDebugAndroidTest` for
+every module that has an `src/androidTest`. No device, no emulator, no change to
+what `verifyOnDevice` means. Both gates now share one `androidTestModules` list
+rather than filtering `subprojects` twice.
+
+**Consequences.** A change that breaks instrumented-test *source* now fails on
+the same gate as everything else, seconds after it is made, instead of waiting
+for whenever someone next attaches a device. Given those tests are the only
+coverage of the three data-loss paths, and ADR-0018 already admits they are the
+least-run tests in the project, the gap between "broken" and "noticed" was the
+whole risk.
+
+An assertion that compiles and is simply *wrong* — the
+`catslist_error_loading_cats` one — still needs a device to catch. This closes
+the larger half of the hole, not all of it.
+
+`verify` gets slower by one APK build per module with instrumented tests.
+
+**Alternatives rejected.** Running the instrumented tests in CI on a Gradle
+Managed Device, which is ADR-0018's own **Review when** and would collapse the
+two tiers entirely. It is the better answer and a bigger change; this one is a
+two-line dependency that needed no new infrastructure, and it should not wait
+behind that.
+
+Leaving it to `verifyOnDevice`. That is where it was, and it is how three broken
+tests reached `dev` across five pull requests.
