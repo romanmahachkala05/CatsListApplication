@@ -26,6 +26,10 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
@@ -79,7 +83,9 @@ fun CatPullToRefresh(
     LaunchedEffect(phase, hasSettled) {
         if (phase != RefreshPhase.Idle) {
             lastOutcome = phase
-        } else if (hasSettled) {
+        } else if (hasSettled && lastOutcome != RefreshPhase.Idle) {
+            // Only once a cycle has actually run. Letting go of the pull as soon as it
+            // settles would drop the whole sequence for a signal that arrives a frame late.
             lastOutcome = RefreshPhase.Idle
             pullRequested = false
         }
@@ -142,6 +148,8 @@ private fun RefreshIndicator(
     pullFraction: Float,
     modifier: Modifier = Modifier,
 ) {
+    val refreshing = stringResource(R.string.common_cd_refreshing)
+    val refreshing = stringResource(R.string.common_cd_refreshing)
     Surface(
         modifier = modifier.size(INDICATOR_SIZE),
         shape = MaterialTheme.shapes.extraLarge,
@@ -159,7 +167,11 @@ private fun RefreshIndicator(
                         .rotate(pullFraction.coerceIn(0f, 1f) * HALF_TURN),
                 )
                 RefreshPhase.Refreshing -> CircularProgressIndicator(
-                    modifier = Modifier.size(ICON_SIZE),
+                    modifier = Modifier
+                        .size(ICON_SIZE)
+                        // The one phase that can last seconds; the others announce themselves
+                        // through their icon.
+                        .semantics { contentDescription = refreshing },
                     strokeWidth = SPINNER_STROKE,
                     color = MaterialTheme.colorScheme.primary,
                 )
