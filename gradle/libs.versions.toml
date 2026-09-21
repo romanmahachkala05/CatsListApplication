@@ -10,8 +10,7 @@ lifecycle = "2.8.7"
 retrofit = "3.0.0"
 # Retrofit and Coil each bring their own OkHttp, so the version is pinned here rather than
 # left to whichever asks first — the "two OkHttpClients, unpinned" loose end of ADR-0006.
-# Held at 5.4.0: okhttp-android 5.5.0 declares minCompileSdk 37, and this app compiles against 36.
-okhttp = "5.4.0"
+okhttp = "5.5.0"
 coilBom = "3.4.0"
 kotlinxCollectionsImmutable = "0.4.0"
 kotlinxSerialization = "1.10.0"
