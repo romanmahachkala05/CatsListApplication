@@ -29,7 +29,7 @@ val hasReleaseSigning = listOf("storeFile", "storePassword", "keyAlias", "keyPas
 // allowed 0-99 each.
 val versionMajor = 2
 val versionMinor = 2
-val versionPatch = 0
+val versionPatch = 1
 
 android {
     namespace = "com.example.catslist"
@@ -58,7 +58,8 @@ android {
         release {
             // Null with no keystore, producing an unsigned APK rather than a failed build.
             signingConfig = signingConfigs.findByName("release")
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }

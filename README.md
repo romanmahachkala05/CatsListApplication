@@ -1,5 +1,7 @@
 # CatsList
 
+<img src="docs/images/app-icon.png" width="88" align="right" alt="CatsList app icon">
+
 [![CI](https://github.com/romanmahachkala05/CatsListApplication/actions/workflows/ci.yml/badge.svg?branch=dev)](https://github.com/romanmahachkala05/CatsListApplication/actions/workflows/ci.yml)
 
 An endless feed of cats from [TheCatAPI](https://developers.thecatapi.com/), with
@@ -55,7 +57,7 @@ different reason than ADR-0001 predicted).
 | Navigation | Navigation 3 (`NavDisplay`, typed `NavKey`s) |
 | DI | Hilt |
 | Async | Coroutines, Flow |
-| Network | Retrofit |
+| Network | Retrofit 3, OkHttp 5 |
 | Storage | Room, with real migrations and committed schemas — favorites only |
 | Pagination | Paging 3, paging the feed straight from the network |
 | Build | Gradle KTS, version catalog, KSP, JDK 17 |
@@ -63,16 +65,17 @@ different reason than ADR-0001 predicted).
 
 ## Tests
 
-**51 unit tests, 15 instrumented.** No mocking library — every test double is a
+**58 unit tests, 36 instrumented.** No mocking library — every test double is a
 real in-memory implementation ([ADR-0012](docs/DECISIONS.md#adr-0012)). Tests
 live beside the code they test — in the same Gradle module, same package —
 rather than in one shared test source set.
 
-The instrumented ones are not optional extras. They are the only place three
-data-loss failures can be checked, because all three are Room behavior that no
-JVM fake reproduces: that `@Transaction` really serializes concurrent writes,
-that `MIGRATION_2_3` copies every column, and that a v1 database opens instead
-of crashing.
+The instrumented ones are not optional extras. Three data-loss failures can be
+checked nowhere else, because all three are Room behavior that no JVM fake
+reproduces: that `@Transaction` really serializes concurrent writes, that
+`MIGRATION_2_3` copies every column, and that a v1 database opens instead of
+crashing. The rest are Compose UI tests — which branch each screen shows for a
+given load state, and what its cards emit when tapped.
 
 Each bug fix in this project was reproduced before being fixed, and every fix
 was checked by reverting it to confirm the new test fails — a test that cannot
@@ -81,7 +84,7 @@ fail proves nothing.
 ## Engineering notes
 
 The interesting part of this repo is not the cat list. It is
-[`docs/DECISIONS.md`](docs/DECISIONS.md): 23 decision records with the rejected
+[`docs/DECISIONS.md`](docs/DECISIONS.md): 25 decision records with the rejected
 alternative and the consequences, including two decisions superseded by a
 later one. A sample:
 
@@ -133,8 +136,9 @@ JDK 17. No API key required — TheCatAPI's search endpoint is open.
 
 ## Known gaps
 
-Tracked honestly rather than hidden: no app icon, `minifyEnabled` is off for
-release ([RELEASING.md](RELEASING.md#known-limitations)), the instrumented
-tests do not yet run in CI ([ADR-0018](docs/DECISIONS.md#adr-0018)), and Coil
+Tracked honestly rather than hidden: the instrumented tests do not yet run in
+CI, which is why `verifyOnDevice` is a local step before a release
+([ADR-0018](docs/DECISIONS.md#adr-0018)); and Coil
 and Retrofit still build two separate `OkHttpClient` instances rather than
-sharing one configured client ([ADR-0006](docs/DECISIONS.md#adr-0006)).
+sharing one configured client — `NetworkModule` hands Retrofit no client, so
+each library falls back to its own default ([ADR-0006](docs/DECISIONS.md#adr-0006)).
