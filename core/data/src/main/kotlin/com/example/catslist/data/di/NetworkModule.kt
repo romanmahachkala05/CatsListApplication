@@ -1,7 +1,6 @@
 package com.example.catslist.data.di
 
 import com.example.catslist.data.remote.CatApiService
-import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -10,6 +9,7 @@ import javax.inject.Singleton
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import retrofit2.Retrofit
+import retrofit2.converter.kotlinx.serialization.asConverterFactory
 
 private const val CAT_API_BASE_URL = "https://api.thecatapi.com"
 
