@@ -4,7 +4,13 @@ import android.graphics.Bitmap
 import android.os.SystemClock
 import androidx.activity.ComponentActivity
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -14,6 +20,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.example.catslist.core.designsystem.R
 import com.example.catslist.presentation.theme.CatsListTheme
 import com.example.catslist.testing.cat
+import com.google.common.truth.Truth.assertThat
 import java.io.File
 import org.junit.After
 import org.junit.Before
@@ -33,6 +40,9 @@ class CatItemTest {
 
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
 
+    /** Set from composition, because only the composable can read the window's insets. */
+    private var topInsetPx = 0
+
     /**
      * A path of its own per test: Coil's memory cache lives on the singleton loader and
      * outlives any one test, so a shared name would serve the previous test's image.
@@ -50,6 +60,16 @@ class CatItemTest {
     @After
     fun cleanUp() {
         imageFile.delete()
+    }
+
+    /** Edge-to-edge: the card draws under the status bar unless its list insets it. */
+    @Test
+    fun theCardClearsTheStatusBar() {
+        showCatItem()
+
+        val card = composeRule.onAllNodesWithTag(CAT_CARD_TAG)[0].fetchSemanticsNode()
+
+        assertThat(card.boundsInWindow.top).isAtLeast(topInsetPx.toFloat())
     }
 
     @Test
@@ -74,11 +94,17 @@ class CatItemTest {
     private fun showCatItem() {
         composeRule.setContent {
             CatsListTheme {
-                CatItem(
-                    cat = cat("1").copy(url = "file://${imageFile.absolutePath}"),
-                    onFavoriteClick = {},
-                    onDownloadClick = {},
-                )
+                topInsetPx = WindowInsets.safeDrawing.getTop(LocalDensity.current)
+                // A card is never on its own in the app: it sits in an inset list, edge-to-edge.
+                LazyColumn(contentPadding = WindowInsets.safeDrawing.asPaddingValues()) {
+                    item {
+                        CatItem(
+                            cat = cat("1").copy(url = "file://${imageFile.absolutePath}"),
+                            onFavoriteClick = {},
+                            onDownloadClick = {},
+                        )
+                    }
+                }
             }
         }
         composeRule.mainClock.advanceTimeByFrame()

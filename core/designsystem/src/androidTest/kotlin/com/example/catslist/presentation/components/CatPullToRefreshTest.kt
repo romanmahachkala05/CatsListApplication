@@ -147,8 +147,12 @@ class CatPullToRefreshTest {
                     // would otherwise rest behind the status bar.
                     topInset = WindowInsets.safeDrawing.asPaddingValues().calculateTopPadding(),
                 ) {
-                    // Scrollable on purpose: the pull is delivered through nested scroll.
-                    LazyColumn(modifier = Modifier.fillMaxSize().testTag(CONTENT_TAG)) {
+                    // Scrollable on purpose: the pull is delivered through nested scroll, and
+                    // inset the way the feed insets its own list.
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize().testTag(CONTENT_TAG),
+                        contentPadding = WindowInsets.safeDrawing.asPaddingValues(),
+                    ) {
                         items((1..20).toList()) { Text(text = "cat $it") }
                     }
                 }
