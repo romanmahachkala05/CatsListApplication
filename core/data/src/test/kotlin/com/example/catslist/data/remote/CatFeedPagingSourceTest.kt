@@ -5,7 +5,9 @@ import com.example.catslist.testing.FakeCatApiService
 import com.example.catslist.testing.catDto
 import com.google.common.truth.Truth.assertThat
 import java.io.IOException
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.SerializationException
 import org.junit.Test
 
 class CatFeedPagingSourceTest {
@@ -86,6 +88,28 @@ class CatFeedPagingSourceTest {
         val result = pagingSource.refresh()
 
         assertThat(result).isInstanceOf(PagingSource.LoadResult.Error::class.java)
+    }
+
+    @Test
+    fun `a malformed response becomes a load error too`() = runTest {
+        // Not every failure is an IOException: the converter throws this for a 200 whose body
+        // is not the JSON the wire model expects, and it would otherwise escape `load()`.
+        api.error = SerializationException("Unexpected JSON token")
+
+        val result = pagingSource.refresh()
+
+        assertThat(result).isInstanceOf(PagingSource.LoadResult.Error::class.java)
+    }
+
+    @Test
+    fun `a canceled load is rethrown rather than reported as an error`() = runTest {
+        // Paging cancels the loads it no longer needs; reporting those would show the user an
+        // error for scrolling away, and would break structured concurrency.
+        api.error = CancellationException("no longer needed")
+
+        val thrown = runCatching { pagingSource.refresh() }.exceptionOrNull()
+
+        assertThat(thrown).isInstanceOf(CancellationException::class.java)
     }
 
     private suspend fun CatFeedPagingSource.refresh() =
