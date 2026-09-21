@@ -161,7 +161,3 @@ CI, which is why `verifyOnDevice` is a local step before a release
 ([ADR-0018](docs/DECISIONS.md#adr-0018)). `verify` now at least compiles them
 ([ADR-0031](docs/DECISIONS.md#adr-0031)), so what a device is still needed for
 is an assertion that compiles and is wrong.
-
-The "Failure and recovery" screenshot above predates
-[ADR-0028](docs/DECISIONS.md#adr-0028) and shows a message the app no longer
-has; it is regenerated on a device, so it is stale until the next run.
