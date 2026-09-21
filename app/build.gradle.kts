@@ -78,6 +78,12 @@ android {
     }
 }
 
+// :app configures Compose directly rather than through `catslist.compose`, which is an Android
+// *library* convention — so the shared stability config is pointed at by hand here (ADR-0029).
+composeCompiler {
+    stabilityConfigurationFiles.add(rootProject.layout.projectDirectory.file("config/compose-stability.conf"))
+}
+
 java {
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(17))

@@ -53,6 +53,9 @@ that fail without the fix. They are here because finding them was the work.
 | [0024](#adr-0024) | Paging owns the feed's *load* state, not its whole state | Accepted |
 | [0025](#adr-0025) | Page the feed from the network; persist only favorites | Accepted |
 | [0026](#adr-0026) | One shared, configured `OkHttpClient` | Accepted |
+| [0027](#adr-0027) | Connectivity as a `Flow`, not a pre-flight check | Accepted |
+| [0028](#adr-0028) | Classify failures once, in `data`, as `AppError` | Accepted |
+| [0029](#adr-0029) | Measure recomposition, then fix stability at the source | Accepted |
 
 ---
 
@@ -1132,3 +1135,186 @@ never constructed.
 where `AsyncImage` lives: that module applies neither Hilt nor `:core:data`, so
 it cannot reach the client. Wiring one singleton across two libraries is
 composition-root work, and `:app` is the composition root.
+
+---
+
+## ADR-0027
+
+### Connectivity as a `Flow`, not a pre-flight check
+
+**Accepted** · 2026-09-21
+
+**Context.** The app had no idea whether the device was online. Nothing asked,
+and `ACCESS_NETWORK_STATE` was not even requested. Every transport failure
+therefore looked the same from the inside: a `UnknownHostException` is what you
+get with the radio off *and* what you get when the host's DNS is down, and
+without a second source of truth there is no way to tell which sentence to put
+on screen.
+
+**Decision.** A `NetworkMonitor` port in `:core:data`, exposing
+`isOnline: Flow<Boolean>` over `ConnectivityManager.registerNetworkCallback`.
+The permission is declared in this module's own manifest and merges up.
+
+**Consequences.** The one thing it is for: a failure can now be classified as
+"you are offline" only when that is actually true. Everything else stays
+"couldn't reach the server", which is the difference between sending a connected
+user to check a connection that is not broken and telling them what happened.
+
+The stream is keyed on `NET_CAPABILITY_VALIDATED`, not on `onAvailable`.
+`onAvailable` fires as soon as a network attaches, before anything has confirmed
+it carries traffic — the state a captive-portal Wi-Fi never gets past, and where
+requests fail while the device looks connected. Validated networks are tracked
+as a **set**: Wi-Fi and cellular can be validated at once, and losing one of them
+is not going offline.
+
+The current state is seeded by hand on collection, because the callback only
+reports changes from the moment it registers. Without that a collector on a
+steady connection would wait forever for its first value.
+
+**Alternatives rejected.** `suspend fun hasInternetConnection(): Boolean`, called
+before each request — the shape this was modelled on, and the tempting one
+because it reads as a guard. It answers only "should I try?", and it answers it
+about an instant that has already passed by the time the request goes out: a
+device can pass the check and lose the network mid-flight, which is precisely
+the case that needs the good error message. A `Flow` answers that question too,
+and also "did it come back?", which is the half a boolean cannot express at all
+— it is what would let a screen recover on its own rather than waiting to be
+tapped.
+
+Reporting offline when `ConnectivityManager` is unavailable. The monitor sends
+`true` instead: refusing to try on a device that may well be online fails a
+request that would have worked, and the request itself is the better judge.
+
+---
+
+## ADR-0028
+
+### Classify failures once, in `data`, as `AppError`
+
+**Accepted** · 2026-09-21
+
+**Context.** [`ARCHITECTURE.md`](ARCHITECTURE.md) §3c has said since ADR-0003 that
+an error handler branches on "a sealed error type from the data layer, never on
+raw exception classes in the ViewModel". No such type existed. Both error
+handlers took a `Throwable` and *ignored the parameter*:
+
+    override fun onFavoriteIdsFailure(error: Throwable) {
+        stateHolder.showFavoritesUnavailable()
+    }
+
+The cost was on screen. A failed feed load rendered one string —
+"Couldn't load a cat. Check your connection and try again." — for every cause:
+an unresolvable host, a 429 from TheCatAPI's anonymous rate limit, a 503, a
+socket timeout, a response the wire model no longer parses. Two of those five
+tell a connected user to go and fix a connection that is not broken, and the
+rate-limited one, the most common of them in practice, hides the only advice
+that would have worked: wait a moment.
+
+**Decision.** A sealed `AppError` in `:core:model`, with a single `ErrorMapper`
+in `:core:data` that is the only code in the app that knows what a
+`SocketTimeoutException` or an HTTP 429 means. Everything crossing out of `data`
+is classified: `CatRepositoryImpl` wraps its writes and its favorites stream,
+`CatFeedPagingSource` puts one in `LoadResult.Error`. `presentation` unwraps
+with `Throwable.asAppError()` and renders through a shared `AppError.toUiText()`,
+which a screen overrides per case when it can say something better.
+
+**Consequences.** Nine distinguishable messages where there was one. The mapping
+is unit-tested per branch, including the two that need it most: the same
+`UnknownHostException` is `NoConnection` offline and `Unreachable` online.
+
+`ErrorMapper.map` is `suspend`, which is the price of that distinction — telling
+those two apart means asking [ADR-0027](#adr-0027)'s `NetworkMonitor`, and asking
+it *at the moment of failure* rather than before the request, when the answer
+would have been a guess about the future.
+
+`FakeCatRepository` now throws `AppErrorException` too, and its error fields
+changed from `Throwable?` to `AppError?`. That is the point rather than a cost:
+a fake that threw a bare `IOException` let a ViewModel pass a test it would fail
+against the real repository.
+
+**The throwable is not carried.** `AppError` holds a classification and, for HTTP,
+a status code — not the exception. It is logged in `ErrorMapper`, the one place
+with the full stack trace and the context to say what it was doing. Downstream,
+nothing can act on a `SocketTimeoutException` that it cannot act on with
+`Timeout`. Leaving it out also makes these compare by value, so a test asserts
+`AppError.Server(503)` instead of reaching into an exception it had to construct
+to get a value it can match.
+
+**`AppErrorException` is a carrier, not a decision.** `PagingSource.LoadResult.Error`
+and a `Flow`'s failure channel both insist on a `Throwable`, so one wraps the
+`AppError` across those two boundaries. It is thrown only by `data` and unwrapped
+only by `Throwable.asAppError()`, which is the single `as?` this design costs.
+
+**Alternatives rejected.** Returning `Result<T, AppError>` from the repository
+instead of throwing. It is the better shape in the abstract, and it does not fit
+what is actually here: the two failing paths are a `Flow` that Room terminates
+by throwing and a `PagingSource` that Paging requires to report a `Throwable`.
+Neither returns a value that a `Result` could wrap, so the type would have been
+carried by two `suspend` write methods and nothing else. Worth revisiting when
+there is a call that genuinely returns a value that can fail.
+## ADR-0029
+
+### Measure recomposition, then fix stability at the source
+
+**Accepted** · 2026-09-21
+
+**Context.** Strong skipping has been on by default since Kotlin 2.0.2x, which
+retired most of the `@Stable` annotation habit — an unstable parameter now costs
+an identity comparison rather than an unconditional recomposition, and lambdas
+are remembered automatically. What it did not retire is the two cases the
+compiler genuinely cannot infer. Nobody here had looked, and "it is probably
+fine" is not something this repo has a way to check.
+
+**Decision.** Turn on the Compose compiler's own metrics and stability reports
+behind `-Pcatslist.composeMetrics`, read them, and fix what they actually said.
+
+**What they said.** Three findings, none of them guesses:
+
+- `CatItem(unstable cat: Cat)`. `Cat` lives in `:core:model`, a pure-Kotlin
+  module with no Compose compiler on it, so it carries no stability metadata and
+  is assumed unstable. The feed hands every card a fresh instance each pass —
+  `cat.copy(isFavorite = ...)`, the render-time overlay of [ADR-0024](#adr-0024)
+  — and an unstable parameter is compared by **identity**, so no card in the
+  list could ever skip. The `copy` is harmless against a stable type, whose
+  comparison is `equals`; against an unstable one it defeats skipping entirely.
+- `ErrorMessage(unstable message: UiText)` and `EmptyMessage` likewise.
+  [`ARCHITECTURE.md`](ARCHITECTURE.md) §8 has specified `@Immutable sealed
+  interface UiText` since ADR-0003; the code never had the annotation.
+- `UiText.Resource` was *itself* inferred unstable — `args: List<Any>`, a raw
+  interface that could be a `MutableList`. So the missing annotation would have
+  been a lie as well as missing.
+
+**The fixes, in the place each belongs.** `Cat` and `androidx.paging.LoadState`
+are declared in `config/compose-stability.conf`, which every Compose module
+points at — the mechanism that exists for classes you cannot annotate, whether
+because the module has no Compose compiler or because you do not own the code.
+`UiText` gained the `@Immutable` its spec already required, and `args` became an
+`ImmutableList`, which is what makes that annotation true rather than merely
+present.
+
+**Consequences.** Every parameter across `:core:designsystem`, `:feature:feed`
+and `:feature:favorites` is now stable, with two exceptions that should stay
+that way: the `viewModel` on each screen's private entry overload. A ViewModel
+is genuinely unstable, that composable is called once per screen with the
+instance `hiltViewModel()` returns, and skipping it is not a thing anyone wants.
+`:feature:feed` went from 12 known-unstable arguments to 0 that matter.
+
+Metrics stay **off** by default. They are diagnostic output, and generating them
+on every build costs time an ordinary build gets nothing back for. The stability
+config is always on, because unlike the reports it changes what the compiler
+generates.
+
+**No automated guard.** Re-running the flag and reading the report is a manual
+step; nothing fails the build if a future change makes a parameter unstable
+again. A recomposition-count test would catch it, but it needs a device and
+would therefore sit behind `verifyOnDevice` ([ADR-0018](#adr-0018)) rather than
+the gate every PR runs. Recorded as a known limit rather than papered over.
+
+**Alternatives rejected.** Annotating more types by hand. It does not reach
+either of the two real cases: a class in a module without the Compose compiler
+cannot be annotated usefully from outside it, and `androidx.paging.LoadState` is
+not ours to annotate at all.
+
+Moving `Cat` out of `:core:model` into a module that applies the Compose
+compiler. That trades a two-line config entry for putting Compose on the
+classpath of the one module [ADR-0022](#adr-0022) deliberately keeps free of it.
